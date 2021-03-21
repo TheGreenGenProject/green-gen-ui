@@ -23,9 +23,12 @@ type alias Challenge = {
     measure: SuccessMeasure
  }
 
+-- Global stats for a given challenge
 type alias ChallengeStatistics = {
-    contestants: Int,
-    periods: Int,
+    acceptedCount: Int,
+    rejectedCount: Int,
+    elapsedPeriodCount: Int,
+    totalPeriodCount: Int,
     successCount: Int,
     failureCount: Int,
     partialSuccessCount: Int,

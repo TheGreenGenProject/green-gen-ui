@@ -1,6 +1,6 @@
 module State.Cache exposing (..)
 
-import Data.Challenge exposing (Challenge, ChallengeId, ChallengeOutcomeStatus(..), ChallengeReportSummary, ChallengeStatus, ChallengeStepReport)
+import Data.Challenge exposing (Challenge, ChallengeId, ChallengeOutcomeStatus(..), ChallengeReportSummary, ChallengeStatistics, ChallengeStatus, ChallengeStepReport)
 import Data.Event exposing (Event, EventId)
 import Data.Hashtag exposing (Hashtag)
 import Data.Post exposing (PinnedPost(..), Post, PostContent, PostId)
@@ -58,6 +58,7 @@ type alias ChallengeCacheEntry = {
     challenge: Maybe Challenge,
     status: Maybe ChallengeStatus,
     summary: Maybe ChallengeReportSummary,
+    statistics: Maybe ChallengeStatistics,
     outcomeStatus: Maybe ChallengeOutcomeStatus,
     reportDates: List UTCTimestamp,
     stepReports: List ChallengeStepReport
@@ -67,6 +68,7 @@ emptyChallengeEntry = {
     challenge = Nothing,
     status = Nothing,
     summary = Nothing,
+    statistics = Nothing,
     outcomeStatus = Nothing,
     reportDates = [],
     stepReports = []
@@ -226,6 +228,16 @@ getChallengeReportSummary: Cache -> ChallengeId -> Maybe ChallengeReportSummary
 getChallengeReportSummary cache id = Dict.get (Data.Challenge.toString id) cache.challenges
     |> Maybe.andThen (.summary)
 
+addChallengeStatistics: Cache -> ChallengeId -> ChallengeStatistics -> Cache
+addChallengeStatistics cache id stats = let cacheId = (Data.Challenge.toString id)
+                                            entry = Dict.get cacheId cache.challenges |> Maybe.withDefault emptyChallengeEntry
+                                            updated = {entry| statistics = Just stats }
+    in {cache| challenges = Dict.insert cacheId updated cache.challenges }
+
+getChallengeStatistics: Cache -> ChallengeId -> Maybe ChallengeStatistics
+getChallengeStatistics cache id = Dict.get (Data.Challenge.toString id) cache.challenges
+    |> Maybe.andThen (.statistics)
+
 {-- Followers --}
 addFollower: Cache -> UserId -> Cache
 addFollower cache user = {cache| followers = cache.followers |> Set.insert (Data.User.toString user) }
@@ -324,6 +336,7 @@ mergeChallengeCacheEntries a b = {
     challenge     = mergeMaybe a.challenge b.challenge,
     status        = mergeMaybe a.status b.status,
     summary       = mergeMaybe a.summary b.summary,
+    statistics    = mergeMaybe a.statistics b.statistics,
     outcomeStatus = mergeMaybe a.outcomeStatus b.outcomeStatus,
     reportDates   = mergeList a.reportDates b.reportDates,
     stepReports   = mergeList a.stepReports b.stepReports

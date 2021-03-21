@@ -8,7 +8,7 @@ import Data.Challenge as Challenge exposing (ChallengeId, ChallengeStepStatus(..
 import Data.User as User
 import Http
 import Json.Decode exposing (list)
-import Query.Json.ChallengeDecoder exposing (decodeChallenge, decodeChallengeOutcomeStatus, decodeChallengeReportSummary, decodeChallengeStatus, decodeStepReport)
+import Query.Json.ChallengeDecoder exposing (..)
 import Query.Json.DecoderUtils exposing (decodeTimestamp, jsonResolver, unitDecoder)
 import Query.QueryUtils exposing (authHeader, baseUrl)
 import State.Cache as Cache exposing (Cache)
@@ -32,7 +32,7 @@ fetchAndCacheChallengeDetails cache user challengeId = cache
     |> Task.andThen (\cache3 -> fetchAndCacheChallengeStatusForUser cache3 user challengeId)
     |> Task.andThen (\cache4 -> fetchAndCacheChallengeReportDates cache4 user challengeId)
     |> Task.andThen (\cache5 -> fetchAndCacheChallengeStepReports cache5 user challengeId)
-    |> Task.andThen (\cache6 -> fetchAndCacheChallengeReportSummary cache6 user challengeId)
+    |> Task.andThen (\cache6 -> fetchAndCacheChallengeStatistics cache6 user challengeId)
 
 fetchAndCacheChallenge: Cache -> UserInfo -> ChallengeId -> Task Http.Error Cache
 fetchAndCacheChallenge cache user id = Http.task {
@@ -88,11 +88,21 @@ fetchAndCacheChallengeReportSummary: Cache -> UserInfo -> ChallengeId -> Task Ht
 fetchAndCacheChallengeReportSummary cache user id = Http.task {
     method = "GET"
     , headers = [authHeader user]
-    , url = baseUrl ++ absolute ["challenge", "statistics", id |> Challenge.toString] []
+    , url = baseUrl ++ absolute ["challenge", "summary", id |> Challenge.toString] []
     , body = Http.emptyBody
     , resolver = jsonResolver <| decodeChallengeReportSummary
     , timeout = Nothing
  } |> Task.map (\res -> Cache.addChallengeReportSummary cache id res)
+
+fetchAndCacheChallengeStatistics: Cache -> UserInfo -> ChallengeId -> Task Http.Error Cache
+fetchAndCacheChallengeStatistics cache user id = Http.task {
+    method = "GET"
+    , headers = [authHeader user]
+    , url = baseUrl ++ absolute ["challenge", "statistics", id |> Challenge.toString] []
+    , body = Http.emptyBody
+    , resolver = jsonResolver <| decodeChallengeStatistics
+    , timeout = Nothing
+ } |> Task.map (\res -> Cache.addChallengeStatistics cache id res)
 
 acceptChallenge: Cache -> UserInfo -> ChallengeId -> Cmd Msg
 acceptChallenge cache user challengeId = Http.task {

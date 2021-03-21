@@ -4,9 +4,10 @@ module Query.Json.ChallengeDecoder exposing (
     , decodeChallengeStatus
     , decodeChallengeOutcomeStatus
     , decodeChallengeReportSummary
+    , decodeChallengeStatistics
     , decodeStepReport)
 
-import Data.Challenge exposing (Challenge, ChallengeId(..), ChallengeOutcomeStatus(..), ChallengeReportSummary, ChallengeStatus(..), ChallengeStepReport, ChallengeStepStatus(..), SuccessMeasure)
+import Data.Challenge exposing (Challenge, ChallengeId(..), ChallengeOutcomeStatus(..), ChallengeReportSummary, ChallengeStatistics, ChallengeStatus(..), ChallengeStepReport, ChallengeStepStatus(..), SuccessMeasure)
 import Json.Decode as Decoder exposing (Decoder, int, oneOf, string, succeed)
 import Json.Decode.Pipeline exposing (required)
 import Query.Json.DecoderUtils exposing(..)
@@ -47,6 +48,17 @@ decodeChallengeReportSummary = succeed ChallengeReportSummary
     |> required "failure" int
     |> required "partial" int
     |> required "skipped" int
+
+decodeChallengeStatistics: Decoder ChallengeStatistics
+decodeChallengeStatistics = succeed ChallengeStatistics
+    |> required "acceptedCount" int
+    |> required "rejectedCount" int
+    |> required "elapsedPeriodCount" int
+    |> required "totalPeriodCount" int
+    |> required "successCount" int
+    |> required "failureCount" int
+    |> required "partialSuccessCount" int
+    |> required "skippedCount" int
 
 decodeStepReport: Decoder ChallengeStepReport
 decodeStepReport = succeed ChallengeStepReport

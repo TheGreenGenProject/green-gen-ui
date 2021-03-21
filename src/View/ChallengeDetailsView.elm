@@ -1,7 +1,7 @@
 module View.ChallengeDetailsView exposing (challengeDetailsScreen)
 
 import Basics
-import Data.Challenge exposing (Challenge, ChallengeId, ChallengeOutcomeStatus(..), ChallengeStepReport, ChallengeStepStatus(..), SuccessMeasure, isChallengeClosed, stepReport)
+import Data.Challenge exposing (Challenge, ChallengeId, ChallengeOutcomeStatus(..), ChallengeReportSummary, ChallengeStatistics, ChallengeStepReport, ChallengeStepStatus(..), SuccessMeasure, isChallengeClosed, stepReport)
 import Data.Schedule as Schedule exposing (Duration(..), Schedule(..), UTCTimestamp(..), formatDuration)
 import Data.User exposing (UserId)
 import Element exposing (..)
@@ -57,14 +57,15 @@ renderNewChallengerHeader cache userId =
             , " ?" |> text]
 
 renderChallenge: Cache -> UTCTimestamp -> Challenge -> Element Msg
-renderChallenge cache now challenge = let displayReport = isChallengeAccepted cache challenge.id in
+renderChallenge cache now challenge = let isAccepted = isChallengeAccepted cache challenge.id in
     row [padding 5, spacing 10, width fill] [
         el [Font.color Theme.background, alignTop, alignLeft] (Icons.challenge Icons.large)
         , column [alignLeft, spacing 20, width fill] [
             titledTextStyle challenge.title challenge.content 10
             , titledElementStyle "How your success will be evaluated ?" (renderSuccessMeasure challenge.measure) 10
             , titledElementStyle "When do you need to report ?" (renderReportSchedule now challenge.schedule) 10
-            , if displayReport
+            , titledElementStyle "How people are doing ?" (challenge.id |> Cache.getChallengeStatistics cache |> renderChallengeStatistics challenge.measure) 10
+            , if isAccepted
               then titledElementStyle "Report" (renderReportDates now challenge (reportDates cache challenge.id) (reportedSteps cache challenge.id)) 10
               else empty
         ]
@@ -87,6 +88,11 @@ renderReportSchedule: UTCTimestamp -> Schedule -> Element Msg
 renderReportSchedule (UTC now) schedule = case schedule of
     OneOff _ end                 -> "One-off, report after " ++ (end |> formatDate) |> text
     Recurring start _ repeat end -> formatDuration repeat                           |> text
+
+renderChallengeStatistics: SuccessMeasure -> Maybe ChallengeStatistics -> Element Msg
+renderChallengeStatistics measure maybeStats = case maybeStats of
+    Nothing    -> "Not available" |> italic
+    Just stats -> Element.none
 
 renderReportDates: UTCTimestamp -> Challenge -> List UTCTimestamp -> List ChallengeStepReport -> Element Msg
 renderReportDates now challenge dates reported =
