@@ -1,0 +1,256 @@
+
+# /auth/authenticate
+{
+    "NotAuthenticated": {}
+}
+
+{
+    "Authenticated": {
+        "token": {
+            "value": {
+                "uuid": "076cace0-1394-444a-ad57-cbb4cd65378d"
+            }
+        },
+        "user": {
+            "value": {
+                "uuid": "992c8dff-e4fe-4078-84ab-4f745fc77afd"
+            }
+        },
+        "validUntil": {
+            "value": 1607887088835
+        }
+    }
+}
+
+# /post/by-id
+# freeText
+{
+    "FreeTextPost": {
+        "id": {
+            "value": {
+                "uuid": "4ed1c260-fa8e-4540-8a3c-420ff85d9fd6"
+            }
+        },
+        "author": {
+            "value": {
+                "uuid": "f51e84c7-36c7-4cf7-9a8b-11207825e2ba"
+            }
+        },
+        "content": "This is a post",
+        "sources": [
+            {
+                "MySelf": {}
+            }
+        ],
+        "created": {
+            "value": 1608589917658
+        },
+        "hashtags": [
+            {
+                "value": "ecology"
+            },
+            {
+                "value": "green"
+            },
+            {
+                "value": "environment"
+            }
+        ]
+    }
+}
+
+
+// Tip Post
+{
+    "TipPost": {
+        "id": {
+            "value": {
+                "uuid": "a61ae3aa-0e12-4c53-ba71-c8f20caf2bbd"
+            }
+        },
+        "author": {
+            "value": {
+                "uuid": "c69f2aa8-b802-42da-9618-1c315a2582c2"
+            }
+        },
+        "tip": {
+            "value": {
+                "uuid": "273298e6-6cd2-4174-bd3b-7224eed993ee"
+            }
+        },
+        "created": {
+            "value": 1608992036166
+        },
+        "hashtags": [
+            {
+                "value": "verde"
+            },
+            {
+                "value": "something-else"
+            },
+            {
+                "value": "tip"
+            }
+        ]
+    }
+}
+
+// Tip
+{
+    "id": {
+        "value": {
+            "uuid": "96dc8a4d-5454-4e80-9127-b10c8c2be5c4"
+        }
+    },
+    "author": {
+        "value": {
+            "uuid": "b05d2145-15d0-47bc-bed6-3463791bac09"
+        }
+    },
+    "content": "My tip to share tips ... a lot !",
+    "created": {
+        "value": 1608996509582
+    },
+    "sources": [
+        {
+            "MySelf": {}
+        }
+    ]
+}
+
+
+// Challenge Post
+{
+    "ChallengePost": {
+        "id": {
+            "value": {
+                "uuid": "0347bfb4-ee9a-4958-96b4-75622725bad5"
+            }
+        },
+        "author": {
+            "value": {
+                "uuid": "c69f2aa8-b802-42da-9618-1c315a2582c2"
+            }
+        },
+        "challenge": {
+            "value": {
+                "uuid": "36665bda-4e1b-4989-8e5b-7738b2fa36c8"
+            }
+        },
+        "created": {
+            "value": 1608992036180
+        },
+        "hashtags": [
+            {
+                "value": "verde"
+            },
+            {
+                "value": "ichallengeyou"
+            },
+            {
+                "value": "tip"
+            }
+        ]
+    }
+}
+
+// Challenge
+{
+    "id": {
+        "value": {
+            "uuid": "36665bda-4e1b-4989-8e5b-7738b2fa36c8"
+        }
+    },
+    "author": {
+        "value": {
+            "uuid": "c69f2aa8-b802-42da-9618-1c315a2582c2"
+        }
+    },
+    "created": {
+        "value": 1608992036107
+    },
+    "schedule": {
+        "OneOff": {
+            "start": {
+                "value": 1608992036107
+            },
+            "end": {
+                "value": 1608992096107
+            }
+        }
+    },
+    "content": {
+        "title": "One steak a day, death on its way !",
+        "description": "One steak a week no more - for the whole year"
+    }
+}
+
+
+
+
+
+
+# /user/create/
+[
+    {
+        "id": {
+            "value": {
+                "uuid": "68caf0f5-725a-4153-af43-0af71806bd04"
+            }
+        },
+        "pseudo": "cacr",
+        "emailHash": {
+            "bytes": [
+                -85,
+                -7,
+                -89,
+                -1,
+                -26,
+                -66,
+                -65,
+                13,
+                -75,
+                -103,
+                -50,
+                104,
+                33,
+                -17,
+                9,
+                -64
+            ]
+        },
+        "passwordHash": {
+            "bytes": [
+                53,
+                -81,
+                75,
+                -15,
+                48,
+                -128,
+                95,
+                11,
+                -122,
+                -79,
+                -79,
+                62,
+                73,
+                -56,
+                16,
+                30
+            ]
+        },
+        "enabled": true
+    },
+    {
+        "id": {
+            "value": {
+                "uuid": "68caf0f5-725a-4153-af43-0af71806bd04"
+            }
+        },
+        "since": {
+            "value": 1607873097144
+        },
+        "intro": "The Boss !",
+        "verified": false
+    }
+]

@@ -1,0 +1,227 @@
+module Query.CacheQueryUtils exposing (
+    fetchAndCacheUserInfo
+    , fetchAndCachePostInfo
+    , fetchAndCacheAllUsersFromPosts
+    , fetchAndCacheAllUsersFromNotifications
+    , fetchAndCacheAllPosts
+    , fetchFromIdAndCacheAll
+    , fetchAndCacheFollowing
+    , fetchAndCacheFollowers
+    , fetchAndCacheScoreBreakdown
+    , fetchAndCacheLikeForPost
+    , fetchAndCacheLikes
+    , fetchAndCachePins
+    , fetchAndCachePinnedForPost
+    , fetchAndCacheAll)
+
+import Data.Challenge as Challenge exposing (ChallengeId)
+import Data.Event exposing (EventId)
+import Data.Notification exposing (Notification)
+import Data.Poll exposing (PollId)
+import Data.Post as Post exposing (Post, PostContent(..), PostId)
+import Data.Tip as Tip exposing (TipId)
+import Data.User as User exposing (UserId)
+import Http
+import Json.Decode as Decoder
+import Query.Json.ChallengeDecoder exposing (decodeChallenge)
+import Query.Json.DecoderUtils exposing (decodeIntWithDefault, jsonResolver)
+import Query.Json.PostDecoder exposing (decodePost)
+import Query.Json.RankDecoder exposing (decodeBreakdown)
+import Query.Json.TipDecoder exposing (decodeTip)
+import Query.Json.UserDecoder exposing (decodeUserList, decodeUserProfile)
+import Query.QueryUtils exposing (authHeader, baseUrl, fetchAllPosts)
+import State.Cache as Cache exposing (Cache)
+import State.UserState exposing (UserInfo)
+import Task exposing (Task)
+import Url.Builder exposing (absolute)
+
+
+-- Cache all necessary post information from posts ids
+-- This includes user and post related info
+fetchFromIdAndCacheAll: Cache -> UserInfo -> List PostId -> Task Http.Error Cache
+fetchFromIdAndCacheAll cache user ids = fetchAllPosts user ids
+    |> Task.andThen (\posts -> fetchAndCacheAll cache user posts)
+
+-- Cache all necessary information from posts
+-- This include user and post related info
+fetchAndCacheAll: Cache -> UserInfo -> List Post -> Task Http.Error Cache
+fetchAndCacheAll cache user posts = cache
+    |> Task.succeed
+    |> Task.andThen (\cache1 -> fetchAndCacheAllUsersFromPosts cache1 user posts)
+    |> Task.andThen (\cache2 -> fetchAndCacheAllPosts cache2 user posts)
+    |> Task.andThen (\cache3 -> fetchAndCacheLikes cache3 user posts)
+    |> Task.andThen (\cache4 -> fetchAndCachePins cache4 user posts)
+    |> Task.andThen (\cache5 -> fetchAndCacheFollowing cache5 user)
+    |> Task.andThen (\cache6 -> fetchAndCacheFollowers cache6 user)
+
+-- Cache users we are following
+fetchAndCacheFollowing: Cache -> UserInfo -> Task Http.Error Cache
+fetchAndCacheFollowing cache user = Http.task {
+    method = "GET"
+    , headers = [authHeader user]
+    , url = baseUrl ++ absolute ["following", "all", user.id |> User.toString] []
+    , body = Http.emptyBody
+    , resolver = jsonResolver <| decodeUserList
+    , timeout = Nothing
+  } |> Task.map (List.foldl (\id acc -> Cache.addFollowing acc id) cache)
+
+-- Cache followers from user
+fetchAndCacheFollowers: Cache -> UserInfo -> Task Http.Error Cache
+fetchAndCacheFollowers cache user = Http.task {
+    method = "GET"
+    , headers = [authHeader user]
+    , url = baseUrl ++ absolute ["followers", "all", user.id |> User.toString] []
+    , body = Http.emptyBody
+    , resolver = jsonResolver <| decodeUserList
+    , timeout = Nothing
+  } |> Task.map (List.foldl (\id acc -> Cache.addFollower acc id) cache)
+
+fetchAndCacheScoreBreakdown: Cache -> UserInfo -> UserId -> Task Http.Error Cache
+fetchAndCacheScoreBreakdown cache user targetId = Http.task {
+    method     = "GET"
+    , headers  = [authHeader user]
+    , url      = baseUrl ++ absolute ["rank", "breakdown", targetId |> User.toString] []
+    , body     = Http.emptyBody
+    , resolver = jsonResolver <| decodeBreakdown
+    , timeout  = Nothing
+  } |> Task.map (\score -> Cache.addScoreBreakdown cache targetId score)
+
+-- Cache all user information related to the posts + follower list
+fetchAndCacheAllUsersFromPosts: Cache -> UserInfo -> List Post -> Task Http.Error Cache
+fetchAndCacheAllUsersFromPosts cache user posts = posts
+    |> List.map (\post -> post.author)
+    |> List.map (\id -> fetchAndCacheUserInfo cache user id)
+    |> Task.sequence
+    |> Task.andThen (\xs -> List.foldl Cache.merge cache xs |> Task.succeed)
+
+fetchAndCacheAllUsersFromNotifications: Cache -> UserInfo -> List Notification -> Task Http.Error Cache
+fetchAndCacheAllUsersFromNotifications cache user notifs = notifs
+    |> Data.Notification.usersFromNotifications
+    |> List.map (\id -> fetchAndCacheUserInfo cache user id)
+    |> Task.sequence
+    |> Task.andThen (\xs -> List.foldl Cache.merge cache xs |> Task.succeed)
+
+fetchAndCacheUserInfo: Cache -> UserInfo -> UserId -> Task Http.Error Cache
+fetchAndCacheUserInfo cache user id = Http.task {
+    method = "GET"
+    , headers = [authHeader user]
+    , url = baseUrl ++ absolute ["user", "profile", id |> User.toString] []
+    , body = Http.emptyBody
+    , resolver = jsonResolver <| (decodeUserProfile user.token)
+    , timeout = Nothing
+    } |> Task.map (\res -> Cache.addUser cache res.id res)
+
+-- Cache all necessary post information
+-- This means content post related content + like count
+fetchAndCacheAllPosts: Cache -> UserInfo -> List Post -> Task Http.Error Cache
+fetchAndCacheAllPosts cache user posts = let updatedCache = Cache.addPostList cache posts in
+    posts
+    |> List.map (\post -> fetchAndCachePostInfo updatedCache user post)
+    |> Task.sequence
+    |> Task.andThen (\xs -> List.foldl Cache.merge updatedCache xs |> Task.succeed)
+
+fetchAndCachePostInfo: Cache -> UserInfo -> Post -> Task Http.Error Cache
+fetchAndCachePostInfo cache user post = case post.content of
+    RePost id        -> fetchAndCachePost cache user id
+    EventPost id     -> fetchAndCacheEvent cache user id
+    ChallengePost id -> fetchAndCacheChallenge cache user id
+    TipPost id       -> fetchAndCacheTip cache user id
+    PollPost id      -> fetchAndCachePoll cache user id
+    FreeTextPost _ _ -> Task.succeed cache -- nothing to do here
+
+-- Caching like counts for posts and posts like by the user
+fetchAndCacheLikes: Cache -> UserInfo -> List Post -> Task Http.Error Cache
+fetchAndCacheLikes cache user posts = posts
+    |> List.map (\post -> fetchAndCacheLikeCountForPost cache user post.id)
+    |> Task.sequence
+    |> Task.andThen (\xs -> List.foldl Cache.merge cache xs |> Task.succeed)
+    |> Task.andThen (\cache1 -> List.map (\post -> fetchAndCacheLikeForPost cache1 user post.id) posts |> Task.sequence)
+    |> Task.andThen (\xs -> List.foldl Cache.merge cache xs |> Task.succeed)
+
+-- Fetch and cache like count for a single post
+fetchAndCacheLikeCountForPost: Cache -> UserInfo -> PostId -> Task Http.Error Cache
+fetchAndCacheLikeCountForPost cache user post = Http.task {
+    method = "GET"
+    , headers = [authHeader user]
+    , url = baseUrl ++ absolute ["like", post |> Post.toString] []
+    , body = Http.emptyBody
+    , resolver = jsonResolver <| (decodeIntWithDefault 0)
+    , timeout = Nothing
+  } |> Task.map (Cache.setLikeCount cache post)
+
+-- Fetch and cache if user has liked a given post
+fetchAndCacheLikeForPost: Cache -> UserInfo -> PostId -> Task Http.Error Cache
+fetchAndCacheLikeForPost cache user post = Http.task {
+    method = "GET"
+    , headers = [authHeader user]
+    , url = baseUrl ++ absolute ["like", "is-liked", post |> Post.toString] []
+    , body = Http.emptyBody
+    , resolver = jsonResolver <| Decoder.bool
+    , timeout = Nothing
+  } |> Task.map (\isLiked -> (if isLiked then Cache.setLiked else Cache.unsetLiked) cache post)
+
+
+fetchAndCachePins: Cache -> UserInfo -> List Post -> Task Http.Error Cache
+fetchAndCachePins cache user posts = posts
+    |> List.map (\post -> fetchAndCachePinnedForPost cache user post.id)
+    |> Task.sequence
+    |> Task.andThen (\xs -> List.foldl Cache.merge cache xs |> Task.succeed)
+
+
+-- Fetch and cache if user has pinned a given post
+fetchAndCachePinnedForPost: Cache -> UserInfo -> PostId -> Task Http.Error Cache
+fetchAndCachePinnedForPost cache user post = Http.task {
+    method = "GET"
+    , headers = [authHeader user]
+    , url = baseUrl ++ absolute ["pin", "is-pinned", post |> Post.toString] []
+    , body = Http.emptyBody
+    , resolver = jsonResolver <| Decoder.bool
+    , timeout = Nothing
+  } |> Task.map (\isPinned -> (if isPinned then Cache.addPinned else Cache.removePinned) cache post)
+
+-- Helpers
+
+fetchAndCacheTip: Cache -> UserInfo -> TipId -> Task Http.Error Cache
+fetchAndCacheTip cache user id = Http.task {
+    method = "GET"
+    , headers = [authHeader user]
+    , url = baseUrl ++ absolute ["tip", "by-id", id |> Tip.toString] []
+    , body = Http.emptyBody
+    , resolver = jsonResolver <| decodeTip
+    , timeout = Nothing
+    } |> Task.map (\res -> Cache.addTip cache id res)
+
+fetchAndCacheChallenge: Cache -> UserInfo -> ChallengeId -> Task Http.Error Cache
+fetchAndCacheChallenge cache user id = Http.task {
+    method = "GET"
+    , headers = [authHeader user]
+    , url = baseUrl ++ absolute ["challenge", "by-id", id |> Challenge.toString] []
+    , body = Http.emptyBody
+    , resolver = jsonResolver <| decodeChallenge
+    , timeout = Nothing
+    } |> Task.map (\res -> Cache.addChallenge cache id res)
+
+fetchAndCacheEvent: Cache -> UserInfo -> EventId -> Task Http.Error Cache
+fetchAndCacheEvent cache user id = Task.succeed cache
+--Http.task {
+--    method = "GET"
+--    , headers = [authHeader user]
+--    , url = baseUrl ++ absolute ["event", "by-id", id |> Event.toString] []
+--    , body = Http.emptyBody
+--    , resolver = jsonResolver <| (decodeEvent)
+--    , timeout = Nothing
+--    } |> Task.map (\res -> Cache.addEvent cache id res)
+
+fetchAndCachePost: Cache -> UserInfo -> PostId -> Task Http.Error Cache
+fetchAndCachePost cache user id = Http.task {
+    method = "GET"
+    , headers = [authHeader user]
+    , url = baseUrl ++ absolute ["post", "by-id", id |> Post.toString] []
+    , body = Http.emptyBody
+    , resolver = jsonResolver <| decodePost
+    , timeout = Nothing
+    } |> Task.map (\res -> Cache.addPost cache id res)
+
+fetchAndCachePoll: Cache -> UserInfo -> PollId -> Task Http.Error Cache
+fetchAndCachePoll cache user id = Task.succeed cache
+
