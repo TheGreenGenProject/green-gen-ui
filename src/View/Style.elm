@@ -198,6 +198,26 @@ hashtagStyle (Hashtag tag as ht) =
     Input.button [Font.italic, Font.semiBold]
         { onPress = Just <| PerformSearchFromHashtag ht, label = Element.text ("#" ++ tag) }
 
+followHashtagStyle: Hashtag -> Element Msg
+followHashtagStyle ht = row [spacing 5] [
+    hashtagStyle ht
+    , Input.button [Font.size 11
+        , paddingXY 2 2
+        , Border.width 1
+        , Border.rounded 5]
+      { onPress = Just <| FollowHashtag ht, label = "Follow" |> text }
+ ]
+
+unfollowHashtagStyle: Hashtag -> Element Msg
+unfollowHashtagStyle ht = row [spacing 5] [
+    hashtagStyle ht
+    , Input.button [Font.size 11
+        , paddingXY 2 2
+        , Border.width 1
+        , Border.rounded 5]
+      { onPress = Just <| UnfollowHashtag ht, label = "Unfollow" |> text }
+ ]
+
 userStyle: String -> Maybe UserId -> Element Msg
 userStyle pseudo userId =
     Input.button [Font.italic, Font.semiBold, Font.color (if userId==Nothing then black else blue)]

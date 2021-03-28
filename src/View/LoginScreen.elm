@@ -53,7 +53,7 @@ loginComponents state = [
             ,label = (labelLeft [centerX, centerY] (Icons.password normal))
             ,show = False
         })
-        ,(Input.button [alignRight, Border.width 2, Border.rounded 20, padding 5] {
+        ,(Input.button [alignRight, Border.width 2, Border.rounded 5, padding 5] {
             onPress = attemptLogin state
             ,label = (text "Login")
         })

@@ -120,7 +120,7 @@ renderChallengeButtons challenge = row [width fill, spacing 10] [
 
 renderFollowingButton: Cache -> UserId -> Element Msg
 renderFollowingButton cache userId =
-    if Cache.containsFollowing cache userId then unfollowButtonStyle userId else followButtonStyle userId
+    if Cache.containsFollowingUser cache userId then unfollowButtonStyle userId else followButtonStyle userId
 
 followButtonStyle: UserId -> Element Msg
 followButtonStyle id =

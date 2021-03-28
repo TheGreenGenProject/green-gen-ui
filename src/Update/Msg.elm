@@ -34,6 +34,8 @@ type Msg =
     | ChangeSearchPage Page
     | FollowUser UserId
     | UnfollowUser UserId
+    | FollowHashtag Hashtag
+    | UnfollowHashtag Hashtag
     | LikePost PostId
     | UnlikePost PostId
     | PinPost PostId
@@ -63,6 +65,8 @@ type Msg =
     | HttpPinnedPostsFetched (Result Http.Error (Cache, List PinnedPost))
     | HttpUserFollowed (Result Http.Error ())
     | HttpUserUnfollowed (Result Http.Error ())
+    | HttpHashtagFollowed (Result Http.Error ())
+    | HttpHashtagUnfollowed (Result Http.Error ())
     | HttpWallFetched (Result Http.Error (Cache, Wall))
     | HttpUnreadNotificationsFetched (Result Http.Error (Cache, List Notification))
     | HttpMarkNotificationAsRead (Result Http.Error ())

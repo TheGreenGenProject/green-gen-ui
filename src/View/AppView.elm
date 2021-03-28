@@ -28,7 +28,7 @@ import View.WizardNewTipPage exposing (newWizardNewTipScreen)
 
 viewApp: AppState -> Html Msg
 viewApp state = Element.layout [width fill, height fill]
-    (column [ width fill, height fill, padding 20, spacing 20 ]
+    (column [ width fill, height fill, padding 5, spacing 10 ]
             [ menuBar state, displayCurrentPage state])
 
 menuBar : AppState -> Element Msg

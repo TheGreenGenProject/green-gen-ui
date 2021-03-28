@@ -1,5 +1,6 @@
 module Query.Following exposing (..)
 
+import Data.Hashtag as Hashtag exposing (Hashtag)
 import Data.User as User exposing (UserId)
 import Http
 import Query.Json.DecoderUtils exposing (jsonResolver, unitDecoder)
@@ -10,8 +11,8 @@ import Update.Msg exposing (Msg(..))
 import Url.Builder exposing (absolute, string)
 
 
-follow: UserInfo -> UserId -> Cmd Msg
-follow user userId = Debug.log ("Following user " ++ (User.toString userId))
+followUser: UserInfo -> UserId -> Cmd Msg
+followUser user userId = Debug.log ("Following user " ++ (User.toString userId))
     Http.task {
         method     = "POST"
         , headers  = [authHeader user]
@@ -21,8 +22,8 @@ follow user userId = Debug.log ("Following user " ++ (User.toString userId))
         , timeout  = Nothing
      } |> Task.attempt HttpUserFollowed
 
-unfollow: UserInfo -> UserId -> Cmd Msg
-unfollow user userId = Debug.log ("Unfollowing user " ++ (User.toString userId))
+unfollowUser: UserInfo -> UserId -> Cmd Msg
+unfollowUser user userId = Debug.log ("Unfollowing user " ++ (User.toString userId))
     Http.task {
         method     = "POST"
         , headers  = [authHeader user]
@@ -31,3 +32,25 @@ unfollow user userId = Debug.log ("Unfollowing user " ++ (User.toString userId))
         , resolver = jsonResolver <| unitDecoder
         , timeout  = Nothing
      } |> Task.attempt HttpUserUnfollowed
+
+followHashtag: UserInfo -> Hashtag -> Cmd Msg
+followHashtag user hashtag = Debug.log ("Following hashtag " ++ (Hashtag.format hashtag))
+    Http.task {
+        method     = "POST"
+        , headers  = [authHeader user]
+        , url      = baseUrl ++ absolute ["hashtag", "followers", "add", Hashtag.toString hashtag] []
+        , body     = Http.emptyBody
+        , resolver = jsonResolver <| unitDecoder
+        , timeout  = Nothing
+     } |> Task.attempt HttpHashtagFollowed
+
+unfollowHashtag: UserInfo -> Hashtag -> Cmd Msg
+unfollowHashtag user hashtag = Debug.log ("Unfollowing hashtag " ++ (Hashtag.format hashtag))
+    Http.task {
+        method     = "POST"
+        , headers  = [authHeader user]
+        , url      = baseUrl ++ absolute ["hashtag", "followers", "remove", Hashtag.toString hashtag] []
+        , body     = Http.emptyBody
+        , resolver = jsonResolver <| unitDecoder
+        , timeout  = Nothing
+     } |> Task.attempt HttpHashtagUnfollowed

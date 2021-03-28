@@ -77,7 +77,7 @@ renderFreeTextPost cache post = case post.content of
 -- Helpers
 renderHeader: UTCTimestamp -> Cache -> Post -> Element Msg
 renderHeader tmstp cache post =
-    let isFollowing = Cache.containsFollowing cache post.author
+    let isFollowing = Cache.containsFollowingUser cache post.author
         hasLiked = Cache.containsLike cache post.id
         isPinned = Cache.containsPinned cache post.id
     in

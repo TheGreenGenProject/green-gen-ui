@@ -20,7 +20,7 @@ feedScreen state = column [
         , scrollbarY
         , centerX
         , spacing 5
-        , padding 20 ]
+        , padding 5 ]
     [ renderFeedState state.timestamp state.cache state.feed ]
     |> paged state.feed.currentPage (\p -> ChangeFeedPage p) (FeedState.hasMorePost state.feed)
 

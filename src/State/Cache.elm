@@ -19,6 +19,7 @@ type alias UserKey      = String
 type alias EventKey     = String
 type alias TipKey       = String
 type alias ChallengeKey = String
+type alias HashtagKey   = String
 
 
 type alias Cache = {
@@ -30,7 +31,8 @@ type alias Cache = {
     tips: Dict TipKey Tip,
     challenges: Dict ChallengeKey ChallengeCacheEntry,
     followers: Set UserKey,
-    following: Set UserKey,
+    followingUsers: Set UserKey,
+    followingHashtags: Set HashtagKey,
     likeCount: Dict PostKey Int,
     liked: Set PostKey,
     pinned: Set PostKey
@@ -47,7 +49,8 @@ empty = {
     tips                     = Dict.empty,
     challenges               = Dict.empty,
     followers                = Set.empty,
-    following                = Set.empty,
+    followingUsers           = Set.empty,
+    followingHashtags        = Set.empty,
     likeCount                = Dict.empty,
     liked                    = Set.empty,
     pinned                   = Set.empty
@@ -84,7 +87,8 @@ merge a b = {
     tips                     = Dict.union a.tips b.tips,
     challenges               = DictUtils.merge mergeChallengeCacheEntries a.challenges b.challenges,
     followers                = Set.union a.followers b.followers,
-    following                = Set.union a.following b.following,
+    followingUsers           = Set.union a.followingUsers b.followingUsers,
+    followingHashtags        = Set.union a.followingHashtags b.followingHashtags,
     likeCount                = mergeLikeCounts a.likeCount b.likeCount,
     liked                    = Set.union a.liked b.liked,
     pinned                   = Set.union a.pinned b.pinned
@@ -249,14 +253,23 @@ containsFollower: Cache -> UserId -> Bool
 containsFollower cache user = Set.member (Data.User.toString user) cache.followers
 
 {-- Following --}
-addFollowing: Cache -> UserId -> Cache
-addFollowing cache user = {cache| following = cache.following |> Set.insert (Data.User.toString user) }
+addFollowingUser: Cache -> UserId -> Cache
+addFollowingUser cache user = {cache| followingUsers = cache.followingUsers |> Set.insert (Data.User.toString user) }
 
-removeFollowing: Cache -> UserId -> Cache
-removeFollowing cache user = {cache| following = cache.following |> Set.remove (Data.User.toString user) }
+removeFollowingUser: Cache -> UserId -> Cache
+removeFollowingUser cache user = {cache| followingUsers = cache.followingUsers |> Set.remove (Data.User.toString user) }
 
-containsFollowing: Cache -> UserId -> Bool
-containsFollowing cache user = Set.member (Data.User.toString user) cache.following
+containsFollowingUser: Cache -> UserId -> Bool
+containsFollowingUser cache user = Set.member (Data.User.toString user) cache.followingUsers
+
+addFollowingHashtag: Cache -> Hashtag -> Cache
+addFollowingHashtag cache hashtag = {cache| followingHashtags = cache.followingHashtags |> Set.insert (Data.Hashtag.toString hashtag) }
+
+removeFollowingHashtag: Cache -> Hashtag -> Cache
+removeFollowingHashtag cache hashtag = {cache| followingHashtags = cache.followingHashtags |> Set.remove (Data.Hashtag.toString hashtag) }
+
+containsFollowingHashtag: Cache -> Hashtag -> Bool
+containsFollowingHashtag cache hashtag = Set.member (Data.Hashtag.toString hashtag) cache.followingHashtags
 
 {-- Liked --}
 addLike: Cache -> PostId -> Cache

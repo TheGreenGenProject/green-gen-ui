@@ -20,7 +20,7 @@ pinnedScreen state = column [
         , scrollbarY
         , centerX
         , spacing 5
-        , padding 20 ]
+        , padding 5 ]
     [ renderPinnedState state.timestamp state.cache state.pinned ]
 
 

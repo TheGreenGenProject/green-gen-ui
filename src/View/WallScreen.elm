@@ -33,7 +33,7 @@ wallScreen state = column [
         , scrollbarY
         , centerX
         , spacing 5
-        , padding 20 ]
+        , padding 5 ]
     [ renderUserHeader state.cache state.wall, renderWallState state.timestamp state.cache state.wall]
     |> paged state.wall.currentPage (\p -> ChangeWallPage p) (WallState.hasMorePost state.wall)
 
@@ -72,7 +72,7 @@ renderUserHeader cache state =
 
 renderFollowingButton: Cache -> Maybe UserId -> Element Msg
 renderFollowingButton cache maybeUserId = maybeUserId
-    |> Maybe.map (\userId -> if Cache.containsFollowing cache userId then unfollowButtonStyle userId else followButtonStyle userId)
+    |> Maybe.map (\userId -> if Cache.containsFollowingUser cache userId then unfollowButtonStyle userId else followButtonStyle userId)
     |> Maybe.withDefault Element.none
 
 renderWallState: UTCTimestamp -> Cache -> WallState -> Element Msg

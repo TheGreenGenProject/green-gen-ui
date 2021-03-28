@@ -1,13 +1,12 @@
 module Update.Logic exposing (update)
 
 import Data.Challenge exposing (ChallengeOutcomeStatus(..))
-import Data.Page as Page
 import Platform.Cmd exposing (Cmd(..), none)
 import Query.Authentication exposing (logon)
 import Query.Challenge exposing (acceptChallenge, fetchChallengeDetails, rejectChallenge, reportStepStatus)
 import Query.Clock as Clock
 import Query.Feed exposing (fetchFeed, hasNewPosts, scheduleFeedCheck)
-import Query.Following exposing (follow, unfollow)
+import Query.Following exposing (followHashtag, followUser, unfollowHashtag, unfollowUser)
 import Query.FreeText exposing (postFreeText)
 import Query.Hashtag exposing (refreshHashtagTrend)
 import Query.Like exposing (like, unlike)
@@ -65,10 +64,14 @@ update msg state = case msg of
         display = if (isUserLoggedIn state) then page else LoginPage,
         previous = (if (isUserLoggedIn state) then [page] else []) ++ state.previous }
         |> cmd (loadPageContent state page)
-    FollowUser followee ->  {state| cache = Cache.addFollowing state.cache followee }
-        |> ifLogged (\user -> follow user followee)
-    UnfollowUser followee -> {state| cache = Cache.removeFollowing state.cache followee }
-        |> ifLogged (\user -> unfollow user followee)
+    FollowUser followee ->  {state| cache = Cache.addFollowingUser state.cache followee }
+        |> ifLogged (\user -> followUser user followee)
+    UnfollowUser followee -> {state| cache = Cache.removeFollowingUser state.cache followee }
+        |> ifLogged (\user -> unfollowUser user followee)
+    FollowHashtag hashtag ->  {state| cache = Cache.addFollowingHashtag state.cache hashtag }
+        |> ifLogged (\user -> followHashtag user hashtag)
+    UnfollowHashtag hashtag -> {state| cache = Cache.removeFollowingHashtag state.cache hashtag }
+        |> ifLogged (\user -> unfollowHashtag user hashtag)
     LikePost postId -> {state| cache = Cache.addLike state.cache postId }
         |> ifLogged (\user -> like state.cache user postId)
     UnlikePost postId -> {state| cache = Cache.removeLike state.cache postId }
@@ -143,6 +146,8 @@ update msg state = case msg of
     HttpPostUnliked _                  -> state |> nocmd
     HttpUserFollowed _                 -> state |> nocmd
     HttpUserUnfollowed _               -> state |> nocmd
+    HttpHashtagFollowed _              -> state |> nocmd
+    HttpHashtagUnfollowed _            -> state |> nocmd
     HttpPostPinned _                   -> state |> nocmd
     HttpPostUnpinned _                 -> state |> nocmd
     HttpMarkNotificationAsRead _       -> state |> nocmd

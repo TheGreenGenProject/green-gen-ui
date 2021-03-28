@@ -5,7 +5,7 @@ module Query.CacheQueryUtils exposing (
     , fetchAndCacheAllUsersFromNotifications
     , fetchAndCacheAllPosts
     , fetchFromIdAndCacheAll
-    , fetchAndCacheFollowing
+    , fetchAndCacheFollowingUsers
     , fetchAndCacheFollowers
     , fetchAndCacheScoreBreakdown
     , fetchAndCacheLikeForPost
@@ -22,10 +22,10 @@ import Data.Post as Post exposing (Post, PostContent(..), PostId)
 import Data.Tip as Tip exposing (TipId)
 import Data.User as User exposing (UserId)
 import Http
-import Json.Decode as Decoder
+import Json.Decode as Decoder exposing (list)
 import Query.Json.ChallengeDecoder exposing (decodeChallenge)
 import Query.Json.DecoderUtils exposing (decodeIntWithDefault, jsonResolver)
-import Query.Json.PostDecoder exposing (decodePost)
+import Query.Json.PostDecoder exposing (decodeHashtag, decodePost)
 import Query.Json.RankDecoder exposing (decodeBreakdown)
 import Query.Json.TipDecoder exposing (decodeTip)
 import Query.Json.UserDecoder exposing (decodeUserList, decodeUserProfile)
@@ -51,19 +51,20 @@ fetchAndCacheAll cache user posts = cache
     |> Task.andThen (\cache2 -> fetchAndCacheAllPosts cache2 user posts)
     |> Task.andThen (\cache3 -> fetchAndCacheLikes cache3 user posts)
     |> Task.andThen (\cache4 -> fetchAndCachePins cache4 user posts)
-    |> Task.andThen (\cache5 -> fetchAndCacheFollowing cache5 user)
+    |> Task.andThen (\cache5 -> fetchAndCacheFollowingUsers cache5 user)
     |> Task.andThen (\cache6 -> fetchAndCacheFollowers cache6 user)
+    |> Task.andThen (\cache7 -> fetchAndCacheFollowingHashtags cache7 user)
 
 -- Cache users we are following
-fetchAndCacheFollowing: Cache -> UserInfo -> Task Http.Error Cache
-fetchAndCacheFollowing cache user = Http.task {
+fetchAndCacheFollowingUsers: Cache -> UserInfo -> Task Http.Error Cache
+fetchAndCacheFollowingUsers cache user = Http.task {
     method = "GET"
     , headers = [authHeader user]
     , url = baseUrl ++ absolute ["following", "all", user.id |> User.toString] []
     , body = Http.emptyBody
     , resolver = jsonResolver <| decodeUserList
     , timeout = Nothing
-  } |> Task.map (List.foldl (\id acc -> Cache.addFollowing acc id) cache)
+  } |> Task.map (List.foldl (\id acc -> Cache.addFollowingUser acc id) cache)
 
 -- Cache followers from user
 fetchAndCacheFollowers: Cache -> UserInfo -> Task Http.Error Cache
@@ -75,6 +76,17 @@ fetchAndCacheFollowers cache user = Http.task {
     , resolver = jsonResolver <| decodeUserList
     , timeout = Nothing
   } |> Task.map (List.foldl (\id acc -> Cache.addFollower acc id) cache)
+
+-- Cache hashtags we are following
+fetchAndCacheFollowingHashtags: Cache -> UserInfo -> Task Http.Error Cache
+fetchAndCacheFollowingHashtags cache user = Http.task {
+    method = "GET"
+    , headers = [authHeader user]
+    , url = baseUrl ++ absolute ["hashtag", "followed"] []
+    , body = Http.emptyBody
+    , resolver = jsonResolver <| list decodeHashtag
+    , timeout = Nothing
+  } |> Task.map (List.foldl (\id acc -> Cache.addFollowingHashtag acc id) cache)
 
 fetchAndCacheScoreBreakdown: Cache -> UserInfo -> UserId -> Task Http.Error Cache
 fetchAndCacheScoreBreakdown cache user targetId = Http.task {
