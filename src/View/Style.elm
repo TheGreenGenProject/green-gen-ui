@@ -118,7 +118,7 @@ viewChallengeButtonStyle id =
                   , paddingXY 2 2
                   , Border.width 1
                   , Border.rounded 5]
-        { onPress = Just (DisplayPage (ChallengeDetailsPage id)), label = Element.text "View" }
+        { onPress = Just (DisplayPage (ChallengeDetailsPage id)), label = Element.text "View challenge" }
 
 tabButton: String -> msg -> Element msg
 tabButton txt msg =

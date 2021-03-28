@@ -62,7 +62,9 @@ renderRepostPost cache post = case post.content of
 renderChallengePost: Cache -> Post -> Element Msg
 renderChallengePost cache post = case post.content of
     ChallengePost id   -> case Cache.getChallenge cache id of
-        Just challenge -> challenge.content |> text |> postBodyStyle
+        Just challenge -> column [spacing 10] [
+            challenge.title |> text |> el [Font.semiBold, Font.size 10]
+            , challenge.content |> text |> postBodyStyle]
         Nothing        -> id |> Challenge.toString |> text |> postBodyStyle
     _                  -> neverElement
 
@@ -85,10 +87,17 @@ renderHeader tmstp cache post =
             el [alignLeft] (postLogo post)
             , el [alignLeft] (renderUser cache post.author)
             , el [alignLeft] ((if isFollowing then unfollowButtonStyle else followButtonStyle) post.author)
+            , el [alignLeft] (specialPostActions cache post)
             , el [alignRight] ((if hasLiked then unlikeButtonStyle else likeButtonStyle) post.id)
              , el [alignRight] ((if isPinned then unpinButtonStyle else pinButtonStyle) post.id)
             , el [alignRight] (renderDate tmstp post.created)]
             |> postHeaderStyle
+
+specialPostActions: Cache -> Post -> Element Msg
+specialPostActions _ post = case post.content of
+    ChallengePost id -> viewChallengeButtonStyle id
+    _                -> Element.none
+
 
 renderFooter: Cache -> Post -> Element Msg
 renderFooter cache post = let likes = Cache.getLikeCount cache post.id in
