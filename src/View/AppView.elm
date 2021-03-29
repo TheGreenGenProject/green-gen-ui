@@ -35,6 +35,7 @@ menuBar : AppState -> Element Msg
 menuBar state =
     row [ width fill, padding 10, spacing 5, Background.color background, Border.rounded 20 ]
         [el [alignLeft] (backButton state)
+        , el [width fill] (if state.display==State.AppState.SearchPage then searchBar state else Element.none)
         , el [alignRight] (wallTab state)
         , el [alignRight] (feedTab state)
         , el [alignRight] (pinnedTab state)

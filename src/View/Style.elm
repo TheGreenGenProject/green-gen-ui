@@ -178,7 +178,7 @@ searchField state =
             (Html.Events.on "keyup"
                 (Decode.field "key" Decode.string
                     |> Decode.andThen (\key -> if key == "Enter" then Decode.succeed msg else Decode.fail "Not the enter key")))
-    in Input.search [ Border.color background, Border.rounded 5, onEnter PerformSearchFromField]
+    in Input.search [ Font.size 11, Border.color background, Border.rounded 5, onEnter PerformSearchFromField]
      { onChange = (\txt -> EnteringSearch txt)
        , text = state.search.field
        , placeholder = placeholderStyle "Search..."
