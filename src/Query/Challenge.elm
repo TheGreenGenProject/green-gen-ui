@@ -1,5 +1,6 @@
 module Query.Challenge exposing (
     fetchChallengeDetails
+    , fetchAndCacheChallengeStatistics
     , acceptChallenge
     , rejectChallenge
     , reportStepStatus)

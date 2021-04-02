@@ -1,6 +1,6 @@
 module View.ChallengeDetailsView exposing (challengeDetailsScreen)
 
-import Basics
+import Basics as Int
 import Data.Challenge exposing (Challenge, ChallengeId, ChallengeOutcomeStatus(..), ChallengeReportSummary, ChallengeStatistics, ChallengeStepReport, ChallengeStepStatus(..), SuccessMeasure, isChallengeClosed, stepReport)
 import Data.Schedule as Schedule exposing (Duration(..), Schedule(..), UTCTimestamp(..), formatDuration)
 import Data.User exposing (UserId)
@@ -13,10 +13,12 @@ import State.Cache as Cache exposing (Cache)
 import State.UserState exposing (UserInfo, UserState)
 import Update.Msg exposing (Msg(..))
 import Utils.DateUtils exposing (formatDate)
+import View.Chart.ChartUtils exposing (rightLegendPanel)
+import View.Chart.Donut as Donut
 import View.Icons as Icons
 import View.ScreenUtils
 import View.Style exposing (bold, empty, italic, titledElementStyle, titledTextStyle, userStyle)
-import View.Theme as Theme
+import View.Theme as Theme exposing (background, darkRed, lightGrey, orange)
 
 
 challengeDetailsScreen: AppState -> ChallengeId -> Element Msg
@@ -92,7 +94,37 @@ renderReportSchedule (UTC now) schedule = case schedule of
 renderChallengeStatistics: SuccessMeasure -> Maybe ChallengeStatistics -> Element Msg
 renderChallengeStatistics measure maybeStats = case maybeStats of
     Nothing    -> "Not available" |> italic
-    Just stats -> Element.none
+    Just stats -> let totalReport = stats.successCount + stats.failureCount + stats.skippedCount + stats.partialSuccessCount
+                      successRate = if stats.elapsedPeriodCount==0 then 100
+                                    else if totalReport == 0 then 0
+                                    else ((stats.successCount |> Int.toFloat) + (0.5 * (stats.partialSuccessCount |> Int.toFloat))) / (totalReport |> Int.toFloat) * 100.0
+        in
+        row [spacing 20] [
+            renderChallengeStatisticsDonut stats
+                |> rightLegendPanel [Font.size 10] [
+                    ("Skipped: " ++ String.fromInt stats.skippedCount, lightGrey)
+                    , ("Failed: " ++ String.fromInt stats.failureCount, darkRed)
+                    , ("Partial: " ++ String.fromInt stats.partialSuccessCount, orange)
+                    , ("Success: " ++ String.fromInt stats.successCount, background)
+                  ]
+              , column [Font.size 10, centerY, height fill] [
+                "- There is currently " ++ (stats.acceptedCount |> String.fromInt) ++ " contestant(s)." |> text
+                ,"- " ++ (stats.rejectedCount |> String.fromInt) ++ " have rejected this challenge." |> text
+                ,"- " ++ (stats.elapsedPeriodCount |> String.fromInt) ++ " report period(s) have passed. " ++
+                    (stats.totalPeriodCount - stats.elapsedPeriodCount |> String.fromInt) ++ " remaining." |> text
+                ,"- At the moment, success rate is " ++ (successRate |> String.fromFloat) ++ "%." |> text
+              ]
+            ]
+
+renderChallengeStatisticsDonut: ChallengeStatistics -> Element Msg
+renderChallengeStatisticsDonut stats = let contestants = stats.acceptedCount
+                                           total   = (stats.elapsedPeriodCount * contestants) |> Int.toFloat
+                                           success = (stats.successCount |> Int.toFloat) / total
+                                           skipped = (stats.skippedCount |> Int.toFloat) / total
+                                           partial = (stats.partialSuccessCount |> Int.toFloat) / total
+                                           failure = (stats.failureCount |> Int.toFloat) / total
+    in Donut.smallDonut [(skipped, lightGrey),(failure, darkRed), (partial, orange),(success, background)]
+        |>  el [centerX, centerY, padding 5]
 
 renderReportDates: UTCTimestamp -> Challenge -> List UTCTimestamp -> List ChallengeStepReport -> Element Msg
 renderReportDates now challenge dates reported =
@@ -197,4 +229,3 @@ cutoffReportDate (UTC now) dates = case dates of
     (UTC x) :: (UTC y) :: xs -> if now >=x && now < y
                                 then UTC x
                                 else cutoffReportDate (UTC now) ((UTC y) :: xs)
-

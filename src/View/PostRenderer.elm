@@ -1,23 +1,27 @@
 module View.PostRenderer exposing (..)
 
 
-import Data.Challenge as Challenge
+import Basics as Int
+import Data.Challenge as Challenge exposing (ChallengeStatistics, SuccessMeasure)
 import Data.Post as Post exposing (Post, PostContent(..), PostId(..), Source(..))
 import Data.Schedule exposing (UTCTimestamp(..))
 import Data.Tip as Tip exposing (Tip)
 import Data.Url exposing (Url(..))
 import Data.User as User exposing (UserId(..))
-import Element exposing (Element, alignLeft, alignRight, alignTop, centerX, centerY, column, el, fill, height, padding, paragraph, px, row, spacing, text, width)
+import Element exposing (Element, alignLeft, alignRight, alignTop, centerX, centerY, column, el, fill, height, padding, paddingEach, paragraph, px, row, spacing, text, width)
 import Element.Border as Border
 import Element.Font as Font
 import Query.QueryUtils exposing (baseUrl)
+import State.AppState exposing (Display(..))
 import State.Cache as Cache exposing (Cache)
-import Update.Msg exposing (Msg)
+import Update.Msg exposing (Msg(..))
 import Utils.DateUtils as DateUtils
 import Uuid
+import View.Chart.Donut as Donut
 import View.Icons as Icons
 import View.ScreenUtils exposing (neverElement)
 import View.Style exposing (..)
+import View.Theme exposing (background, darkGreen, darkRed, green, lightGrey, lightOrange, lightPurple, lightRed, orange)
 
 renderPostId: UTCTimestamp -> Cache -> PostId -> Element Msg
 renderPostId tmstp cache postId = postId
@@ -62,9 +66,17 @@ renderRepostPost cache post = case post.content of
 renderChallengePost: Cache -> Post -> Element Msg
 renderChallengePost cache post = case post.content of
     ChallengePost id   -> case Cache.getChallenge cache id of
-        Just challenge -> column [spacing 10] [
-            challenge.title |> text |> el [Font.semiBold, Font.size 10]
-            , challenge.content |> text |> postBodyStyle]
+        Just challenge -> row [spacing 10, width fill, height fill] [
+            Cache.getChallengeStatistics cache id
+                |> Maybe.map renderChallengeStatistics
+                |> Maybe.withDefault Element.none
+            , verticalSeparator 5 background
+            , column [spacing 10, alignTop, width fill] [
+                challenge.title |> text |> el [Font.semiBold, Font.size 10]
+                , challenge.content |> text |> postBodyStyle]
+            , verticalSeparator 5 background
+            , el [alignTop] (renderChallengeSuccessMeasure challenge.measure)
+            ]
         Nothing        -> id |> Challenge.toString |> text |> postBodyStyle
     _                  -> neverElement
 
@@ -87,7 +99,7 @@ renderHeader tmstp cache post =
             el [alignLeft] (postLogo post)
             , el [alignLeft] (renderUser cache post.author)
             , el [alignLeft] ((if isFollowing then unfollowButtonStyle else followButtonStyle) post.author)
-            , el [alignLeft] (specialPostActions cache post)
+            , el [alignLeft, paddingEach {left=10,top=0,bottom=0,right=10}] (specialPostActions cache post)
             , el [alignRight] ((if hasLiked then unlikeButtonStyle else likeButtonStyle) post.id)
              , el [alignRight] ((if isPinned then unpinButtonStyle else pinButtonStyle) post.id)
             , el [alignRight] (renderDate tmstp post.created)]
@@ -95,7 +107,7 @@ renderHeader tmstp cache post =
 
 specialPostActions: Cache -> Post -> Element Msg
 specialPostActions _ post = case post.content of
-    ChallengePost id -> viewChallengeButtonStyle id
+    ChallengePost id -> buttonBarStyle [Font.size 9, Font.semiBold] [("View", DisplayPage (ChallengeDetailsPage id))]
     _                -> Element.none
 
 
@@ -137,3 +149,25 @@ postLogo post =
             TipPost _        -> Icons.tiny |> Icons.tip       |> center
             PollPost _       -> Icons.tiny |> Icons.poll      |> center
             FreeTextPost _ _ -> Icons.tiny |> Icons.post      |> center
+
+renderChallengeStatistics: ChallengeStatistics -> Element Msg
+renderChallengeStatistics stats = let contestants = stats.acceptedCount
+                                      total   = (stats.elapsedPeriodCount * contestants) |> Int.toFloat
+                                      success = (stats.successCount |> Int.toFloat) / total
+                                      skipped = (stats.skippedCount |> Int.toFloat) / total
+                                      partial = (stats.partialSuccessCount |> Int.toFloat) / total
+                                      failure = (stats.failureCount |> Int.toFloat) / total
+    in column [spacing 5, Font.size 8] [
+        Donut.doubleTinyDonut
+            [(skipped, lightGrey),(failure, darkRed), (partial, orange),(success, background)]
+            [(stats.elapsedPeriodCount |> Int.toFloat, lightPurple), (stats.totalPeriodCount |> Int.toFloat, lightGrey)]
+        |>  el [centerX, centerY]
+        , ((contestants |> String.fromInt) ++ " contestant(s)") |> bold |> el [alignRight]
+     ]
+
+renderChallengeSuccessMeasure: SuccessMeasure -> Element Msg
+renderChallengeSuccessMeasure measure = checkListStyle [Font.size 9] [
+    (measure.maxSkip > 0, if measure.maxSkip > 0 then "Skipping some reports allowed" else "Skipping report not allowed")
+    , (measure.maxPartial > 0, if measure.maxPartial > 0 then "Reporting partial success allowed" else "Partial success report not allowed")
+    , (measure.maxFailure > 0, if measure.maxFailure > 0 then "Some failure allowed" else "No failed report allowed")
+ ]

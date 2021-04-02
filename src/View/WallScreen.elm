@@ -105,7 +105,7 @@ renderChart breakdown = let score = Rank.score breakdown
                             fromEvents  = breakdown.fromEvents  |> Int.toFloat
                             remainder   = nextRankScore - (fromLikes + fromFollows + fromPosts + fromEvents) |> max 0.0
     in row [spacing 10] [
-        Donut.donut 40 [(fromLikes + fromFollows + fromPosts + fromEvents, background), (remainder, lightPurple)]
+        Donut.donut [(fromLikes + fromFollows + fromPosts + fromEvents, background), (remainder, lightPurple)]
         , ChartUtils.legend [Font.size 10] [
             ("Likes: " ++ String.fromFloat fromLikes, background)
             , ("Follow: " ++ String.fromFloat fromFollows, background)

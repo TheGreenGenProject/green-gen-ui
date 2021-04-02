@@ -16,7 +16,7 @@ import Json.Decode as Decode
 import State.AppState exposing (AppState, Display(..))
 import Update.Msg exposing (Msg(..))
 import View.Icons as Icons
-import View.Theme as Theme exposing (background, black, blue, errorForeground, foreground, darkRed)
+import View.Theme as Theme exposing (background, black, blue, darkRed, errorForeground, foreground, grey)
 
 empty: Element Msg
 empty = Element.none
@@ -120,6 +120,12 @@ viewChallengeButtonStyle id =
                   , Border.rounded 5]
         { onPress = Just (DisplayPage (ChallengeDetailsPage id)), label = Element.text "View challenge" }
 
+buttonBarStyle: List (Attribute Msg) -> List (String, Msg) -> Element Msg
+buttonBarStyle attrs buttons = buttons
+    |> List.map (\(txt, action) -> Input.button attrs { onPress = Just action, label = txt |> text })
+    |> List.intersperse (el attrs ("|" |> text))
+    |> row attrs
+
 tabButton: String -> msg -> Element msg
 tabButton txt msg =
     Input.button [ Background.color background
@@ -183,15 +189,6 @@ searchField state =
        , text = state.search.field
        , placeholder = placeholderStyle "Search..."
        , label = labelHidden "" }
-
---searchButton: Element Msg
---searchButton =
---    Input.button
---        [Background.color background
---         , Font.color foreground
---         , Border.rounded 5
---         , height fill]
---        { onPress = Just PerformSearchFromField, label = Icons.search <| Icons.normal}
 
 hashtagStyle: Hashtag -> Element Msg
 hashtagStyle (Hashtag tag as ht) =
@@ -264,6 +261,19 @@ titledElementStyle title content fontSize = column [width fill, height fill, spa
     el [Font.semiBold, Font.size (fontSize + 2)] (text title)
     , row [Font.size fontSize] [content]
  ]
+
+checkListStyle: List (Attribute Msg) -> List (Bool, String) -> Element Msg
+checkListStyle attrs items = items
+    |> List.map (\(checked, item) -> row [alignLeft] [
+        el [centerX, centerY, padding 1, Font.color (if checked then background else grey)] (Icons.square Icons.tiny),
+        item |> text
+      ])
+    |> column attrs
+
+verticalSeparator: Int -> Color -> Element Msg
+verticalSeparator width col =
+    el [Border.color col, height fill, Border.widthEach {left = width, top = 0, bottom = 0, right = 0} ] empty
+
 
 placeholderStyle: String -> Maybe (Placeholder msg)
 placeholderStyle txt = Just (placeholder [Font.italic, Font.color Theme.lightBlue] (text txt))

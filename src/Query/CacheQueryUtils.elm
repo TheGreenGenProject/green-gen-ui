@@ -23,6 +23,7 @@ import Data.Tip as Tip exposing (TipId)
 import Data.User as User exposing (UserId)
 import Http
 import Json.Decode as Decoder exposing (list)
+import Query.Challenge exposing (fetchAndCacheChallengeStatistics)
 import Query.Json.ChallengeDecoder exposing (decodeChallenge)
 import Query.Json.DecoderUtils exposing (decodeIntWithDefault, jsonResolver)
 import Query.Json.PostDecoder exposing (decodeHashtag, decodePost)
@@ -137,6 +138,7 @@ fetchAndCachePostInfo cache user post = case post.content of
     RePost id        -> fetchAndCachePost cache user id
     EventPost id     -> fetchAndCacheEvent cache user id
     ChallengePost id -> fetchAndCacheChallenge cache user id
+                        |> Task.andThen (\cache1 -> fetchAndCacheChallengeStatistics cache1 user id)
     TipPost id       -> fetchAndCacheTip cache user id
     PollPost id      -> fetchAndCachePoll cache user id
     FreeTextPost _ _ -> Task.succeed cache -- nothing to do here

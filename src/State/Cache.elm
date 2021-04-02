@@ -242,6 +242,11 @@ getChallengeStatistics: Cache -> ChallengeId -> Maybe ChallengeStatistics
 getChallengeStatistics cache id = Dict.get (Data.Challenge.toString id) cache.challenges
     |> Maybe.andThen (.statistics)
 
+containsChallengeStatistics: Cache -> ChallengeId -> Bool
+containsChallengeStatistics cache id = Dict.get (Data.Challenge.toString id) cache.challenges
+    |> Maybe.andThen (.statistics)
+    |> MaybeUtils.isDefined
+
 {-- Followers --}
 addFollower: Cache -> UserId -> Cache
 addFollower cache user = {cache| followers = cache.followers |> Set.insert (Data.User.toString user) }
