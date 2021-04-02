@@ -5,8 +5,7 @@ import Data.Notification as Notification exposing (Notification, NotificationCon
 import Data.Page as Page
 import Data.Schedule exposing (UTCTimestamp)
 import Data.User exposing (UserId)
-import Element exposing (Element, alignLeft, centerX, column, el, fill, height, padding, paragraph, row, scrollbarY, spacing, text, width)
-import Element.Border as Border
+import Element exposing (Element, alignLeft, centerX, column, el, fill, height, padding, row, scrollbarY, spacing, text, width)
 import Element.Font as Font
 import Element.Input as Input
 import State.AppState exposing (AppState)
@@ -17,7 +16,6 @@ import Utils.DateUtils as DateUtils
 import View.Icons as Icons
 import View.ScreenUtils as ScreenUtils
 import View.Style exposing (notifHeaderStyle, paged, userStyle, viewChallengeButtonStyle)
-import View.Theme as Theme
 
 
 notificationScreen: AppState -> Element Msg
@@ -36,22 +34,18 @@ renderNotifications now cache notifs = column [
         , scrollbarY
         , centerX
         , spacing 5
-        , padding 5
+        , padding 10
     ] (List.map (renderNotification now cache) notifs)
 
 renderNotification:  UTCTimestamp -> Cache -> Notification -> Element Msg
 renderNotification now cache notif = row [
-        width fill,
-        spacing 10,
-        padding 5,
-        Border.color Theme.background,
-        Border.width 1,
-        Border.roundEach { topLeft=3, topRight=0, bottomLeft=3, bottomRight=0 }
+        width fill
+        , spacing 10
     ] [renderHeader notif, renderTimestamp now notif, renderContent cache notif]
 
 renderEmptyNotificationScreen: Element Msg
 renderEmptyNotificationScreen =
-    ScreenUtils.emptyScreen "No notification"
+    ScreenUtils.emptyScreen "No new notification"
 
 -- Helpers
 renderHeader: Notification -> Element Msg
