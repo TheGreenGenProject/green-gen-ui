@@ -1,9 +1,10 @@
 module Update.Logic exposing (update)
 
-import Data.Challenge exposing (ChallengeOutcomeStatus(..))
+import Data.Challenge as Challenge exposing (ChallengeOutcomeStatus(..))
+import Data.Page as Page
 import Platform.Cmd exposing (Cmd(..), none)
 import Query.Authentication exposing (logon)
-import Query.Challenge exposing (acceptChallenge, fetchChallengeDetails, rejectChallenge, reportStepStatus)
+import Query.Challenge exposing (acceptChallenge, fetchUserChallengePosts, fetchChallengeDetails, rejectChallenge, reportStepStatus)
 import Query.Clock as Clock
 import Query.Feed exposing (fetchFeed, hasNewPosts, scheduleFeedCheck)
 import Query.Following exposing (followHashtag, followUser, unfollowHashtag, unfollowUser)
@@ -18,6 +19,7 @@ import Query.Tip exposing (postTip)
 import Query.Wall exposing (fetchUserWall, fetchWall)
 import State.AppState as AppState exposing (AppState, Display(..), isUserLoggedIn)
 import State.Cache as Cache
+import State.ChallengeState as ChallengeState
 import State.FeedState as FeedState
 import State.FormState as FormState exposing (clearNewFreeTextWizardState, clearNewTipWizardState)
 import State.NotificationState as NotificationState
@@ -98,9 +100,14 @@ update msg state = case msg of
         |> ifLogged (\user -> acceptChallenge state.cache user challengeId)
     RejectChallenge challengeId -> {state| cache = Cache.addChallengeOutcomeStatus state.cache challengeId Rejected}
         |> ifLogged (\user -> rejectChallenge state.cache user challengeId)
-    ReportChallengeStepStatus challengeId step status ->  {state|
-        cache = Cache.updateChallengeStepReports state.cache challengeId {step = step, status = status}}
+    ReportChallengeStepStatus challengeId step status -> {state|
+        cache = Cache.simulateChallengeStepReports state.cache challengeId {step = step, status = status}}
         |> ifLogged (\user -> reportStepStatus user challengeId step status)
+    ChangeChallengePage page -> state
+        |> ifLogged (\user -> fetchUserChallengePosts state.cache user {tab = state.challenge.currentTab, page=page})
+    ChangeChallengeTab tab -> {state|
+        challenge = state.challenge |> ChallengeState.changeTab tab }
+        |> ifLogged (\user -> fetchUserChallengePosts state.cache user  {tab = tab, page = Page.first})
     -----------------------
     --- Form processing ---
     -----------------------
@@ -214,6 +221,12 @@ update msg state = case msg of
     HttpNewFreeTextPosted (Err err) -> Debug.log ("Error while posting new free text: " ++ (errorToString err))
         {state| forms = FormState.newFreeTextPosted state.forms }
         |> nocmd
+    HttpChallengePostsFetched (Ok (cache, {tab, page}, challenges)) -> {state |
+        challenge = ChallengeState.from challenges {tab=tab, page=page}
+        , cache = Cache.merge cache state.cache }
+        |> nocmd
+    HttpChallengePostsFetched (Err err) -> Debug.log ("Error while getting challenge posts: " ++ (errorToString err))
+        state |> nocmd
     HttpChallengeDetailsFetched (Ok (cache, _)) -> {state |
         cache = Cache.merge cache state.cache }
         |> nocmd
@@ -250,7 +263,7 @@ ifLogged f state = case state.user of
     LoggedIn user -> state |> cmd (f user)
     _             -> Debug.log "Couldn't process command: user is not logged in !" AppState.empty |> nocmd
 
--- Loads/Reload a page content if needed and if the user is logged in
+-- Loads/Reloads a page content if needed and if the user is logged in
 loadPageContent: AppState -> Display -> Cmd Msg
 loadPageContent state page = case (state.user, page) of
     (LoggedIn user, WallPage)                         -> (fetchWall state.cache user state.wall.currentPage)
@@ -259,6 +272,7 @@ loadPageContent state page = case (state.user, page) of
     (LoggedIn user, SearchPage)                       -> (performSearch state.cache user state.search.filter state.search.currentPage)
     (LoggedIn user, NotificationPage)                 -> (fetchNotifications state.cache user state.notifications.currentPage)
     (LoggedIn user, UserPage userId)                  -> (fetchUserWall state.cache user userId state.wall.currentPage)
+    (LoggedIn user, ChallengePage)                    -> (fetchUserChallengePosts state.cache user {tab=state.challenge.currentTab, page=Page.first})
     (LoggedIn user, ChallengeDetailsPage challengeId) -> (fetchChallengeDetails state.cache user challengeId)
     _                                                 -> none
 

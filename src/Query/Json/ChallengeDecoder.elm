@@ -151,5 +151,5 @@ decodeStepSkipped = Decoder.field "Skipped" unitDecoder
     |> Decoder.map (\_ -> Skipped)
 
 decodeStepPartialSuccess: Decoder ChallengeStepStatus
-decodeStepPartialSuccess = Decoder.field "PartialSuccess" unitDecoder
+decodeStepPartialSuccess = Decoder.field "Partial" unitDecoder
     |> Decoder.map (\_ -> PartialSuccess)

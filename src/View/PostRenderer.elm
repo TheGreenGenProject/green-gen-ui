@@ -2,7 +2,7 @@ module View.PostRenderer exposing (..)
 
 
 import Basics as Int
-import Data.Challenge as Challenge exposing (ChallengeStatistics, SuccessMeasure)
+import Data.Challenge as Challenge exposing (ChallengeOutcomeStatus(..), ChallengeStatistics, SuccessMeasure)
 import Data.Post as Post exposing (Post, PostContent(..), PostId(..), Source(..))
 import Data.Schedule exposing (UTCTimestamp(..))
 import Data.Tip as Tip exposing (Tip)
@@ -21,7 +21,7 @@ import View.Chart.Donut as Donut
 import View.Icons as Icons
 import View.ScreenUtils exposing (neverElement)
 import View.Style exposing (..)
-import View.Theme exposing (background, darkGreen, darkRed, green, lightGrey, lightOrange, lightPurple, lightRed, orange)
+import View.Theme exposing (background, darkRed, lightGrey, lightPurple, orange)
 
 renderPostId: UTCTimestamp -> Cache -> PostId -> Element Msg
 renderPostId tmstp cache postId = postId
@@ -74,8 +74,8 @@ renderChallengePost cache post = case post.content of
             , column [spacing 10, alignTop, width fill] [
                 challenge.title |> text |> el [Font.semiBold, Font.size 10]
                 , challenge.content |> text |> postBodyStyle]
-            , verticalSeparator 5 background
-            , el [alignTop] (renderChallengeSuccessMeasure challenge.measure)
+            --, verticalSeparator 5 background
+            --, el [alignTop] (renderChallengeSuccessMeasure challenge.measure)
             ]
         Nothing        -> id |> Challenge.toString |> text |> postBodyStyle
     _                  -> neverElement
@@ -106,8 +106,13 @@ renderHeader tmstp cache post =
             |> postHeaderStyle
 
 specialPostActions: Cache -> Post -> Element Msg
-specialPostActions _ post = case post.content of
-    ChallengePost id -> buttonBarStyle [Font.size 9, Font.semiBold] [("View", DisplayPage (ChallengeDetailsPage id))]
+specialPostActions cache post = case post.content of
+    ChallengePost id -> let challengeText = case Cache.getChallengeOutcomeStatus cache id of
+                                            Just OnTracks    -> "Report"
+                                            Just NotYetTaken -> "Take challenge"
+                                            Just Failed      -> "Failed"
+                                            _                -> "View"
+        in buttonBarStyle [Font.size 9, Font.semiBold] [(challengeText, DisplayPage (ChallengeDetailsPage id))]
     _                -> Element.none
 
 

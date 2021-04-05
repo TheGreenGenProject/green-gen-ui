@@ -20,8 +20,8 @@ newPostScreen _ = column [
         , padding 20 ]
     [ newTipButton
      , newChallengeButton
-     , newEventButton
-     , newPollButton
+     --, newEventButton
+     --, newPollButton
      , newFreeTextButton]
 
 newTipButton: Element Msg

@@ -12,7 +12,8 @@ module Query.CacheQueryUtils exposing (
     , fetchAndCacheLikes
     , fetchAndCachePins
     , fetchAndCachePinnedForPost
-    , fetchAndCacheAll)
+    , fetchAndCacheAll
+    , fetchAndCacheChallengeStatistics)
 
 import Data.Challenge as Challenge exposing (ChallengeId)
 import Data.Event exposing (EventId)
@@ -23,8 +24,7 @@ import Data.Tip as Tip exposing (TipId)
 import Data.User as User exposing (UserId)
 import Http
 import Json.Decode as Decoder exposing (list)
-import Query.Challenge exposing (fetchAndCacheChallengeStatistics)
-import Query.Json.ChallengeDecoder exposing (decodeChallenge)
+import Query.Json.ChallengeDecoder exposing (decodeChallenge, decodeChallengeStatistics)
 import Query.Json.DecoderUtils exposing (decodeIntWithDefault, jsonResolver)
 import Query.Json.PostDecoder exposing (decodeHashtag, decodePost)
 import Query.Json.RankDecoder exposing (decodeBreakdown)
@@ -214,6 +214,16 @@ fetchAndCacheChallenge cache user id = Http.task {
     , resolver = jsonResolver <| decodeChallenge
     , timeout = Nothing
     } |> Task.map (\res -> Cache.addChallenge cache id res)
+
+fetchAndCacheChallengeStatistics: Cache -> UserInfo -> ChallengeId -> Task Http.Error Cache
+fetchAndCacheChallengeStatistics cache user id = Http.task {
+    method = "GET"
+    , headers = [authHeader user]
+    , url = baseUrl ++ absolute ["challenge", "statistics", id |> Challenge.toString] []
+    , body = Http.emptyBody
+    , resolver = jsonResolver <| decodeChallengeStatistics
+    , timeout = Nothing
+ } |> Task.map (\res -> Cache.addChallengeStatistics cache id res)
 
 fetchAndCacheEvent: Cache -> UserInfo -> EventId -> Task Http.Error Cache
 fetchAndCacheEvent cache user id = Task.succeed cache

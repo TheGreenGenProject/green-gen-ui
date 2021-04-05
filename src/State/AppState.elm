@@ -5,6 +5,7 @@ import Data.Schedule exposing (UTCTimestamp(..))
 import Data.User exposing (UserId)
 import Http
 import State.Cache as Cache exposing (Cache)
+import State.ChallengeState exposing (ChallengeState)
 import State.FeedState exposing (FeedState)
 import State.FormState exposing (FormState)
 import State.NotificationState exposing (NotificationState)
@@ -27,6 +28,7 @@ type Display = LoginPage
     | UserPage UserId
     | NotificationPage
     | NewPostPage
+    | ChallengePage
     | ChallengeDetailsPage ChallengeId
     | WizardNewEventPage
     | WizardNewTipPage
@@ -41,6 +43,7 @@ type alias AppState = {
     user: UserState,
     wall: WallState,
     feed: FeedState,
+    challenge: ChallengeState,
     pinned: PinnedState,
     notifications: NotificationState,
     search: SearchState,
@@ -56,6 +59,7 @@ empty = {
     user          = State.UserState.NotLogged,
     wall          = State.WallState.empty,
     feed          = State.FeedState.empty,
+    challenge     = State.ChallengeState.empty,
     pinned        = State.PinnedState.empty,
     notifications = State.NotificationState.empty,
     search        = State.SearchState.empty,

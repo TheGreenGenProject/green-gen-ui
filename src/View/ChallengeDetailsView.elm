@@ -43,8 +43,12 @@ renderChallengerHeader cache now userId challenge =
     then el [Font.size 15, Font.italic] ("This challenge is now closed." |> text)
     else if isChallengeAccepted cache challenge.id
     then el [Font.size 15, Font.bold] ("You have accepted this challenge !" |> text)
+    else if isChallengeFailed cache challenge.id
+    then el [Font.size 15, Font.bold] ("You have FAILED this challenge." |> text)
     else if Cache.getChallengeOutcomeStatus cache challenge.id == Just Rejected
     then el [Font.size 15, Font.bold] ("You have rejected this challenge !" |> text)
+    else if Cache.getChallengeOutcomeStatus cache challenge.id == Just Completed
+    then el [Font.size 15, Font.bold] ("You have completed this challenge !" |> text)
     else paragraph [paddingXY 10 2] [
         renderNewChallengerHeader cache userId
         , text "  "
@@ -210,6 +214,11 @@ reportButton label msg currentStatus =  Input.button [Font.size 8
 isChallengeAccepted: Cache -> ChallengeId -> Bool
 isChallengeAccepted cache id = Cache.getChallengeOutcomeStatus cache id
     |> Maybe.map (\x -> x == Accepted || x ==  OnTracks)
+    |> Maybe.withDefault False
+
+isChallengeFailed: Cache -> ChallengeId -> Bool
+isChallengeFailed cache id = Cache.getChallengeOutcomeStatus cache id
+    |> Maybe.map (\x -> x == Failed)
     |> Maybe.withDefault False
 
 reportDates: Cache -> ChallengeId -> List UTCTimestamp

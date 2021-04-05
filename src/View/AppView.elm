@@ -11,6 +11,7 @@ import Element exposing (..)
 import State.AppState exposing (AppState, AuthError, Display(..))
 import Update.Msg exposing (Msg(..))
 import View.ChallengeDetailsView exposing (challengeDetailsScreen)
+import View.ChallengeScreen exposing (challengeScreen)
 import View.FeedScreen exposing (feedScreen)
 import View.Icons as Icons
 import View.LoggedOffScreen exposing (logoffScreen)
@@ -38,6 +39,7 @@ menuBar state =
         , el [width fill] (if state.display==State.AppState.SearchPage then searchBar state else Element.none)
         , el [alignRight] (wallTab state)
         , el [alignRight] (feedTab state)
+        , el [alignRight] (challengeTab state)
         , el [alignRight] (pinnedTab state)
         , el [alignRight] (searchTab state)
         , el [alignRight] (notificationTab state)
@@ -63,6 +65,7 @@ displayCurrentPage state = case state.display of
     State.AppState.WizardNewPollPage       -> displayWizardNewPollPost state
     State.AppState.WizardNewTipPage        -> displayWizardNewTipPost state
     State.AppState.WizardNewFreePostPage   -> displayWizardNewFreeTextPost state
+    State.AppState.ChallengePage           -> displayChallenge state
     State.AppState.ChallengeDetailsPage id -> displayChallengeDetails state id
 
 
@@ -117,6 +120,9 @@ displayWizardNewPollPost state = (text "Wizard new poll")
 displayBlocked: AppState -> Element Msg
 displayBlocked state = (text "Your user has been blocked !")
 
+displayChallenge: AppState -> Element Msg
+displayChallenge = challengeScreen
+
 displayChallengeDetails: AppState -> ChallengeId -> Element Msg
 displayChallengeDetails = challengeDetailsScreen
 
@@ -141,6 +147,10 @@ wallTab state = screenTabIcon state WallPage (Icons.wall Icons.normal) (DisplayP
 feedTab : AppState -> Element Msg
 feedTab state =
     screenTabIconWithRefresh state FeedPage state.feed.newPostsAvailable (Icons.feed Icons.normal) (DisplayPage FeedPage)
+
+challengeTab : AppState -> Element Msg
+challengeTab state =
+    screenTabIcon state ChallengePage (Icons.challenge Icons.normal) (DisplayPage ChallengePage)
 
 eventTab : AppState -> Element Msg
 eventTab state = screenTabIcon state EventPage (Icons.event Icons.normal) (DisplayPage EventPage)

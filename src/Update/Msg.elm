@@ -13,6 +13,7 @@ import Data.Wall exposing (Wall)
 import Http
 import State.AppState exposing (AppState, AuthError, Display(..))
 import State.Cache exposing (Cache)
+import State.ChallengeState exposing (ChallengePagedTab, ChallengeTab)
 import State.FormState exposing (NewFreeTextWizardState, NewTipWizardState)
 import State.SearchState exposing (SearchResult)
 import State.UserState exposing (UserInfo, UserState(..))
@@ -32,6 +33,8 @@ type Msg =
     | ChangePinnedPage Page
     | ChangeNotificationPage Page
     | ChangeSearchPage Page
+    | ChangeChallengeTab ChallengeTab
+    | ChangeChallengePage Page
     | FollowUser UserId
     | UnfollowUser UserId
     | FollowHashtag Hashtag
@@ -76,6 +79,7 @@ type Msg =
     | HttpFeedFetched (Result Http.Error (Cache, Feed))
     | HttpNewTipPosted (Result Http.Error ())
     | HttpNewFreeTextPosted (Result Http.Error ())
+    | HttpChallengePostsFetched (Result Http.Error (Cache, ChallengePagedTab, List PostId))
     | HttpChallengeDetailsFetched (Result Http.Error (Cache, ChallengeId))
     | HttpChallengeAccepted (Result Http.Error ())
     | HttpChallengeRejected (Result Http.Error ())

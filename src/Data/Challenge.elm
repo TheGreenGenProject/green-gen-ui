@@ -89,6 +89,35 @@ isChallengeClosed now challenge =
 stepReport: Int -> List ChallengeStepReport -> Maybe ChallengeStepReport
 stepReport step stepReports = ListUtils.find (\x -> x.step == step) stepReports
 
+emptyChallengeStatistics: ChallengeStatistics
+emptyChallengeStatistics = {
+    acceptedCount = 0,
+    rejectedCount = 0,
+    elapsedPeriodCount = 0,
+    totalPeriodCount = 0,
+    successCount = 0,
+    failureCount = 0,
+    partialSuccessCount = 0,
+    skippedCount = 0
+ }
+
+adjustChallengeStatistics: List ChallengeStepReport ->
+                           List ChallengeStepReport ->
+                           ChallengeStatistics ->
+                           ChallengeStatistics
+adjustChallengeStatistics oldSteps newSteps stats =
+    let countStatus status = List.foldl (\x acc -> if x.status==status then acc+1 else acc) (0)
+        countSuccess = countStatus Success
+        countFailure = countStatus Failure
+        countPartial = countStatus PartialSuccess
+        countSkipped = countStatus Skipped
+    in {stats|
+        successCount = stats.successCount - (countSuccess oldSteps) + (countSuccess newSteps),
+        failureCount = stats.failureCount - (countFailure oldSteps) + (countFailure newSteps),
+        partialSuccessCount = stats.partialSuccessCount - (countPartial oldSteps) + (countPartial newSteps),
+        skippedCount = stats.skippedCount - (countSkipped oldSteps) + (countSkipped newSteps)
+     }
+
 fromUuid: Uuid -> ChallengeId
 fromUuid uuid = ChallengeId uuid
 

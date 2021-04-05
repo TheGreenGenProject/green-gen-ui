@@ -218,6 +218,20 @@ updateChallengeStepReports cache id update = let cacheId = (Data.Challenge.toStr
                                                  updated = {entry| stepReports = update :: filteredStepReport}
     in {cache| challenges = Dict.insert cacheId updated cache.challenges }
 
+-- Simulating a new step report
+simulateChallengeStepReports: Cache -> ChallengeId -> ChallengeStepReport -> Cache
+simulateChallengeStepReports cache challengeId update =
+    let oldSteps = getChallengeStepReports cache challengeId |> Maybe.withDefault []
+        newCache = updateChallengeStepReports cache challengeId update
+        newSteps = getChallengeStepReports newCache challengeId |> Maybe.withDefault []
+        statsToUpdate = getChallengeStatistics newCache challengeId
+            |> Maybe.withDefault Data.Challenge.emptyChallengeStatistics
+        updatedStats = {statsToUpdate|
+            acceptedCount = statsToUpdate.acceptedCount + if List.isEmpty oldSteps then 1 else 0}
+            |> Data.Challenge.adjustChallengeStatistics oldSteps newSteps
+        simulatedCache = addChallengeStatistics newCache challengeId updatedStats
+    in simulatedCache
+
 getChallengeStepReports: Cache -> ChallengeId -> Maybe (List ChallengeStepReport)
 getChallengeStepReports cache id = Dict.get (Data.Challenge.toString id) cache.challenges
     |> Maybe.map (.stepReports)
