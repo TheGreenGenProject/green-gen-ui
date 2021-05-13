@@ -1,16 +1,23 @@
 module State.FormState exposing (..)
 
 
+import Data.Challenge exposing (SuccessMeasure)
 import Data.Post exposing (Source)
+import Data.Schedule exposing (UTCTimestamp)
+import Data.User exposing (UserId)
+
+
 type alias FormState = {
     newTipWizard: NewTipWizardState,
-    newFreeTextWizard: NewFreeTextWizardState
+    newFreeTextWizard: NewFreeTextWizardState,
+    newChallengeWizard: NewChallengeWizardState
  }
 
 empty: FormState
 empty = {
-    newTipWizard      = emptyTipWizard,
-    newFreeTextWizard = emptyFreeTextWizard
+    newTipWizard       = emptyTipWizard,
+    newFreeTextWizard  = emptyFreeTextWizard,
+    newChallengeWizard = emptyChallengeWizard
  }
 
 
@@ -76,3 +83,51 @@ postingNewFreeText formState = let wizard = formState.newFreeTextWizard in
 newFreeTextPosted: FormState -> FormState
 newFreeTextPosted formState = let wizard = formState.newFreeTextWizard in
     {formState | newFreeTextWizard = {wizard| posting = False} }
+
+
+-- Challenges
+
+type Audience = Followers | Specific (List UserId)
+type ReportPeriod = Daily | Weekly
+
+type alias NewChallengeWizardState = {
+    posting: Bool,
+    title: Maybe String,
+    content: Maybe String,
+    start: Maybe UTCTimestamp,
+    end: Maybe UTCTimestamp,
+    reportPeriod: ReportPeriod,
+    audience: Audience,
+    successMeasure: SuccessMeasure
+ }
+
+emptyChallengeWizard = {
+    posting = False,
+    title = Nothing,
+    start = Nothing,
+    end = Nothing,
+    reportPeriod = Daily,
+    content = Nothing,
+    audience = Followers,
+    successMeasure = {
+        maxFailure = 0,
+        maxPartial = 0,
+        maxSkip    = 0
+    }
+ }
+
+updateNewChallengeWizardState: FormState -> NewChallengeWizardState -> FormState
+updateNewChallengeWizardState formState newChallengeState = {formState |
+    newChallengeWizard = newChallengeState }
+
+clearNewChallengeWizardState: FormState -> FormState
+clearNewChallengeWizardState formState = {formState |
+    newChallengeWizard = emptyChallengeWizard }
+
+postingNewChallenge: FormState -> FormState
+postingNewChallenge formState = let wizard = formState.newChallengeWizard in
+    {formState | newChallengeWizard = {wizard| posting = True} }
+
+newChallengePosted: FormState -> FormState
+newChallengePosted formState = let wizard = formState.newChallengeWizard in
+    {formState | newChallengeWizard = {wizard| posting = False} }

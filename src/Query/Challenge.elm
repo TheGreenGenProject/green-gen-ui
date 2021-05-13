@@ -1,14 +1,17 @@
 module Query.Challenge exposing (
-    fetchUserChallengePosts
+    postChallenge
+    , fetchUserChallengePosts
     , fetchChallengeDetails
     , acceptChallenge
     , rejectChallenge
     , reportStepStatus)
 
-import Data.Challenge as Challenge exposing (ChallengeId, ChallengeStepStatus(..))
+import Data.Challenge as Challenge exposing (ChallengeId, ChallengeStepStatus(..), SuccessMeasure)
+import Data.Hashtag exposing (Hashtag(..))
 import Data.Page as Page exposing (Page)
 import Data.Post exposing (PostId)
-import Data.User as User
+import Data.Schedule as Schedule exposing (Duration(..), Schedule(..), UTCTimestamp(..))
+import Data.User as User exposing (UserId)
 import Http
 import Json.Decode exposing (list)
 import Query.CacheQueryUtils exposing (fetchAndCacheChallengeStatistics, fetchFromIdAndCacheAll)
@@ -19,11 +22,74 @@ import Query.QueryUtils exposing (authHeader, baseUrl)
 import Query.TaskUtils exposing (thread)
 import State.Cache as Cache exposing (Cache)
 import State.ChallengeState exposing (ChallengePagedTab, ChallengeTab(..))
+import State.FormState exposing (Audience(..), NewChallengeWizardState, ReportPeriod(..))
 import State.UserState exposing (UserInfo)
 import Task exposing (Task)
 import Update.Msg exposing (Msg(..))
-import Url.Builder exposing (absolute)
+import Url.Builder exposing (absolute, string)
+import Utils.TextUtils as TextUtils
 
+
+postChallenge: UserInfo -> NewChallengeWizardState -> Cmd Msg
+postChallenge user newChallenge =
+    createNewChallenge user newChallenge
+    |> Task.andThen (\challengeId -> createNewChallengePost user newChallenge challengeId |> Task.map (\_ -> challengeId))
+    |> Task.andThen (\challengeId -> challengeAudience user newChallenge.audience challengeId)
+    |> Task.attempt HttpNewChallengePosted
+
+createNewChallenge: UserInfo -> NewChallengeWizardState -> Task Http.Error ChallengeId
+createNewChallenge user newChallenge = Http.task {
+        method     = "POST"
+        , headers  = [authHeader user]
+        , url      = baseUrl ++ absolute ["challenge", "new"] [
+            string "title" (newChallenge.title |> Maybe.withDefault "")
+            , string "content" (newChallenge.content |> Maybe.withDefault "")
+            , string "schedule"  (newChallenge |> toSchedule |> toScheduleParam)
+            , string "success" (newChallenge.successMeasure |> toSuccessMeasureParam)]
+        , body     = Http.emptyBody
+        , resolver = jsonResolver <| decodeChallengeId
+        , timeout  = Nothing
+    }
+
+createNewChallengePost: UserInfo -> NewChallengeWizardState -> ChallengeId -> Task Http.Error ()
+createNewChallengePost user state challengeId = Http.task {
+    method     = "POST"
+    , headers  = [authHeader user]
+    , url      = baseUrl ++ absolute ["post", "new", "challenge"] [
+        string "challenge-id" (challengeId |> Challenge.toString)
+        , string "hashtags" (state |> hashtagsAsParameter)]
+    , body     = Http.emptyBody
+    , resolver = jsonResolver <| unitDecoder
+    , timeout  = Nothing
+  }
+
+challengeAudience: UserInfo -> Audience -> ChallengeId -> Task Http.Error ()
+challengeAudience user audience challengeId = case audience of
+    Followers        -> challengeFollowers user challengeId
+    Specific targets -> targets
+        |> List.map (challengeUser user challengeId)
+        |> Task.sequence
+        |> Task.map (\_ -> ())
+
+challengeUser: UserInfo -> ChallengeId -> UserId -> Task Http.Error ()
+challengeUser user challengeId target = Http.task {
+    method     = "POST"
+    , headers  = [authHeader user]
+    , url      = baseUrl ++ absolute ["challenge", "user", (User.toString target), "to", Challenge.toString challengeId] []
+    , body     = Http.emptyBody
+    , resolver = jsonResolver <| unitDecoder
+    , timeout  = Nothing
+  }
+
+challengeFollowers: UserInfo -> ChallengeId -> Task Http.Error ()
+challengeFollowers user challengeId = Http.task {
+    method     = "POST"
+    , headers  = [authHeader user]
+    , url      = baseUrl ++ absolute ["challenge", "followers", "to", Challenge.toString challengeId] []
+    , body     = Http.emptyBody
+    , resolver = jsonResolver <| unitDecoder
+    , timeout  = Nothing
+  }
 
 fetchUserChallengePosts: Cache -> UserInfo -> ChallengePagedTab -> Cmd Msg
 fetchUserChallengePosts cache user pagedTab = case pagedTab.tab of
@@ -286,9 +352,51 @@ reportStepStatus user challengeId step status = Http.task {
     , timeout = Nothing
  } |> Task.attempt HttpChallengeStepStatusReported
 
+
+-- Helpers
+
 stepStatusAsString: ChallengeStepStatus -> String
 stepStatusAsString status = case status of
     Success        -> "success"
     Failure        -> "failure"
     Skipped        -> "skipped"
     PartialSuccess -> "partial-success"
+
+toSchedule: NewChallengeWizardState -> Schedule
+toSchedule state =
+    let start = state.start |> Maybe.withDefault (UTC 0)
+        end   = state.end |> Maybe.withDefault (UTC 0)
+        period = state.reportPeriod |> periodToMillis |> Duration
+    in Recurring start period period end
+
+toScheduleParam: Schedule -> String
+toScheduleParam schedule = "rec(" ++
+    (schedule |> Schedule.start |> toMillis |> String.fromInt) ++ "," ++
+    (schedule |> Schedule.duration |> durationToMillis |> String.fromInt) ++ "," ++
+    (schedule |> Schedule.duration |> durationToMillis |> String.fromInt) ++ "," ++
+   (schedule |> Schedule.end |> toMillis |> String.fromInt) ++ ")"
+
+toSuccessMeasureParam: SuccessMeasure -> String
+toSuccessMeasureParam successMeasure = "success(" ++
+    (successMeasure.maxFailure |> String.fromInt) ++ "," ++
+    (successMeasure.maxSkip |> String.fromInt) ++ "," ++
+    (successMeasure.maxPartial |> String.fromInt) ++ ")"
+
+toMillis: UTCTimestamp -> Int
+toMillis (UTC millis) = millis
+
+durationToMillis: Duration -> Int
+durationToMillis (Duration millis) = millis
+
+periodToMillis: ReportPeriod -> Int
+periodToMillis period = case period of
+    Daily -> 24 * 60 * 60 * 1000
+    Weekly -> 7 * 24 * 60 * 60 * 1000
+
+hashtagsAsParameter: NewChallengeWizardState -> String
+hashtagsAsParameter state =
+    let content = state.content |> Maybe.withDefault ""
+        hashtags = TextUtils.hashtagsFrom content
+    in hashtags
+        |> List.map (\(Hashtag x) -> x)
+        |> String.join "+"

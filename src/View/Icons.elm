@@ -70,3 +70,16 @@ newFollowerNotification = Icons.usergroupAddOutlined
 back = Icons.arrowLeftOutlined
 
 square = Icons.checkSquareFilled
+
+calendar = Icons.calendarOutlined
+
+report = Icons.pieChartOutlined
+
+successMeasure = Icons.slidersOutlined
+
+followers = Icons.usergroupAddOutlined
+
+arrowUp = Icons.caretUpFilled
+
+arrowDown = Icons.caretDownFilled
+

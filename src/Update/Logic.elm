@@ -1,10 +1,10 @@
 module Update.Logic exposing (update)
 
-import Data.Challenge as Challenge exposing (ChallengeOutcomeStatus(..))
+import Data.Challenge exposing (ChallengeOutcomeStatus(..))
 import Data.Page as Page
 import Platform.Cmd exposing (Cmd(..), none)
 import Query.Authentication exposing (logon)
-import Query.Challenge exposing (acceptChallenge, fetchUserChallengePosts, fetchChallengeDetails, rejectChallenge, reportStepStatus)
+import Query.Challenge exposing (acceptChallenge, fetchChallengeDetails, fetchUserChallengePosts, postChallenge, rejectChallenge, reportStepStatus)
 import Query.Clock as Clock
 import Query.Feed exposing (fetchFeed, hasNewPosts, scheduleFeedCheck)
 import Query.Following exposing (followHashtag, followUser, unfollowHashtag, unfollowUser)
@@ -21,7 +21,7 @@ import State.AppState as AppState exposing (AppState, Display(..), isUserLoggedI
 import State.Cache as Cache
 import State.ChallengeState as ChallengeState
 import State.FeedState as FeedState
-import State.FormState as FormState exposing (clearNewFreeTextWizardState, clearNewTipWizardState)
+import State.FormState as FormState exposing (clearNewChallengeWizardState, clearNewFreeTextWizardState, clearNewTipWizardState)
 import State.NotificationState as NotificationState
 import State.PinnedState as PinnedState
 import State.SearchState as SearchState
@@ -129,6 +129,12 @@ update msg state = case msg of
     PostNewFreeText -> { state |
         forms = FormState.postingNewFreeText state.forms }
         |> ifLogged (\user -> postFreeText user state.forms.newFreeTextWizard)
+    FillingNewChallengeWizard challengeState -> { state |
+        forms = FormState.updateNewChallengeWizardState state.forms challengeState }
+        |> nocmd
+    PostNewChallenge -> { state |
+        forms = FormState.postingNewChallenge state.forms }
+        |> ifLogged (\user -> postChallenge user state.forms.newChallengeWizard)
     ---------------------
     --- Http commands ---
     ---------------------
@@ -220,6 +226,13 @@ update msg state = case msg of
         |> nocmd
     HttpNewFreeTextPosted (Err err) -> Debug.log ("Error while posting new free text: " ++ (errorToString err))
         {state| forms = FormState.newFreeTextPosted state.forms }
+        |> nocmd
+    HttpNewChallengePosted (Ok _) -> {state |
+        display = NewPostPage,
+        forms = clearNewChallengeWizardState state.forms}
+        |> nocmd
+    HttpNewChallengePosted (Err err) -> Debug.log ("Error while posting new challenge text: " ++ (errorToString err))
+        {state| forms = FormState.newChallengePosted state.forms }
         |> nocmd
     HttpChallengePostsFetched (Ok (cache, {tab, page}, challenges)) -> {state |
         challenge = ChallengeState.from challenges {tab=tab, page=page}

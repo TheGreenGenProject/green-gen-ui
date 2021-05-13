@@ -64,3 +64,8 @@ isMyself str = String.toLower str == "myself"
 isAlphaNumerical: String -> Bool
 isAlphaNumerical = String.toList >> List.all (Char.isAlphaNum)
 
+format2Digits: Int -> String
+format2Digits n =
+    (if n >= 0 && n <= 9 then "0"  else "") ++ (String.fromInt n)
+
+

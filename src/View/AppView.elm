@@ -23,6 +23,7 @@ import View.SearchScreen exposing (searchScreen)
 import View.Style exposing(..)
 import View.Theme exposing (background, foreground)
 import View.WallScreen exposing (wallScreen)
+import View.WizardNewChallengePage exposing (newWizardNewChallengeScreen)
 import View.WizardNewFreeTextPage exposing (newWizardNewFreeTextScreen)
 import View.WizardNewTipPage exposing (newWizardNewTipScreen)
 
@@ -102,20 +103,20 @@ displayNotification = notificationScreen
 displayNewPost: AppState -> Element Msg
 displayNewPost = newPostScreen
 
-displayWizardNewEvent: AppState -> Element Msg
-displayWizardNewEvent state = (text "Wizard new event")
-
 displayWizardNewFreeTextPost: AppState -> Element Msg
 displayWizardNewFreeTextPost = newWizardNewFreeTextScreen
 
 displayWizardNewChallengePost: AppState -> Element Msg
-displayWizardNewChallengePost state = (text "Wizard new challenge")
+displayWizardNewChallengePost = newWizardNewChallengeScreen
 
 displayWizardNewTipPost: AppState -> Element Msg
 displayWizardNewTipPost = newWizardNewTipScreen
 
 displayWizardNewPollPost: AppState -> Element Msg
 displayWizardNewPollPost state = (text "Wizard new poll")
+
+displayWizardNewEvent: AppState -> Element Msg
+displayWizardNewEvent state = (text "Wizard new event")
 
 displayBlocked: AppState -> Element Msg
 displayBlocked state = (text "Your user has been blocked !")

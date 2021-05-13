@@ -1,4 +1,4 @@
-module Query.FreeText exposing (..)
+module Query.FreeText exposing (postFreeText)
 
 import Data.Hashtag exposing (Hashtag(..))
 import Http

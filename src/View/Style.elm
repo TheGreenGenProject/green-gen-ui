@@ -4,6 +4,7 @@ import Data.Challenge exposing (ChallengeId)
 import Data.Hashtag exposing (Hashtag(..))
 import Data.Page as Page exposing (Page)
 import Data.Post exposing (PostId)
+import Data.Schedule exposing (UTCTimestamp(..))
 import Data.Url exposing (Url(..))
 import Data.User exposing (UserId)
 import Element exposing (..)
@@ -14,7 +15,10 @@ import Element.Input as Input exposing (Placeholder, labelHidden, placeholder)
 import Html.Events
 import Json.Decode as Decode
 import State.AppState exposing (AppState, Display(..))
+import Time exposing (Month, Posix)
 import Update.Msg exposing (Msg(..))
+import Utils.DateUtils exposing (LocalDate, toLocalDate)
+import Utils.TextUtils exposing (format2Digits)
 import View.Icons as Icons
 import View.Theme as Theme exposing (background, black, blue, darkRed, errorForeground, foreground, grey)
 
@@ -340,3 +344,118 @@ pageBar page f showNext = row [
                 , height fill]
                 { onPress = if showNext then page |> Page.next |> f |> Just else Nothing, label = Element.text ">>" }
         ]))
+
+
+-- Trying to implement a simplistic and decent date spinner ...
+
+dateSpinner: UTCTimestamp ->
+             (LocalDate -> Maybe Msg) ->
+             Element Msg
+dateSpinner timestamp onChange =
+    let leapYear yyyy = ((modBy 4 yyyy == 0) || (modBy 100 yyyy == 0)) &&  not (modBy 400 yyyy == 0)
+        maxDayOfMonth date = if date.month == 2 && leapYear date.year then 29
+            else if date.month == 2 then 28
+            else if [1 , 3, 5 , 7, 8, 10, 12] |> List.member date.month then 31
+            else 30
+        ensureMaxDay date = {day = min date.day (maxDayOfMonth date), month = date.month, year = date.year }
+        spinYear date = {day = date.day, month = date.month, year = date.year + 1 }
+        spinMonth date = {day = date.day, month = (modBy 12 date.month) + 1, year = date.year }
+            |> ensureMaxDay
+        spinDay date = let maxDay = maxDayOfMonth date in {day = (modBy maxDay date.day) + 1, month = date.month, year = date.year }
+        {day, month, year} = toLocalDate timestamp
+    in row [Border.width 3, Border.rounded 3, Border.color Theme.background, spacing 5] [
+        -- Day
+        Input.button [Background.color foreground
+            , padding 4
+            , Font.size 14
+            , Font.color foreground
+            , Background.color background
+            , width <| px 30
+            , height fill
+            , Border.color background
+            , Border.widthEach { right = 1, top = 0, bottom = 0, left = 0 } ]
+        { onPress = onChange (spinDay { day = day , month = month, year = year })
+          , label = day |> format2Digits |> Element.text |> el [centerX] }
+        -- Month
+        , Input.button [Background.color foreground
+            , padding 4
+            , Font.size 14
+            , Font.color foreground
+            , Background.color background
+            , width <| px 30
+            , height fill
+            , Border.color background
+            , Border.widthEach { right = 1, top = 0, bottom = 0, left = 0 }]
+         { onPress = onChange (spinMonth { day = day, month = month, year = year })
+           , label = month |> format2Digits |> Element.text |> el [centerX] }
+        -- Year
+        , Input.button [Background.color foreground
+            , Font.color foreground
+            , Background.color background
+            , padding 4
+            , Font.size 14
+            , height fill
+            , width <| px 50]
+         { onPress = onChange (spinYear { day = day, month = month, year = year })
+          , label = year |> String.fromInt |> Element.text |> el [centerX] }
+    ]
+
+intSpinner: Int -> Int -> Int -> Int -> (Int -> Maybe Msg) -> Element Msg
+intSpinner mn mx step value onChange =
+    let checked v = min mx v |> max mn
+        checkedValue = checked value
+    in
+    row [spacing 5] [
+        String.fromInt checkedValue |> text
+        , column [centerX, centerY] [
+            Input.button [centerX, centerY, Font.size 10]
+                     { onPress = onChange ((checkedValue + step) |> checked), label = "▲" |> text}
+            , Input.button [centerX, centerY, Font.size 10]
+                     { onPress = onChange ((checkedValue - step) |> checked), label = "▼" |> text}
+        ]
+      ]
+
+
+-- Option selection
+
+type ButtonPosition
+    = First
+    | Mid
+    | Last
+
+options: List (String, a) -> a -> (a -> Msg) -> Element Msg
+options opts selected onChange =
+    Input.radioRow
+        [ Border.rounded 6
+          , Border.shadow { offset = ( 0, 0 ), size = 3, blur = 10, color = Theme.lightGrey }
+        ]
+        { onChange = onChange
+          , selected = Just selected
+          , label = Input.labelHidden ""
+          , options = opts
+            |> List.map (\(label, opt) -> Input.optionWith opt <| button Mid label )
+        }
+
+button : ButtonPosition -> String -> Input.OptionState -> Element msg
+button position label state =
+    let borders =
+            case position of
+                First -> { left = 2, right = 2, top = 2, bottom = 2 }
+                Mid -> { left = 0, right = 2, top = 2, bottom = 2 }
+                Last -> { left = 0, right = 2, top = 2, bottom = 2 }
+        corners =
+            case position of
+                First -> { topLeft = 6, bottomLeft = 6, topRight = 0, bottomRight = 0 }
+                Mid -> { topLeft = 0, bottomLeft = 0, topRight = 0, bottomRight = 0 }
+                Last -> { topLeft = 0, bottomLeft = 0, topRight = 6, bottomRight = 6 }
+    in el [ paddingEach { left = 3, right = 3, top = 3, bottom = 3 }
+            , Border.roundEach corners
+            , Border.widthEach borders
+            , Border.color Theme.background
+            , Font.color <|
+                if state == Input.Selected then  Theme.white
+                else Theme.background
+            , Background.color <|
+                if state == Input.Selected then  Theme.background
+                else Theme.white
+            ] <| el [ centerX, centerY, Font.size 14 ] <| text label

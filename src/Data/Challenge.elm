@@ -101,6 +101,11 @@ emptyChallengeStatistics = {
     skippedCount = 0
  }
 
+-- Count the number of reports due for the challenge
+reportCount: Challenge -> Int
+reportCount challenge = Schedule.dates challenge.schedule
+    |> List.length
+
 adjustChallengeStatistics: List ChallengeStepReport ->
                            List ChallengeStepReport ->
                            ChallengeStatistics ->
