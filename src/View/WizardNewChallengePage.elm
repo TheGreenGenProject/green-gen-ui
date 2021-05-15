@@ -119,7 +119,7 @@ form state =
     , makeHashtagBar state.forms.newChallengeWizard
     , makeUserBar state.cache state.forms.newChallengeWizard
     , (Input.button [alignRight, Border.width 2, Border.rounded 5, padding 5, Font.color postButtonColor] {
-        onPress = if isCorrect then Just PostNewChallenge else Nothing
+        onPress = if isCorrect then Just (PostNewChallenge wizardState) else Nothing
         , label = (text (if posting then "Posting ..." else "Post your challenge !"))
     })
  ]

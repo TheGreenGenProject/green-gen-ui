@@ -132,9 +132,9 @@ update msg state = case msg of
     FillingNewChallengeWizard challengeState -> { state |
         forms = FormState.updateNewChallengeWizardState state.forms challengeState }
         |> nocmd
-    PostNewChallenge -> { state |
-        forms = FormState.postingNewChallenge state.forms }
-        |> ifLogged (\user -> postChallenge user state.forms.newChallengeWizard)
+    PostNewChallenge newChallengeWizard -> let forms = state.forms in { state |
+        forms = FormState.postingNewChallenge {forms| newChallengeWizard = newChallengeWizard} }
+        |> ifLogged (\user -> postChallenge user newChallengeWizard)
     ---------------------
     --- Http commands ---
     ---------------------

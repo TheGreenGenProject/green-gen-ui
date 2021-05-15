@@ -58,7 +58,7 @@ type Msg =
     | FillingNewFreeTextWizard NewFreeTextWizardState
     | PostNewFreeText
     | FillingNewChallengeWizard NewChallengeWizardState
-    | PostNewChallenge
+    | PostNewChallenge NewChallengeWizardState
     -- Http
     | HttpAuthenticated (Result AuthError UserInfo)
     | HttpLoggedOff (Result Http.Error ())
