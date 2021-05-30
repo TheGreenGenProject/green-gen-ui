@@ -3,6 +3,7 @@ module View.PostRenderer exposing (..)
 
 import Basics as Int
 import Data.Challenge as Challenge exposing (ChallengeOutcomeStatus(..), ChallengeStatistics, SuccessMeasure)
+import Data.Poll as Poll exposing (Poll, PollOption(..), PollStats(..), emptyPollStats, normalizePollStats, respondents)
 import Data.Post as Post exposing (Post, PostContent(..), PostId(..), Source(..))
 import Data.Schedule exposing (UTCTimestamp(..))
 import Data.Tip as Tip exposing (Tip)
@@ -11,6 +12,7 @@ import Data.User as User exposing (UserId(..))
 import Element exposing (Element, alignLeft, alignRight, alignTop, centerX, centerY, column, el, fill, height, padding, paddingEach, paragraph, px, row, spacing, text, width)
 import Element.Border as Border
 import Element.Font as Font
+import Element.Input as Input
 import Query.QueryUtils exposing (baseUrl)
 import State.AppState exposing (Display(..))
 import State.Cache as Cache exposing (Cache)
@@ -22,6 +24,7 @@ import View.Icons as Icons
 import View.ScreenUtils exposing (neverElement)
 import View.Style exposing (..)
 import View.Theme exposing (background, darkRed, lightGrey, lightPurple, orange)
+
 
 renderPostId: UTCTimestamp -> Cache -> PostId -> Element Msg
 renderPostId tmstp cache postId = postId
@@ -81,7 +84,12 @@ renderChallengePost cache post = case post.content of
     _                  -> neverElement
 
 renderPollPost: Cache -> Post -> Element Msg
-renderPollPost cache post = (text "Poll")
+renderPollPost cache post = case post.content of
+    PollPost id -> case (Cache.getPoll cache id, Cache.getPollAnswered cache id) of
+        (Just poll, Just True)  -> renderAnsweredPoll cache poll
+        (Just poll, _)          -> renderUnansweredPoll cache poll
+        (Nothing, _)            -> id |> Poll.toString |> text |> postBodyStyle
+    _                           -> neverElement
 
 renderFreeTextPost: Cache -> Post -> Element Msg
 renderFreeTextPost cache post = case post.content of
@@ -176,3 +184,30 @@ renderChallengeSuccessMeasure measure = checkListStyle [Font.size 9] [
     , (measure.maxPartial > 0, if measure.maxPartial > 0 then "Reporting partial success allowed" else "Partial success report not allowed")
     , (measure.maxFailure > 0, if measure.maxFailure > 0 then "Some failure allowed" else "No failed report allowed")
  ]
+
+renderAnsweredPoll: Cache -> Poll -> Element Msg
+renderAnsweredPoll cache poll =
+    let (PollStats stats) = Cache.getPollStats cache poll.id
+            |> Maybe.withDefault (emptyPollStats poll)
+            |> normalizePollStats poll
+        sum = respondents (PollStats stats) |> Int.toFloat
+        percentages = stats
+            |> List.map (\entry -> (entry.option, 100.0 * (Int.toFloat entry.count) / sum))
+    in column [spacing 10] [
+        poll.title |> bold |> postBodyStyle
+        , column [spacing 5]
+          (percentages
+            |> List.map (\(PollOption opt, percentage) -> (opt ++ ": " ++ (String.fromFloat percentage) ++ "%")
+                |> text
+                |> postBodyStyle))
+     ]
+
+renderUnansweredPoll: Cache -> Poll -> Element Msg
+renderUnansweredPoll cache poll = Input.radio
+    [padding 5 , spacing 5]
+    { onChange = AnswerPoll poll.id
+      , selected = Nothing
+      , label = Input.labelAbove [] (poll.title |> bold |> postBodyStyle)
+      , options = poll.options |> List.map (\ (PollOption opt) -> Input.option (PollOption opt) (opt |> text |> postBodyStyle))
+    }
+

@@ -4,7 +4,6 @@ import Data.Tip exposing (Tip, TipId(..))
 import Json.Decode exposing (Decoder, string, succeed)
 import Json.Decode.Pipeline exposing (required)
 import Query.Json.DecoderUtils exposing(..)
-import Query.Json.SourceDecoder exposing (decodeSources)
 
 
 decodeTip: Decoder Tip

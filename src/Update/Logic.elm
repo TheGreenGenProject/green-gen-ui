@@ -13,12 +13,13 @@ import Query.Hashtag exposing (refreshHashtagTrend)
 import Query.Like exposing (like, unlike)
 import Query.Notification exposing (fetchNotifications, hasUnreadNotifications, markAsRead, scheduleNotificationCheck)
 import Query.Pinned exposing (fetchPinnedPosts, pin, unpin)
+import Query.Poll exposing (answerPoll, answerPollOption)
 import Query.QueryUtils exposing (errorToString)
 import Query.Search exposing (performSearch)
 import Query.Tip exposing (postTip)
 import Query.Wall exposing (fetchUserWall, fetchWall)
 import State.AppState as AppState exposing (AppState, Display(..), isUserLoggedIn)
-import State.Cache as Cache
+import State.Cache as Cache exposing (simulatePollAnswer)
 import State.ChallengeState as ChallengeState
 import State.FeedState as FeedState
 import State.FormState as FormState exposing (clearNewChallengeWizardState, clearNewFreeTextWizardState, clearNewTipWizardState)
@@ -108,6 +109,8 @@ update msg state = case msg of
     ChangeChallengeTab tab -> {state|
         challenge = state.challenge |> ChallengeState.changeTab tab }
         |> ifLogged (\user -> fetchUserChallengePosts state.cache user  {tab = tab, page = Page.first})
+    AnswerPoll pollId option -> {state| cache = simulatePollAnswer state.cache pollId option }
+        |> ifLogged (\user -> answerPollOption state.cache user pollId option)
     -----------------------
     --- Form processing ---
     -----------------------
@@ -248,6 +251,7 @@ update msg state = case msg of
     HttpChallengeAccepted _             -> state |> nocmd
     HttpChallengeRejected _             -> state |> nocmd
     HttpChallengeStepStatusReported _   -> state |> nocmd
+    HttpPollAnswered _                  -> state |> nocmd
     HttpLoggedOff _                     -> {state | display = LoggedOffPage, user = NotLogged }
         |> nocmd
 

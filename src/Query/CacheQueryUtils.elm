@@ -13,19 +13,22 @@ module Query.CacheQueryUtils exposing (
     , fetchAndCachePins
     , fetchAndCachePinnedForPost
     , fetchAndCacheAll
-    , fetchAndCacheChallengeStatistics)
+    , fetchAndCacheChallengeStatistics
+    , fetchAndCachePoll
+    , fetchAndCachePollStatistics)
 
 import Data.Challenge as Challenge exposing (ChallengeId)
 import Data.Event exposing (EventId)
 import Data.Notification exposing (Notification)
-import Data.Poll exposing (PollId)
+import Data.Poll as Poll exposing (PollId)
 import Data.Post as Post exposing (Post, PostContent(..), PostId)
 import Data.Tip as Tip exposing (TipId)
 import Data.User as User exposing (UserId)
 import Http
-import Json.Decode as Decoder exposing (list)
+import Json.Decode as Decoder exposing (bool, list)
 import Query.Json.ChallengeDecoder exposing (decodeChallenge, decodeChallengeStatistics)
 import Query.Json.DecoderUtils exposing (decodeIntWithDefault, jsonResolver)
+import Query.Json.PollDecoder exposing (decodePoll, decodePollStats)
 import Query.Json.PostDecoder exposing (decodeHashtag, decodePost)
 import Query.Json.RankDecoder exposing (decodeBreakdown)
 import Query.Json.TipDecoder exposing (decodeTip)
@@ -41,7 +44,7 @@ import Url.Builder exposing (absolute)
 -- This includes user and post related info
 fetchFromIdAndCacheAll: Cache -> UserInfo -> List PostId -> Task Http.Error Cache
 fetchFromIdAndCacheAll cache user ids = fetchAllPosts user ids
-    |> Task.andThen (\posts -> fetchAndCacheAll cache user posts)
+    |> Task.andThen (fetchAndCacheAll cache user)
 
 -- Cache all necessary information from posts
 -- This include user and post related info
@@ -97,7 +100,7 @@ fetchAndCacheScoreBreakdown cache user targetId = Http.task {
     , body     = Http.emptyBody
     , resolver = jsonResolver <| decodeBreakdown
     , timeout  = Nothing
-  } |> Task.map (\score -> Cache.addScoreBreakdown cache targetId score)
+  } |> Task.map (Cache.addScoreBreakdown cache targetId)
 
 -- Cache all user information related to the posts + follower list
 fetchAndCacheAllUsersFromPosts: Cache -> UserInfo -> List Post -> Task Http.Error Cache
@@ -141,6 +144,8 @@ fetchAndCachePostInfo cache user post = case post.content of
                         |> Task.andThen (\cache1 -> fetchAndCacheChallengeStatistics cache1 user id)
     TipPost id       -> fetchAndCacheTip cache user id
     PollPost id      -> fetchAndCachePoll cache user id
+                        |> Task.andThen (\cache1 -> fetchAndCachePollStatistics cache1 user id)
+                        |> Task.andThen (\cache2 -> fetchAndCachePollAnswered cache2 user id)
     FreeTextPost _ _ -> Task.succeed cache -- nothing to do here
 
 -- Caching like counts for posts and posts like by the user
@@ -203,7 +208,7 @@ fetchAndCacheTip cache user id = Http.task {
     , body = Http.emptyBody
     , resolver = jsonResolver <| decodeTip
     , timeout = Nothing
-    } |> Task.map (\res -> Cache.addTip cache id res)
+    } |> Task.map (Cache.addTip cache id)
 
 fetchAndCacheChallenge: Cache -> UserInfo -> ChallengeId -> Task Http.Error Cache
 fetchAndCacheChallenge cache user id = Http.task {
@@ -213,7 +218,7 @@ fetchAndCacheChallenge cache user id = Http.task {
     , body = Http.emptyBody
     , resolver = jsonResolver <| decodeChallenge
     , timeout = Nothing
-    } |> Task.map (\res -> Cache.addChallenge cache id res)
+    } |> Task.map (Cache.addChallenge cache id)
 
 fetchAndCacheChallengeStatistics: Cache -> UserInfo -> ChallengeId -> Task Http.Error Cache
 fetchAndCacheChallengeStatistics cache user id = Http.task {
@@ -223,7 +228,7 @@ fetchAndCacheChallengeStatistics cache user id = Http.task {
     , body = Http.emptyBody
     , resolver = jsonResolver <| decodeChallengeStatistics
     , timeout = Nothing
- } |> Task.map (\res -> Cache.addChallengeStatistics cache id res)
+ } |> Task.map (Cache.addChallengeStatistics cache id)
 
 fetchAndCacheEvent: Cache -> UserInfo -> EventId -> Task Http.Error Cache
 fetchAndCacheEvent cache user id = Task.succeed cache
@@ -244,8 +249,34 @@ fetchAndCachePost cache user id = Http.task {
     , body = Http.emptyBody
     , resolver = jsonResolver <| decodePost
     , timeout = Nothing
-    } |> Task.map (\res -> Cache.addPost cache id res)
+    } |> Task.map (Cache.addPost cache id)
 
 fetchAndCachePoll: Cache -> UserInfo -> PollId -> Task Http.Error Cache
-fetchAndCachePoll cache user id = Task.succeed cache
+fetchAndCachePoll cache user id = Http.task {
+    method = "GET"
+    , headers = [authHeader user]
+    , url = baseUrl ++ absolute ["poll", "by-id", id |> Poll.toString] []
+    , body = Http.emptyBody
+    , resolver = jsonResolver <| decodePoll
+    , timeout = Nothing
+ } |> Task.map (Cache.addPoll cache id)
 
+fetchAndCachePollStatistics: Cache -> UserInfo -> PollId -> Task Http.Error Cache
+fetchAndCachePollStatistics cache user id = Http.task {
+    method = "GET"
+    , headers = [authHeader user]
+    , url = baseUrl ++ absolute ["poll", "statistics", id |> Poll.toString] []
+    , body = Http.emptyBody
+    , resolver = jsonResolver <| decodePollStats
+    , timeout = Nothing
+ } |> Task.map (Cache.addPollStats cache id)
+
+fetchAndCachePollAnswered: Cache -> UserInfo -> PollId -> Task Http.Error Cache
+fetchAndCachePollAnswered cache user id = Http.task {
+    method = "GET"
+    , headers = [authHeader user]
+    , url = baseUrl ++ absolute ["poll", "has-answered", id |> Poll.toString] []
+    , body = Http.emptyBody
+    , resolver = jsonResolver <| bool
+    , timeout = Nothing
+ } |> Task.map (Cache.addPollAnswered cache id)

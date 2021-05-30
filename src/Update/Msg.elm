@@ -6,6 +6,7 @@ import Data.Hash exposing (Hash)
 import Data.Hashtag exposing (Hashtag)
 import Data.Notification exposing (Notification, NotificationId)
 import Data.Page exposing (Page)
+import Data.Poll exposing (PollId, PollOption)
 import Data.Post exposing (PinnedPost, Post, PostId)
 import Data.Schedule exposing (UTCTimestamp)
 import Data.User exposing (UserId)
@@ -50,6 +51,7 @@ type Msg =
     | AcceptChallenge ChallengeId
     | RejectChallenge ChallengeId
     | ReportChallengeStepStatus ChallengeId Int ChallengeStepStatus
+    | AnswerPoll PollId PollOption
     | CheckNotifications
     | CheckFeed
     -- Form
@@ -87,6 +89,7 @@ type Msg =
     | HttpChallengeRejected (Result Http.Error ())
     | HttpChallengeStepStatusReported (Result Http.Error ())
     | HttpHashtagTrendRefreshed (Result Http.Error (List (Int, Hashtag)))
+    | HttpPollAnswered (Result Http.Error ())
     -- Special
     | Batch (List Msg)
     | NoOp

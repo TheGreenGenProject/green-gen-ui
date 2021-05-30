@@ -3,6 +3,7 @@ module State.Cache exposing (..)
 import Data.Challenge exposing (Challenge, ChallengeId, ChallengeOutcomeStatus(..), ChallengeReportSummary, ChallengeStatistics, ChallengeStatus, ChallengeStepReport)
 import Data.Event exposing (Event, EventId)
 import Data.Hashtag exposing (Hashtag)
+import Data.Poll exposing (Poll, PollId, PollOption, PollStats(..), updatePollStats)
 import Data.Post exposing (PinnedPost(..), Post, PostContent, PostId)
 import Data.Rank exposing (ScoreBreakdown)
 import Data.Schedule exposing (UTCTimestamp)
@@ -18,6 +19,7 @@ type alias PostKey      = String
 type alias UserKey      = String
 type alias EventKey     = String
 type alias TipKey       = String
+type alias PollKey       = String
 type alias ChallengeKey = String
 type alias HashtagKey   = String
 
@@ -29,6 +31,7 @@ type alias Cache = {
     hashtagTrend: Maybe (List (Int, Hashtag)),
     events: Dict EventKey Event,
     tips: Dict TipKey Tip,
+    polls: Dict PollKey PollCacheEntry,
     challenges: Dict ChallengeKey ChallengeCacheEntry,
     followers: Set UserKey,
     followingUsers: Set UserKey,
@@ -47,6 +50,7 @@ empty = {
     hashtagTrend             = Nothing,
     events                   = Dict.empty,
     tips                     = Dict.empty,
+    polls                    = Dict.empty,
     challenges               = Dict.empty,
     followers                = Set.empty,
     followingUsers           = Set.empty,
@@ -56,6 +60,18 @@ empty = {
     pinned                   = Set.empty
   }
 
+
+type alias PollCacheEntry = {
+    poll: Maybe Poll,
+    answered: Maybe Bool,
+    stats: Maybe PollStats
+ }
+
+emptyPollEntry = {
+    poll     = Nothing,
+    answered = Nothing,
+    stats    = Nothing
+ }
 
 type alias ChallengeCacheEntry = {
     challenge: Maybe Challenge,
@@ -85,6 +101,7 @@ merge a b = {
     hashtagTrend             = a.hashtagTrend |> MaybeUtils.orElse b.hashtagTrend,
     events                   = Dict.union a.events b.events,
     tips                     = Dict.union a.tips b.tips,
+    polls                    = DictUtils.merge mergePollCacheEntries a.polls b.polls,
     challenges               = DictUtils.merge mergeChallengeCacheEntries a.challenges b.challenges,
     followers                = Set.union a.followers b.followers,
     followingUsers           = Set.union a.followingUsers b.followingUsers,
@@ -162,6 +179,46 @@ addTip cache id content = {cache | tips =  cache.tips |> Dict.insert (Data.Tip.t
 
 getTip: Cache -> TipId -> Maybe Tip
 getTip cache id = Dict.get (Data.Tip.toString id) cache.tips
+
+{-- Polls --}
+addPoll: Cache -> PollId -> Poll -> Cache
+addPoll cache id content = let cacheId = (Data.Poll.toString id)
+                               entry = Dict.get cacheId cache.polls |> Maybe.withDefault emptyPollEntry
+                               updated = {entry| poll = Just content }
+    in {cache| polls = Dict.insert cacheId updated cache.polls }
+
+getPoll: Cache -> PollId -> Maybe Poll
+getPoll cache id = Dict.get (Data.Poll.toString id) cache.polls
+    |> Maybe.andThen (.poll)
+
+addPollStats: Cache -> PollId -> PollStats -> Cache
+addPollStats cache id stats = let cacheId = (Data.Poll.toString id)
+                                  entry = Dict.get cacheId cache.polls |> Maybe.withDefault emptyPollEntry
+                                  updated = {entry| stats = Just stats }
+    in {cache| polls = Dict.insert cacheId updated cache.polls }
+
+getPollStats: Cache -> PollId -> Maybe PollStats
+getPollStats cache id = Dict.get (Data.Poll.toString id) cache.polls
+    |> Maybe.andThen (.stats)
+
+addPollAnswered: Cache -> PollId -> Bool -> Cache
+addPollAnswered cache id answered = let cacheId = (Data.Poll.toString id)
+                                        entry = Dict.get cacheId cache.polls |> Maybe.withDefault emptyPollEntry
+                                        updated = {entry| answered = Just answered }
+    in {cache| polls = Dict.insert cacheId updated cache.polls }
+
+getPollAnswered: Cache -> PollId -> Maybe Bool
+getPollAnswered cache id = Dict.get (Data.Poll.toString id) cache.polls
+    |> Maybe.andThen (.answered)
+
+-- Simulating a answer of the Poll
+simulatePollAnswer: Cache -> PollId -> PollOption -> Cache
+simulatePollAnswer cache pollId option =
+    let answered = addPollAnswered cache pollId True
+        stats = getPollStats answered pollId |> Maybe.withDefault (PollStats [])
+    in addPollStats answered pollId (updatePollStats option stats)
+
+
 
 {-- Challenge --}
 addChallenge: Cache -> ChallengeId -> Challenge -> Cache
@@ -361,7 +418,7 @@ decrement counter = case counter of
         Just n  -> (n - 1) |> Just
         Nothing -> Nothing
 
--- Merge 2 challenges cache entries
+-- Merges 2 challenges cache entries
 -- In case of collision, we take the the first entry (to be consistent with Dict.union way - but this might be inappropriate)
 mergeChallengeCacheEntries: ChallengeCacheEntry -> ChallengeCacheEntry -> ChallengeCacheEntry
 mergeChallengeCacheEntries a b = {
@@ -373,6 +430,15 @@ mergeChallengeCacheEntries a b = {
     reportDates   = mergeList a.reportDates b.reportDates,
     stepReports   = mergeList a.stepReports b.stepReports
  }
+
+-- Merges 2 Poll cache entries
+mergePollCacheEntries: PollCacheEntry -> PollCacheEntry -> PollCacheEntry
+mergePollCacheEntries a b = {
+    poll     = mergeMaybe a.poll b.poll,
+    answered = mergeMaybe a.answered b.answered,
+    stats    = mergeMaybe a.stats b.stats
+ }
+
 
 mergeMaybe: Maybe a -> Maybe a -> Maybe a
 mergeMaybe a b = case (a, b) of

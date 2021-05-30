@@ -1,11 +1,12 @@
 module Query.Json.PostDecoder exposing (..)
 
-import Data.Challenge exposing (ChallengeId(..))
 import Data.Hashtag exposing (Hashtag(..))
 import Data.Post exposing (Post, PostContent(..), PostId(..), Source(..))
 import Json.Decode as Decoder exposing (Decoder, string, succeed)
 import Json.Decode.Pipeline exposing (required)
+import Query.Json.ChallengeDecoder exposing (decodeChallengeId)
 import Query.Json.DecoderUtils exposing(..)
+import Query.Json.PollDecoder exposing (decodePollId)
 import Query.Json.SourceDecoder exposing (decodeSources)
 import Query.Json.TipDecoder exposing (decodeTipId)
 
@@ -17,6 +18,7 @@ decodePost: Decoder Post
 decodePost = Decoder.oneOf [
     decodeFreeTextPost,
     decodeTipPost,
+    decodePollPost,
     decodeChallengePost,
     decodeRePost
   ]
@@ -26,6 +28,9 @@ decodeFreeTextPost = decodePostFields |> Decoder.field "FreeTextPost"
 
 decodeTipPost: Decoder Post
 decodeTipPost = decodePostFields |> Decoder.field "TipPost"
+
+decodePollPost: Decoder Post
+decodePollPost = decodePostFields |> Decoder.field "PollPost"
 
 decodeChallengePost: Decoder Post
 decodeChallengePost = decodePostFields |> Decoder.field "ChallengePost"
@@ -49,10 +54,6 @@ decodePostId: Decoder PostId
 decodePostId = succeed PostId
     |> required "value" decodeUuid
 
-decodeChallengeId: Decoder ChallengeId
-decodeChallengeId = succeed ChallengeId
-    |> required "value" decodeUuid
-
 decodeHashtags: Decoder (List Hashtag)
 decodeHashtags = Decoder.list decodeHashtag
 
@@ -73,6 +74,7 @@ decodePostContent: Decoder PostContent
 decodePostContent = Decoder.oneOf [
         decodeFreeTextPostContent,
         decodeTipPostContent,
+        decodePollPostContent,
         decodeChallengePostContent,
         decodeRePostContent
   ]
@@ -85,6 +87,10 @@ decodeFreeTextPostContent =  succeed FreeTextPost
 decodeTipPostContent: Decoder PostContent
 decodeTipPostContent = succeed TipPost
     |> required "tip" decodeTipId
+
+decodePollPostContent: Decoder PostContent
+decodePollPostContent = succeed PollPost
+    |> required "poll" decodePollId
 
 decodeChallengePostContent: Decoder PostContent
 decodeChallengePostContent = succeed ChallengePost
