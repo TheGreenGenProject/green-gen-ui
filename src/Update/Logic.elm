@@ -13,7 +13,7 @@ import Query.Hashtag exposing (refreshHashtagTrend)
 import Query.Like exposing (like, unlike)
 import Query.Notification exposing (fetchNotifications, hasUnreadNotifications, markAsRead, scheduleNotificationCheck)
 import Query.Pinned exposing (fetchPinnedPosts, pin, unpin)
-import Query.Poll exposing (answerPoll, answerPollOption)
+import Query.Poll exposing (answerPoll, answerPollOption, postPoll)
 import Query.QueryUtils exposing (errorToString)
 import Query.Search exposing (performSearch)
 import Query.Tip exposing (postTip)
@@ -22,7 +22,7 @@ import State.AppState as AppState exposing (AppState, Display(..), isUserLoggedI
 import State.Cache as Cache exposing (simulatePollAnswer)
 import State.ChallengeState as ChallengeState
 import State.FeedState as FeedState
-import State.FormState as FormState exposing (clearNewChallengeWizardState, clearNewFreeTextWizardState, clearNewTipWizardState)
+import State.FormState as FormState exposing (clearNewChallengeWizardState, clearNewFreeTextWizardState, clearNewPollWizardState, clearNewTipWizardState)
 import State.NotificationState as NotificationState
 import State.PinnedState as PinnedState
 import State.SearchState as SearchState
@@ -138,6 +138,12 @@ update msg state = case msg of
     PostNewChallenge newChallengeWizard -> let forms = state.forms in { state |
         forms = FormState.postingNewChallenge {forms| newChallengeWizard = newChallengeWizard} }
         |> ifLogged (\user -> postChallenge user newChallengeWizard)
+    FillingNewPollWizard pollState -> { state |
+        forms = FormState.updateNewPollWizardState state.forms pollState }
+        |> nocmd
+    PostNewPoll newPollWizard -> let forms = state.forms in { state |
+        forms = FormState.postingNewPoll {forms| newPollWizard = newPollWizard} }
+        |> ifLogged (\user -> postPoll user newPollWizard)
     ---------------------
     --- Http commands ---
     ---------------------
@@ -252,6 +258,13 @@ update msg state = case msg of
     HttpChallengeRejected _             -> state |> nocmd
     HttpChallengeStepStatusReported _   -> state |> nocmd
     HttpPollAnswered _                  -> state |> nocmd
+    HttpNewPollPosted (Ok _) -> {state |
+        display = NewPostPage,
+        forms = clearNewPollWizardState state.forms}
+        |> nocmd
+    HttpNewPollPosted (Err err) -> Debug.log ("Error while posting new Poll: " ++ (errorToString err))
+        {state| forms = FormState.newPollPosted state.forms }
+        |> nocmd
     HttpLoggedOff _                     -> {state | display = LoggedOffPage, user = NotLogged }
         |> nocmd
 

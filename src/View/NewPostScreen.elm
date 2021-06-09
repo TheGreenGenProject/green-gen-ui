@@ -21,7 +21,7 @@ newPostScreen _ = column [
     [ newTipButton
      , newChallengeButton
      --, newEventButton
-     --, newPollButton
+     , newPollButton
      , newFreeTextButton]
 
 newTipButton: Element Msg

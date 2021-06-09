@@ -25,6 +25,7 @@ import View.Theme exposing (background, foreground)
 import View.WallScreen exposing (wallScreen)
 import View.WizardNewChallengePage exposing (newWizardNewChallengeScreen)
 import View.WizardNewFreeTextPage exposing (newWizardNewFreeTextScreen)
+import View.WizardNewPollPage exposing (newWizardNewPollScreen)
 import View.WizardNewTipPage exposing (newWizardNewTipScreen)
 
 
@@ -113,7 +114,7 @@ displayWizardNewTipPost: AppState -> Element Msg
 displayWizardNewTipPost = newWizardNewTipScreen
 
 displayWizardNewPollPost: AppState -> Element Msg
-displayWizardNewPollPost state = (text "Wizard new poll")
+displayWizardNewPollPost = newWizardNewPollScreen
 
 displayWizardNewEvent: AppState -> Element Msg
 displayWizardNewEvent state = (text "Wizard new event")

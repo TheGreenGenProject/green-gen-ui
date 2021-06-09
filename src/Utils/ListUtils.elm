@@ -7,7 +7,10 @@ module Utils.ListUtils exposing (
     , rotate
     , rotaten
     , fix
-    , find)
+    , find
+    , replace
+    , delete
+    , nonEmptyToMaybe)
 
 
 fromMaybe: Maybe a -> List a
@@ -54,5 +57,17 @@ find: (a -> Bool) -> List a -> Maybe a
 find predicate lst = case lst of
     []      -> Nothing
     x :: xs -> if predicate x then Just x else find predicate xs
+
+nonEmptyToMaybe: List a -> Maybe (List a)
+nonEmptyToMaybe xs = if List.isEmpty xs then Nothing else Just xs
+
+replace: a -> Int -> List a -> List a
+replace elt index xs =
+    (xs |> List.take index) ++ [elt] ++ (xs |> List.drop (index+1))
+
+delete: Int -> List a -> List a
+delete index xs =
+    (xs |> List.take index) ++ (xs |> List.drop (index+1))
+
 
 

@@ -2,6 +2,7 @@ module State.FormState exposing (..)
 
 
 import Data.Challenge exposing (SuccessMeasure)
+import Data.Poll exposing (PollOption)
 import Data.Post exposing (Source)
 import Data.Schedule exposing (UTCTimestamp)
 import Data.User exposing (UserId)
@@ -10,14 +11,16 @@ import Data.User exposing (UserId)
 type alias FormState = {
     newTipWizard: NewTipWizardState,
     newFreeTextWizard: NewFreeTextWizardState,
-    newChallengeWizard: NewChallengeWizardState
+    newChallengeWizard: NewChallengeWizardState,
+    newPollWizard: NewPollWizardState
  }
 
 empty: FormState
 empty = {
     newTipWizard       = emptyTipWizard,
     newFreeTextWizard  = emptyFreeTextWizard,
-    newChallengeWizard = emptyChallengeWizard
+    newChallengeWizard = emptyChallengeWizard,
+    newPollWizard = emptyPollWizard
  }
 
 
@@ -131,3 +134,35 @@ postingNewChallenge formState = let wizard = formState.newChallengeWizard in
 newChallengePosted: FormState -> FormState
 newChallengePosted formState = let wizard = formState.newChallengeWizard in
     {formState | newChallengeWizard = {wizard| posting = False} }
+
+
+-- Polls
+
+type alias NewPollWizardState = {
+    posting: Bool,
+    question: Maybe String,
+    options: Maybe (List PollOption)
+ }
+
+emptyPollWizard: NewPollWizardState
+emptyPollWizard = {
+    posting = False,
+    question = Nothing,
+    options = Nothing
+ }
+
+clearNewPollWizardState: FormState -> FormState
+clearNewPollWizardState formState = {formState| newPollWizard = emptyPollWizard }
+
+updateNewPollWizardState: FormState -> NewPollWizardState -> FormState
+updateNewPollWizardState formState newPollState = {formState |
+    newPollWizard = newPollState }
+
+postingNewPoll: FormState -> FormState
+postingNewPoll formState = let wizard = formState.newPollWizard in
+    {formState | newPollWizard = {wizard| posting = True} }
+
+newPollPosted: FormState -> FormState
+newPollPosted formState = let wizard = formState.newPollWizard in
+    {formState | newPollWizard = {wizard| posting = False} }
+

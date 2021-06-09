@@ -15,7 +15,7 @@ import Http
 import State.AppState exposing (AppState, AuthError, Display(..))
 import State.Cache exposing (Cache)
 import State.ChallengeState exposing (ChallengePagedTab, ChallengeTab)
-import State.FormState exposing (NewChallengeWizardState, NewFreeTextWizardState, NewTipWizardState)
+import State.FormState exposing (NewChallengeWizardState, NewFreeTextWizardState, NewPollWizardState, NewTipWizardState)
 import State.SearchState exposing (SearchResult)
 import State.UserState exposing (UserInfo, UserState(..))
 
@@ -61,6 +61,8 @@ type Msg =
     | PostNewFreeText
     | FillingNewChallengeWizard NewChallengeWizardState
     | PostNewChallenge NewChallengeWizardState
+    | FillingNewPollWizard NewPollWizardState
+    | PostNewPoll NewPollWizardState
     -- Http
     | HttpAuthenticated (Result AuthError UserInfo)
     | HttpLoggedOff (Result Http.Error ())
@@ -90,6 +92,7 @@ type Msg =
     | HttpChallengeStepStatusReported (Result Http.Error ())
     | HttpHashtagTrendRefreshed (Result Http.Error (List (Int, Hashtag)))
     | HttpPollAnswered (Result Http.Error ())
+    | HttpNewPollPosted (Result Http.Error ())
     -- Special
     | Batch (List Msg)
     | NoOp

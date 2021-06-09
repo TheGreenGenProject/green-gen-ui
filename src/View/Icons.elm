@@ -83,3 +83,7 @@ arrowUp = Icons.caretUpFilled
 
 arrowDown = Icons.caretDownFilled
 
+plus = Icons.plusCircleFilled
+
+minus = Icons.minusCircleFilled
+
