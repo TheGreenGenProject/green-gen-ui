@@ -51,6 +51,8 @@ password = Icons.lockOutlined
 
 logoff = Icons.logoutOutlined
 
+flagged = Icons.flagFilled
+
 flag = Icons.flagOutlined
 
 openConversation = Icons.messageOutlined

@@ -286,9 +286,10 @@ renderFlagAction cache message =
     let flaggedByUser = Cache.isFlaggedByUser cache message.id
         action = (if flaggedByUser then UnflagComment else FlagComment) message.id
         col = if flaggedByUser then darkRed else background
+        icon = if flaggedByUser then Icons.flagged else Icons.flag
     in Input.button [Border.width 0] {
         onPress = Just action
-        , label = Icons.flag Icons.tiny |> el [Font.color col]
+        , label = icon Icons.tiny |> el [Font.color col]
     }
 
 renderFlagWarning: Bool -> Element Msg
