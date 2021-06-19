@@ -46,7 +46,6 @@ userPseudosFrom txt = txt
     |> List.filter isUser
     |> List.map (String.dropLeft 1)
 
-
 {-- Sources --}
 
 sourcesFrom: String -> List Source
@@ -65,6 +64,28 @@ isAcademicReference = Regex.contains academicRefSourceRegex
 isMyself: String -> Bool
 isMyself str = String.toLower str == "myself"
 
+
+{-- Quoted text (text containing user references, sources or hashtags --}
+
+type QuotedString =
+    Str String
+    | HashtagQuote String
+    | UserQuote String
+
+parseQuotedText: String -> List QuotedString
+parseQuotedText txt =
+    let splitted = txt |> String.split " "
+        parse xs = case xs of
+            []  -> []
+            [x] ->
+                if isUser x then [UserQuote x]
+                else if isHashtag x then [HashtagQuote x]
+                else [Str x]
+            x :: y :: rest ->
+                if isUser x then (UserQuote x) :: parse (y :: rest)
+                else if isHashtag x then (HashtagQuote x) :: parse (y :: rest)
+                else (Str x) :: parse (y :: rest)
+    in parse splitted
 
 isAlphaNumerical: String -> Bool
 isAlphaNumerical = String.toList >> List.all (Char.isAlphaNum)

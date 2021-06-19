@@ -22,7 +22,7 @@ import View.Chart.Donut as Donut
 import View.Icons as Icons
 import View.PostRenderer exposing (renderPostId)
 import View.ScreenUtils
-import View.Style exposing (paged, verticalSeparator)
+import View.Style exposing (multiLineQuotedText, paged, verticalSeparator)
 import View.Theme exposing (background, foreground, lightGrey, lightPurple)
 
 
@@ -62,7 +62,7 @@ renderUserHeader cache state =
                     , width fill
                     , Font.size 12
                     , Font.italic]
-            [introduction |> text]
+            [introduction |> multiLineQuotedText]
  ]
 
 renderFollowingButton: Cache -> Maybe UserId -> Element Msg

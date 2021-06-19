@@ -17,7 +17,7 @@ import Json.Decode as Decode
 import State.AppState exposing (AppState, Display(..))
 import Update.Msg exposing (Msg(..))
 import Utils.DateUtils exposing (LocalDate, toLocalDate)
-import Utils.TextUtils exposing (format2Digits)
+import Utils.TextUtils as TextUtils exposing (QuotedString(..), format2Digits)
 import View.Icons as Icons
 import View.Theme as Theme exposing (background, black, blue, darkRed, errorForeground, foreground, grey)
 
@@ -57,9 +57,18 @@ verticalSeparator thickness color = row [height fill] [
     , el [ ] (empty)
  ]
 
-multiLineText: String -> Element Msg
-multiLineText txt = let lines = String.split ("\n") txt in
-    column [spacing 2] (lines |> List.map (text))
+multiLineQuotedText: String -> Element Msg
+multiLineQuotedText txt = let lines = String.split ("\n") txt in
+    column [spacing 2] (lines |> List.map (quotedText))
+
+quotedText: String -> Element Msg
+quotedText str =
+    let quoted = TextUtils.parseQuotedText str |> Debug.log "Quoted Text"
+        quoteToString = \s -> case s of
+            Str x -> x |> text
+            UserQuote x -> userStyle (String.dropLeft 1 x) Nothing
+            HashtagQuote x -> x |> String.dropLeft 1 |> Hashtag |> hashtagStyle
+    in quoted |> List.map (quoteToString) |> List.intersperse (" " |> text) |> paragraph []
 
 tabStyle: Element msg -> Element msg
 tabStyle e = el
@@ -293,8 +302,8 @@ errorTextStyle txt =
 
 titledTextStyle: String -> String -> Int -> Element Msg
 titledTextStyle title content fontSize = column [width fill,height fill, spacing 5] [
-    el [Font.semiBold, Font.size (fontSize + 2)] (text title)
-    , paragraph [Font.size fontSize] [text content]
+    el [Font.semiBold, Font.size (fontSize + 2)] (quotedText title)
+    , el [Font.size fontSize] (multiLineQuotedText content)
  ]
 
 titledElementStyle: String -> Element Msg -> Int -> Element Msg

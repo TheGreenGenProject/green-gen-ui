@@ -21,7 +21,7 @@ import State.AppState exposing (Display(..))
 import State.Cache as Cache exposing (Cache)
 import Update.Msg exposing (Msg(..))
 import Utils.DateUtils as DateUtils
-import Utils.TextUtils as TextUtils
+import Utils.TextUtils as TextUtils exposing (QuotedString(..))
 import Uuid
 import View.Chart.Donut as Donut
 import View.Icons as Icons
@@ -64,7 +64,7 @@ renderEventPost cache post = (text "Event")
 renderTipPost: Cache -> Post -> Element Msg
 renderTipPost cache post = case post.content of
     TipPost id -> case Cache.getTip cache id of
-                    Just tip -> tip.content |> text |> postBodyStyle
+                    Just tip -> tip.content |> multiLineQuotedText |> postBodyStyle
                     Nothing  -> id |> Tip.toString |> text |> postBodyStyle
     _          -> neverElement
 
@@ -82,8 +82,8 @@ renderChallengePost cache post = case post.content of
                 |> Maybe.withDefault Element.none
             , verticalSeparator 1 background
             , column [spacing 10, alignTop, width fill] [
-                challenge.title |> text |> el [Font.semiBold, Font.size 10]
-                , challenge.content |> text |> postBodyStyle]
+                challenge.title |> quotedText |> el [Font.semiBold, Font.size 10]
+                , challenge.content |> multiLineQuotedText |> postBodyStyle]
             --, verticalSeparator 5 background
             --, el [alignTop] (renderChallengeSuccessMeasure challenge.measure)
             ]
@@ -100,7 +100,7 @@ renderPollPost cache post = case post.content of
 
 renderFreeTextPost: Cache -> Post -> Element Msg
 renderFreeTextPost cache post = case post.content of
-    FreeTextPost content sources -> content |> text |> postBodyStyle
+    FreeTextPost content sources -> content |> multiLineQuotedText |> postBodyStyle
     _                            -> neverElement
 
 -- Helpers
@@ -211,11 +211,11 @@ renderAnsweredPoll cache poll =
         percentages = stats
             |> List.map (\entry -> (entry.option, 100.0 * (Int.toFloat entry.count) / sum))
     in column [spacing 10] [
-        poll.title |> bold |> postBodyStyle
+        poll.title |> multiLineQuotedText |> el [Font.bold] |> postBodyStyle
         , column [spacing 5]
           (percentages
             |> List.map (\(PollOption opt, percentage) -> (opt ++ ": " ++ (String.fromFloat percentage) ++ "%")
-                |> text
+                |> multiLineQuotedText
                 |> postBodyStyle))
      ]
 
@@ -224,8 +224,8 @@ renderUnansweredPoll cache poll = Input.radio
     [padding 5 , spacing 5]
     { onChange = AnswerPoll poll.id
       , selected = Nothing
-      , label = Input.labelAbove [] (poll.title |> bold |> postBodyStyle)
-      , options = poll.options |> List.map (\ (PollOption opt) -> Input.option (PollOption opt) (opt |> text |> postBodyStyle))
+      , label = Input.labelAbove [] (poll.title |> multiLineQuotedText |> el [Font.bold] |> postBodyStyle)
+      , options = poll.options |> List.map (\ (PollOption opt) -> Input.option (PollOption opt) (opt |> multiLineQuotedText |> postBodyStyle))
     }
 
 renderConversation: UTCTimestamp -> Cache -> PostId -> Element Msg
@@ -278,7 +278,8 @@ renderConversationMessage tmstp cache _ message =
             , renderFlagAction cache message |> space 20
             , renderFlagWarning flagged
         ]
-        , el [paddingEach {left = 15, right = 0, top = 0, bottom = 0}] (message.content |> multiLineText |> contentStyle)
+        , el [paddingEach {left = 15, right = 0, top = 0, bottom = 0}]
+            (message.content |> multiLineQuotedText |> contentStyle)
     ]
 
 renderFlagAction: Cache -> Message -> Element Msg
