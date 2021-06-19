@@ -54,5 +54,8 @@ plus (UTC time) (Duration millis) = UTC (time + millis)
 minus: UTCTimestamp -> Duration -> UTCTimestamp
 minus (UTC time) (Duration millis) = UTC (time - millis)
 
+milliseconds: UTCTimestamp -> Int
+milliseconds (UTC ms) = ms
+
 
 

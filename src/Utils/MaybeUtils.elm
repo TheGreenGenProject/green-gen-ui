@@ -12,3 +12,8 @@ isEmpty maybe = case maybe of
 
 isDefined: Maybe a -> Bool
 isDefined = not << isEmpty
+
+maybeString: String -> Maybe String
+maybeString str =
+    if String.isEmpty str then Nothing else Just str
+

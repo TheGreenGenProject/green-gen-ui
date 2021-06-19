@@ -13,6 +13,11 @@ urlRefSourceRegex = unsafeRegex "\\link{(http://|https://)([^{}])+\\}"
 unsafeRegex: String -> Regex
 unsafeRegex = Maybe.withDefault Regex.never << Regex.fromString
 
+isEmpty: String -> Bool
+isEmpty = String.trim >> String.isEmpty
+
+nonEmpty: String -> Bool
+nonEmpty = not << isEmpty
 
 {-- Hashtags --}
 

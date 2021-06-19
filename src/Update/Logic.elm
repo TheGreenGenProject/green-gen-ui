@@ -1,11 +1,12 @@
 module Update.Logic exposing (update)
 
 import Data.Challenge exposing (ChallengeOutcomeStatus(..))
-import Data.Page as Page
+import Data.Page as Page exposing (Page(..))
 import Platform.Cmd exposing (Cmd(..), none)
 import Query.Authentication exposing (logon)
 import Query.Challenge exposing (acceptChallenge, fetchChallengeDetails, fetchUserChallengePosts, postChallenge, rejectChallenge, reportStepStatus)
 import Query.Clock as Clock
+import Query.Conversation exposing (fetchConversation, flagComment, postComment, unflagComment)
 import Query.Feed exposing (fetchFeed, hasNewPosts, scheduleFeedCheck)
 import Query.Following exposing (followHashtag, followUser, unfollowHashtag, unfollowUser)
 import Query.FreeText exposing (postFreeText)
@@ -13,7 +14,7 @@ import Query.Hashtag exposing (refreshHashtagTrend)
 import Query.Like exposing (like, unlike)
 import Query.Notification exposing (fetchNotifications, hasUnreadNotifications, markAsRead, scheduleNotificationCheck)
 import Query.Pinned exposing (fetchPinnedPosts, pin, unpin)
-import Query.Poll exposing (answerPoll, answerPollOption, postPoll)
+import Query.Poll exposing (answerPollOption, postPoll)
 import Query.QueryUtils exposing (errorToString)
 import Query.Search exposing (performSearch)
 import Query.Tip exposing (postTip)
@@ -83,6 +84,20 @@ update msg state = case msg of
         |> ifLogged (\user -> pin user postId)
     UnpinPost postId -> {state| cache = Cache.removePinned state.cache postId }
         |> ifLogged (\user -> unpin user postId)
+    OpenPostConversation postId -> {state| cache = Cache.setConversationOpened state.cache postId True }
+        |> ifLogged (\user -> fetchConversation state.cache user postId (Page 1))
+    ClosePostConversation postId -> {state| cache = Cache.setConversationOpened state.cache postId False }
+        |> nocmd
+    UpdateNewPostComment postId comment -> {state| cache = Cache.addComment state.cache postId comment }
+        |> nocmd
+    PostNewComment postId comment -> {state| cache = Cache.removeComment state.cache postId }
+        |> ifLogged (\user -> postComment user postId comment)
+    FlagComment messageId -> {state| cache = Cache.setFlaggedByUser state.cache messageId True }
+        |> ifLogged (\user -> flagComment user messageId)
+    UnflagComment messageId -> {state| cache = Cache.setFlaggedByUser state.cache messageId False }
+        |> ifLogged (\user -> unflagComment user messageId)
+    LoadMoreComment postId page -> state
+        |> ifLogged (\user -> fetchConversation state.cache user postId page)
     PerformSearchFromField ->
         update (DisplayPage SearchPage) {state| search = SearchState.applyInput state.search }
     PerformSearchFromHashtag hashtag ->
@@ -265,9 +280,21 @@ update msg state = case msg of
     HttpNewPollPosted (Err err) -> Debug.log ("Error while posting new Poll: " ++ (errorToString err))
         {state| forms = FormState.newPollPosted state.forms }
         |> nocmd
-    HttpLoggedOff _                     -> {state | display = LoggedOffPage, user = NotLogged }
+    HttpConversationPageFetched (Ok (cache, conversationPage)) ->
+        let added = Cache.getConversationMessages state.cache conversationPage.postId ++ conversationPage.messages
+            updated = Cache.addConversationMessages cache conversationPage.postId added
+        in {state | cache = Cache.merge updated state.cache }
         |> nocmd
-
+    HttpConversationPageFetched (Err err) -> Debug.log ("Error while getting challenge posts: " ++ (errorToString err))
+        state |> nocmd
+    HttpNewCommentPosted (Ok postId)         -> state
+        |> ifLogged (\user -> fetchConversation state.cache user postId Page.first)
+    HttpNewCommentPosted (Err err) -> Debug.log ("Error while getting posted comment: " ++ (errorToString err))
+        state |> nocmd
+    HttpCommentFlagged _                 -> state |> nocmd
+    HttpCommentUnflagged _               -> state |> nocmd
+    HttpLoggedOff _                      -> {state | display = LoggedOffPage, user = NotLogged }
+        |> nocmd
     other -> Debug.log ("Unprocessed message " ++ (Debug.toString other)) state
         |> nocmd
 

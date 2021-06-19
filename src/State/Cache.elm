@@ -1,27 +1,30 @@
 module State.Cache exposing (..)
 
 import Data.Challenge exposing (Challenge, ChallengeId, ChallengeOutcomeStatus(..), ChallengeReportSummary, ChallengeStatistics, ChallengeStatus, ChallengeStepReport)
+import Data.Conversation exposing (Message, MessageId)
 import Data.Event exposing (Event, EventId)
 import Data.Hashtag exposing (Hashtag)
 import Data.Poll exposing (Poll, PollId, PollOption, PollStats(..), updatePollStats)
 import Data.Post exposing (PinnedPost(..), Post, PostContent, PostId)
 import Data.Rank exposing (ScoreBreakdown)
-import Data.Schedule exposing (UTCTimestamp)
+import Data.Schedule exposing (UTCTimestamp, milliseconds)
 import Data.Tip exposing (Tip, TipId)
 import Data.User exposing (UserId)
 import Dict exposing (Dict)
 import Set exposing (Set)
 import State.UserState exposing (UserInfo)
 import Utils.DictUtils as DictUtils
+import Utils.ListUtils as ListUtils
 import Utils.MaybeUtils as MaybeUtils
 
 type alias PostKey      = String
 type alias UserKey      = String
 type alias EventKey     = String
 type alias TipKey       = String
-type alias PollKey       = String
+type alias PollKey      = String
 type alias ChallengeKey = String
 type alias HashtagKey   = String
+type alias MessageKey   = String
 
 
 type alias Cache = {
@@ -38,7 +41,9 @@ type alias Cache = {
     followingHashtags: Set HashtagKey,
     likeCount: Dict PostKey Int,
     liked: Set PostKey,
-    pinned: Set PostKey
+    pinned: Set PostKey,
+    conversations: Dict PostKey ConversationCacheEntry,
+    flaggedMessages: Dict MessageKey FlaggedMessageEntry
   }
 
 
@@ -57,7 +62,9 @@ empty = {
     followingHashtags        = Set.empty,
     likeCount                = Dict.empty,
     liked                    = Set.empty,
-    pinned                   = Set.empty
+    pinned                   = Set.empty,
+    conversations            = Dict.empty,
+    flaggedMessages          = Dict.empty
   }
 
 
@@ -93,6 +100,34 @@ emptyChallengeEntry = {
     stepReports = []
  }
 
+type alias ConversationCacheEntry = {
+    postId: Maybe PostId,
+    opened: Bool,
+    comment: Maybe String,
+    messageCount: Int,
+    messages: List Message,
+    flagged: Set MessageKey
+ }
+
+emptyConversationCacheEntry = {
+    postId = Nothing,
+    opened = False,
+    comment = Nothing,
+    messageCount = 0,
+    messages = [],
+    flagged = Set.empty
+ }
+
+type alias FlaggedMessageEntry = {
+    flagged: Bool,
+    flaggedByUser: Bool
+ }
+
+emptyFlaggedMessageEntry = {
+    flagged = False,
+    flaggedByUser = False
+ }
+
 merge: Cache -> Cache -> Cache
 merge a b = {
     posts                    = Dict.union a.posts b.posts,
@@ -108,7 +143,9 @@ merge a b = {
     followingHashtags        = Set.union a.followingHashtags b.followingHashtags,
     likeCount                = mergeLikeCounts a.likeCount b.likeCount,
     liked                    = Set.union a.liked b.liked,
-    pinned                   = Set.union a.pinned b.pinned
+    pinned                   = Set.union a.pinned b.pinned,
+    conversations            = DictUtils.merge mergeConversationCacheEntries a.conversations b.conversations,
+    flaggedMessages          = DictUtils.merge mergeFlaggedEntries a.flaggedMessages b.flaggedMessages
  }
 
 -- FIXME Not ideal as it just keep the highest count ...
@@ -406,6 +443,98 @@ containsPinned: Cache -> PostId -> Bool
 containsPinned cache postId = Set.member (Data.Post.toString postId) cache.pinned
 
 
+{-- Conversation --}
+addConversationSize: Cache -> PostId -> Int -> Cache
+addConversationSize cache id count =
+    let cacheId = (Data.Post.toString id)
+        entry = Dict.get cacheId cache.conversations |> Maybe.withDefault emptyConversationCacheEntry
+        updated = {entry| messageCount = count }
+    in {cache| conversations = Dict.insert cacheId updated cache.conversations }
+
+getConversationSize: Cache -> PostId -> Int
+getConversationSize cache id = Dict.get (Data.Post.toString id) cache.conversations
+    |> Maybe.map (.messageCount)
+    |> Maybe.withDefault 0
+
+addConversationMessage: Cache -> PostId -> Message -> Cache
+addConversationMessage cache id message =
+    let cacheId = (Data.Post.toString id)
+        entry = Dict.get cacheId cache.conversations |> Maybe.withDefault emptyConversationCacheEntry
+        updated = {entry| messages = message :: entry.messages }
+    in {cache| conversations = Dict.insert cacheId updated cache.conversations }
+
+addConversationMessages: Cache -> PostId -> List Message -> Cache
+addConversationMessages cache id messages =
+    let cacheId = (Data.Post.toString id)
+        entry = Dict.get cacheId cache.conversations |> Maybe.withDefault emptyConversationCacheEntry
+        added = entry.messages ++ messages |> ListUtils.unique |> List.sortBy (.timestamp >> milliseconds >> negate)
+        updated = {entry| messages = added }
+    in {cache| conversations = Dict.insert cacheId updated cache.conversations }
+
+getConversationMessages: Cache -> PostId -> List Message
+getConversationMessages cache id = Dict.get (Data.Post.toString id) cache.conversations
+    |> Maybe.map (.messages)
+    |> Maybe.withDefault []
+
+setConversationOpened: Cache -> PostId -> Bool -> Cache
+setConversationOpened cache id opened =
+    let cacheId = (Data.Post.toString id)
+        entry = Dict.get cacheId cache.conversations |> Maybe.withDefault emptyConversationCacheEntry
+        updated = {entry| opened = opened }
+    in {cache| conversations = Dict.insert cacheId updated cache.conversations }
+
+isConversationOpened: Cache -> PostId -> Bool
+isConversationOpened cache id = Dict.get (Data.Post.toString id) cache.conversations
+    |> Maybe.map (.opened)
+    |> Maybe.withDefault False
+
+isConversationClosed: Cache -> PostId -> Bool
+isConversationClosed cache id = isConversationOpened cache id |> not
+
+addComment: Cache -> PostId -> String -> Cache
+addComment cache id comment =
+    let cacheId = (Data.Post.toString id)
+        entry = Dict.get cacheId cache.conversations |> Maybe.withDefault emptyConversationCacheEntry
+        updated = {entry| comment = MaybeUtils.maybeString comment }
+    in {cache| conversations = Dict.insert cacheId updated cache.conversations }
+
+removeComment: Cache -> PostId -> Cache
+removeComment cache id =
+        let cacheId = (Data.Post.toString id)
+            entry = Dict.get cacheId cache.conversations |> Maybe.withDefault emptyConversationCacheEntry
+            updated = {entry| comment = Nothing }
+        in {cache| conversations = Dict.insert cacheId updated cache.conversations }
+
+getComment: Cache -> PostId -> Maybe String
+getComment cache id = Dict.get (Data.Post.toString id) cache.conversations
+    |> Maybe.andThen (.comment)
+
+{-- Flagged messages --}
+setFlagged: Cache -> MessageId -> Bool -> Cache
+setFlagged cache id flag =
+    let cacheId = (Data.Conversation.toString id)
+        entry = Dict.get cacheId cache.flaggedMessages |> Maybe.withDefault emptyFlaggedMessageEntry
+        updated = {entry| flagged = flag }
+    in {cache| flaggedMessages = Dict.insert cacheId updated cache.flaggedMessages }
+
+isFlagged: Cache -> MessageId -> Bool
+isFlagged cache id = Dict.get (Data.Conversation.toString id) cache.flaggedMessages
+    |> Maybe.map (.flagged)
+    |> Maybe.withDefault False
+
+setFlaggedByUser: Cache -> MessageId -> Bool -> Cache
+setFlaggedByUser cache id flag =
+    let cacheId = (Data.Conversation.toString id)
+        entry = Dict.get cacheId cache.flaggedMessages |> Maybe.withDefault emptyFlaggedMessageEntry
+        updated = {entry| flaggedByUser = flag , flagged = entry.flagged || flag}
+    in {cache| flaggedMessages = Dict.insert cacheId updated cache.flaggedMessages }
+
+isFlaggedByUser: Cache -> MessageId -> Bool
+isFlaggedByUser cache id = Dict.get (Data.Conversation.toString id) cache.flaggedMessages
+    |> Maybe.map (.flaggedByUser)
+    |> Maybe.withDefault False
+
+
 -- Helpers
 
 increment: Maybe Int -> Maybe Int
@@ -439,6 +568,22 @@ mergePollCacheEntries a b = {
     stats    = mergeMaybe a.stats b.stats
  }
 
+-- Merge 2 Conversation cache entries
+mergeConversationCacheEntries: ConversationCacheEntry -> ConversationCacheEntry -> ConversationCacheEntry
+mergeConversationCacheEntries a b = {
+    postId         = mergeMaybe a.postId b.postId,
+    opened         = a.opened || b.opened,
+    comment        = mergeMaybe a.comment b.comment,
+    messageCount   = max a.messageCount b.messageCount,
+    messages       = mergeList a.messages b.messages,
+    flagged        = Set.union a.flagged b.flagged
+ }
+
+mergeFlaggedEntries: FlaggedMessageEntry -> FlaggedMessageEntry -> FlaggedMessageEntry
+mergeFlaggedEntries a b = {
+    flagged = a.flagged || b.flagged,
+    flaggedByUser = a.flaggedByUser || b.flaggedByUser
+ }
 
 mergeMaybe: Maybe a -> Maybe a -> Maybe a
 mergeMaybe a b = case (a, b) of

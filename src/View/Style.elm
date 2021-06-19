@@ -15,7 +15,6 @@ import Element.Input as Input exposing (Placeholder, labelHidden, placeholder)
 import Html.Events
 import Json.Decode as Decode
 import State.AppState exposing (AppState, Display(..))
-import Time exposing (Month, Posix)
 import Update.Msg exposing (Msg(..))
 import Utils.DateUtils exposing (LocalDate, toLocalDate)
 import Utils.TextUtils exposing (format2Digits)
@@ -39,6 +38,28 @@ bold txt = txt |> text |> el [Font.bold]
 
 semiBold: String -> Element Msg
 semiBold txt = txt |> text |> el [Font.semiBold]
+
+space: Int -> Element Msg -> Element Msg
+space sp x = el [paddingEach { top = 0, bottom = 0, left = 0, right = sp}] x
+
+size: Int -> Element Msg -> Element Msg
+size sz x = el [Font.size sz] x
+
+horizontalSeparator: Int -> Color -> Element Msg
+horizontalSeparator thickness color = column [width fill] [
+    el [width fill, Font.color color, Border.widthEach { bottom = thickness, top = 0, left = 0, right = 0}] empty
+    , el [width fill] (empty)
+ ]
+
+verticalSeparator: Int -> Color -> Element Msg
+verticalSeparator thickness color = row [height fill] [
+    el [height fill, Font.color color, Border.widthEach {left = 0, top = 0, bottom = 0, right = thickness} ] empty
+    , el [ ] (empty)
+ ]
+
+multiLineText: String -> Element Msg
+multiLineText txt = let lines = String.split ("\n") txt in
+    column [spacing 2] (lines |> List.map (text))
 
 tabStyle: Element msg -> Element msg
 tabStyle e = el
@@ -115,6 +136,22 @@ unpinButtonStyle id =
                   , Font.size 10
                   , paddingXY 1 1]
         { onPress = Just (UnpinPost id), label = Icons.pinned <| Icons.tiny }
+
+openConversationButtonStyle: PostId -> Element Msg
+openConversationButtonStyle id =
+    Input.button [Background.color background
+                      , Font.color foreground
+                      , Font.size 10
+                      , paddingXY 1 1]
+            { onPress = Just (OpenPostConversation id), label = Icons.openConversation <| Icons.tiny }
+
+closeConversationButtonStyle: PostId -> Element Msg
+closeConversationButtonStyle id =
+    Input.button [Background.color background
+                      , Font.color foreground
+                      , Font.size 10
+                      , paddingXY 1 1]
+            { onPress = Just (ClosePostConversation id), label = Icons.closeConversation <| Icons.tiny }
 
 viewChallengeButtonStyle: ChallengeId -> Element Msg
 viewChallengeButtonStyle id =
@@ -273,11 +310,6 @@ checkListStyle attrs items = items
         item |> text
       ])
     |> column attrs
-
-verticalSeparator: Int -> Color -> Element Msg
-verticalSeparator width col =
-    el [Border.color col, height fill, Border.widthEach {left = width, top = 0, bottom = 0, right = 0} ] empty
-
 
 placeholderStyle: String -> Maybe (Placeholder msg)
 placeholderStyle txt = Just (placeholder [Font.italic, Font.color Theme.lightBlue] (text txt))

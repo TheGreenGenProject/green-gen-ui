@@ -22,7 +22,7 @@ import View.Chart.Donut as Donut
 import View.Icons as Icons
 import View.PostRenderer exposing (renderPostId)
 import View.ScreenUtils
-import View.Style exposing (paged)
+import View.Style exposing (paged, verticalSeparator)
 import View.Theme exposing (background, foreground, lightGrey, lightPurple)
 
 
@@ -49,20 +49,15 @@ renderUserHeader cache state =
         score            = Rank.score scoreBreakdown
     in row [width fill, spacing 10] [
         el [Font.color foreground, Background.color background, Border.rounded 10] (Icons.user Icons.extraLarge)
-        , column [spacing 10, height fill
-                 , Border.color background
-                 , paddingEach { left=0, top=0, bottom=0, right=5 }
-                 , Border.widthEach { left=0, top=0, bottom=0, right=5 }] [
+        , column [spacing 10, height fill, Border.color background] [
             row [spacing 5, centerY] [text pseudo |> el [Font.size 15, Font.semiBold]
                                       , renderFollowingButton cache state.user]
             , score |> Rank.fromScore |> Rank.toString |> text |> el [Font.size 10, Font.italic, centerY]
             , "Since " ++ since  |> text |> el [Font.size 12, Font.italic, centerY]
           ]
-        , el [alignRight
-              , Border.color background
-              , paddingEach { left=0, top=0, bottom=0, right=5 }
-              , Border.widthEach { left=0, top=0, bottom=0, right=5 }]
-              (renderChart scoreBreakdown)
+        , verticalSeparator 1 background
+        , (renderChart scoreBreakdown)
+        , verticalSeparator 1 background
         , paragraph [height fill
                     , width fill
                     , Font.size 12

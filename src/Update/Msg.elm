@@ -1,6 +1,7 @@
 module Update.Msg exposing (..)
 
 import Data.Challenge exposing (Challenge, ChallengeId, ChallengeOutcomeStatus, ChallengeStepStatus)
+import Data.Conversation exposing (Conversation, ConversationPage, Message, MessageId)
 import Data.Feed exposing (Feed)
 import Data.Hash exposing (Hash)
 import Data.Hashtag exposing (Hashtag)
@@ -43,6 +44,13 @@ type Msg =
     | UnlikePost PostId
     | PinPost PostId
     | UnpinPost PostId
+    | OpenPostConversation PostId
+    | ClosePostConversation PostId
+    | UpdateNewPostComment PostId String
+    | PostNewComment PostId String
+    | FlagComment MessageId
+    | UnflagComment MessageId
+    | LoadMoreComment PostId Page
     | EnteringSearch String
     | PerformSearchFromField
     | PerformSearchFromHashtag Hashtag
@@ -93,6 +101,10 @@ type Msg =
     | HttpHashtagTrendRefreshed (Result Http.Error (List (Int, Hashtag)))
     | HttpPollAnswered (Result Http.Error ())
     | HttpNewPollPosted (Result Http.Error ())
+    | HttpConversationPageFetched (Result Http.Error (Cache, ConversationPage))
+    | HttpNewCommentPosted (Result Http.Error PostId)
+    | HttpCommentFlagged (Result Http.Error ())
+    | HttpCommentUnflagged (Result Http.Error ())
     -- Special
     | Batch (List Msg)
     | NoOp

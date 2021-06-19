@@ -3,27 +3,31 @@ module View.PostRenderer exposing (..)
 
 import Basics as Int
 import Data.Challenge as Challenge exposing (ChallengeOutcomeStatus(..), ChallengeStatistics, SuccessMeasure)
+import Data.Conversation as Conversation exposing (Message)
+import Data.Page exposing (Page(..))
 import Data.Poll as Poll exposing (Poll, PollOption(..), PollStats(..), emptyPollStats, normalizePollStats, respondents)
 import Data.Post as Post exposing (Post, PostContent(..), PostId(..), Source(..))
 import Data.Schedule exposing (UTCTimestamp(..))
 import Data.Tip as Tip exposing (Tip)
 import Data.Url exposing (Url(..))
 import Data.User as User exposing (UserId(..))
-import Element exposing (Element, alignLeft, alignRight, alignTop, centerX, centerY, column, el, fill, height, padding, paddingEach, paragraph, px, row, spacing, text, width)
+import Element exposing (Element, alignBottom, alignLeft, alignRight, alignTop, centerX, centerY, column, el, fill, height, padding, paddingEach, paragraph, px, row, spacing, text, width)
+import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
-import Element.Input as Input
+import Element.Input as Input exposing (labelHidden)
 import Query.QueryUtils exposing (baseUrl)
 import State.AppState exposing (Display(..))
 import State.Cache as Cache exposing (Cache)
 import Update.Msg exposing (Msg(..))
 import Utils.DateUtils as DateUtils
+import Utils.TextUtils as TextUtils
 import Uuid
 import View.Chart.Donut as Donut
 import View.Icons as Icons
 import View.ScreenUtils exposing (neverElement)
 import View.Style exposing (..)
-import View.Theme exposing (background, darkRed, lightGrey, lightPurple, orange)
+import View.Theme exposing (background, darkGrey, darkRed, foreground, grey, lightGrey, lightPurple, orange)
 
 
 renderPostId: UTCTimestamp -> Cache -> PostId -> Element Msg
@@ -34,7 +38,10 @@ renderPostId tmstp cache postId = postId
 
 renderPost: UTCTimestamp -> Cache -> Post -> Element Msg
 renderPost tmstp cache post = column [width fill, alignLeft, spacing 5, padding 10 ]
-    [renderHeader tmstp cache post, renderPostContent cache post, renderFooter cache post]
+    [renderHeader tmstp cache post
+     , renderPostContent cache post
+     , renderFooter cache post
+     , renderConversation tmstp cache post.id]
 
 renderPostContent: Cache -> Post -> Element Msg
 renderPostContent cache post = case post.content of
@@ -73,7 +80,7 @@ renderChallengePost cache post = case post.content of
             Cache.getChallengeStatistics cache id
                 |> Maybe.map renderChallengeStatistics
                 |> Maybe.withDefault Element.none
-            , verticalSeparator 5 background
+            , verticalSeparator 1 background
             , column [spacing 10, alignTop, width fill] [
                 challenge.title |> text |> el [Font.semiBold, Font.size 10]
                 , challenge.content |> text |> postBodyStyle]
@@ -102,6 +109,7 @@ renderHeader tmstp cache post =
     let isFollowing = Cache.containsFollowingUser cache post.author
         hasLiked = Cache.containsLike cache post.id
         isPinned = Cache.containsPinned cache post.id
+        openedConversation = Cache.isConversationOpened cache post.id
     in
         row [width fill, spacing 5] [
             el [alignLeft] (postLogo post)
@@ -109,7 +117,8 @@ renderHeader tmstp cache post =
             , el [alignLeft] ((if isFollowing then unfollowButtonStyle else followButtonStyle) post.author)
             , el [alignLeft, paddingEach {left=10,top=0,bottom=0,right=10}] (specialPostActions cache post)
             , el [alignRight] ((if hasLiked then unlikeButtonStyle else likeButtonStyle) post.id)
-             , el [alignRight] ((if isPinned then unpinButtonStyle else pinButtonStyle) post.id)
+            , el [alignRight] ((if isPinned then unpinButtonStyle else pinButtonStyle) post.id)
+            , el [alignRight] ((if openedConversation then closeConversationButtonStyle else openConversationButtonStyle) post.id)
             , el [alignRight] (renderDate tmstp post.created)]
             |> postHeaderStyle
 
@@ -125,10 +134,14 @@ specialPostActions cache post = case post.content of
 
 
 renderFooter: Cache -> Post -> Element Msg
-renderFooter cache post = let likes = Cache.getLikeCount cache post.id in
+renderFooter cache post =
+    let likes = Cache.getLikeCount cache post.id
+        comments = Cache.getConversationSize cache post.id
+    in
     (el [width fill]
-        (row [width fill, spacing 5]
-            ([el [alignLeft, alignTop, Font.italic, Font.size 9] ("Liked " ++ (String.fromInt likes) ++ " time(s)" |> text)] ++
+        (row [width fill, spacing 10]
+            ([el [alignLeft, alignTop, Font.italic, Font.size 9] ("Liked " ++ (String.fromInt likes) ++ " time(s)" |> text)
+             , el [alignLeft, alignTop, Font.italic, Font.size 9] ("Commented " ++ (String.fromInt comments) ++ " time(s)" |> text)] ++
             [paragraph [] (post.hashtags |> List.map (el [alignRight] << hashtagStyle))]))
         |> postFooterStyle)
 
@@ -149,6 +162,10 @@ renderDate: UTCTimestamp -> UTCTimestamp -> Element Msg
 renderDate reftime timestamp = DateUtils.formatRelativeTo reftime timestamp
     |> text
     |> headerDateStyle
+
+renderCommentDate: UTCTimestamp -> UTCTimestamp -> Element Msg
+renderCommentDate reftime timestamp =
+    DateUtils.formatRelativeTo reftime timestamp |> text
 
 postLogo: Post -> Element Msg
 postLogo post =
@@ -211,3 +228,90 @@ renderUnansweredPoll cache poll = Input.radio
       , options = poll.options |> List.map (\ (PollOption opt) -> Input.option (PollOption opt) (opt |> text |> postBodyStyle))
     }
 
+renderConversation: UTCTimestamp -> Cache -> PostId -> Element Msg
+renderConversation tmstp cache postId =
+    let closed = Cache.isConversationClosed cache postId in
+    if closed then Element.none
+    else renderOpenedConversation tmstp cache postId
+
+renderOpenedConversation: UTCTimestamp -> Cache -> PostId -> Element Msg
+renderOpenedConversation tmstp cache postId =
+    let messages = Cache.getConversationMessages cache postId in
+    column [spacing 7, width fill, paddingEach { left = 10, right = 0, top = 0, bottom = 0}]
+    ([renderMessageInput cache postId] ++
+     (messages |> List.map (renderConversationMessage tmstp cache postId)) ++
+     [renderMoreMessageSeparator cache postId]
+    )
+
+renderMessageInput: Cache -> PostId -> Element Msg
+renderMessageInput cache postId =
+    let currentComment = Cache.getComment cache postId |> Maybe.withDefault ""
+        valid = currentComment |> TextUtils.nonEmpty
+    in
+    row [width fill, spacing 5] [
+        Input.multiline [width fill, Font.size 11] {
+        onChange = (\txt -> UpdateNewPostComment postId txt)
+        , text = Cache.getComment cache postId |> Maybe.withDefault ""
+        , placeholder = placeholderStyle "Enter a comment ..."
+        , label = labelHidden "hidden comment"
+        , spellcheck = True }
+        , Input.button [alignRight, alignBottom
+            , Border.width 2, Border.rounded 5
+            , padding 5
+            , Font.color foreground, Background.color background] {
+          onPress = if valid
+                    then PostNewComment postId (Cache.getComment cache postId |> Maybe.withDefault "") |> Just
+                    else Nothing
+          , label = "Post" |> text
+        }
+ ]
+
+renderConversationMessage: UTCTimestamp -> Cache -> PostId -> Message -> Element Msg
+renderConversationMessage tmstp cache _ message =
+    let pseudo = Cache.getUserPseudo cache message.author |> Maybe.withDefault "<unknown>"
+        flagged = Cache.isFlagged cache message.id
+        contentStyle = if flagged then postBodyStyle >> el [Font.color darkGrey, Font.italic] else postBodyStyle
+    in  column [width fill] [
+        row [alignLeft, spacing 1] [
+            userStyle pseudo (Just message.author) |> postBodyStyle
+            , renderCommentDate tmstp message.timestamp |> postFooterStyle |> space 5
+            , renderFlagAction cache message |> space 20
+            , renderFlagWarning flagged
+        ]
+        , el [paddingEach {left = 15, right = 0, top = 0, bottom = 0}] (message.content |> multiLineText |> contentStyle)
+    ]
+
+renderFlagAction: Cache -> Message -> Element Msg
+renderFlagAction cache message =
+    let flaggedByUser = Cache.isFlaggedByUser cache message.id
+        action = (if flaggedByUser then UnflagComment else FlagComment) message.id
+        col = if flaggedByUser then darkRed else background
+    in Input.button [Border.width 0] {
+        onPress = Just action
+        , label = Icons.flag Icons.tiny |> el [Font.color col]
+    }
+
+renderFlagWarning: Bool -> Element Msg
+renderFlagWarning flagged =
+    if flagged then "*** This message has been reported ***"
+        |> text
+        |> postFooterStyle
+        |> el [Font.color darkRed]
+    else Element.none
+
+renderMoreMessageSeparator: Cache -> PostId -> Element Msg
+renderMoreMessageSeparator cache postId =
+    let messagesCacheSize = Cache.getConversationMessages cache postId |> List.length
+        nextPage = (messagesCacheSize // Conversation.pageSize) + 1
+    in
+    row [width fill, spacing 10]
+        [Input.button [
+            alignLeft
+            ,Border.width 0
+            , Font.size 10
+            , padding 5] {
+            onPress = LoadMoreComment postId (Page nextPage) |> Just
+            , label = "More ..." |> text |> el [Font.color darkGrey]
+        }
+       , horizontalSeparator 1 background
+ ]

@@ -12,12 +12,14 @@ module Query.CacheQueryUtils exposing (
     , fetchAndCacheLikes
     , fetchAndCachePins
     , fetchAndCachePinnedForPost
+    , fetchAndCacheAllMessageCounts
     , fetchAndCacheAll
     , fetchAndCacheChallengeStatistics
     , fetchAndCachePoll
     , fetchAndCachePollStatistics)
 
 import Data.Challenge as Challenge exposing (ChallengeId)
+import Data.Conversation exposing (Message, MessageId)
 import Data.Event exposing (EventId)
 import Data.Notification exposing (Notification)
 import Data.Poll as Poll exposing (PollId)
@@ -25,7 +27,7 @@ import Data.Post as Post exposing (Post, PostContent(..), PostId)
 import Data.Tip as Tip exposing (TipId)
 import Data.User as User exposing (UserId)
 import Http
-import Json.Decode as Decoder exposing (bool, list)
+import Json.Decode as Decoder exposing (bool, int, list)
 import Query.Json.ChallengeDecoder exposing (decodeChallenge, decodeChallengeStatistics)
 import Query.Json.DecoderUtils exposing (decodeIntWithDefault, jsonResolver)
 import Query.Json.PollDecoder exposing (decodePoll, decodePollStats)
@@ -58,6 +60,7 @@ fetchAndCacheAll cache user posts = cache
     |> Task.andThen (\cache5 -> fetchAndCacheFollowingUsers cache5 user)
     |> Task.andThen (\cache6 -> fetchAndCacheFollowers cache6 user)
     |> Task.andThen (\cache7 -> fetchAndCacheFollowingHashtags cache7 user)
+    |> Task.andThen (\cache8 -> fetchAndCacheAllMessageCounts cache8 user posts)
 
 -- Cache users we are following
 fetchAndCacheFollowingUsers: Cache -> UserInfo -> Task Http.Error Cache
@@ -280,3 +283,20 @@ fetchAndCachePollAnswered cache user id = Http.task {
     , resolver = jsonResolver <| bool
     , timeout = Nothing
  } |> Task.map (Cache.addPollAnswered cache id)
+
+fetchAndCacheAllMessageCounts: Cache -> UserInfo -> List Post -> Task Http.Error Cache
+fetchAndCacheAllMessageCounts cache user posts = posts
+    |> List.map (\post -> post.id)
+    |> List.map (\id -> fetchAndCacheMessageCount cache user id)
+    |> Task.sequence
+    |> Task.andThen (\xs -> List.foldl Cache.merge cache xs |> Task.succeed)
+
+fetchAndCacheMessageCount: Cache -> UserInfo -> PostId -> Task Http.Error Cache
+fetchAndCacheMessageCount cache user id = Http.task {
+    method = "GET"
+    , headers = [authHeader user]
+    , url = baseUrl ++ absolute ["conversation", "messages", "count", id |> Post.toString] []
+    , body = Http.emptyBody
+    , resolver = jsonResolver <| int
+    , timeout = Nothing
+ } |> Task.map (Cache.addConversationSize cache id)

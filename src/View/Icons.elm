@@ -51,7 +51,11 @@ password = Icons.lockOutlined
 
 logoff = Icons.logoutOutlined
 
-conversation = Icons.messageOutlined
+flag = Icons.flagOutlined
+
+openConversation = Icons.messageOutlined
+
+closeConversation = Icons.messageFilled
 
 comment = Icons.messageOutlined
 
