@@ -38,7 +38,7 @@ menuBar : AppState -> Element Msg
 menuBar state =
     row [ width fill, padding 10, spacing 5, Background.color background, Border.rounded 20 ]
         [el [alignLeft] (backButton state)
-        , el [width fill] (if state.display==State.AppState.SearchPage then searchBar state else Element.none)
+        , el [width fill] (if state.display==State.AppState.SearchPage then searchBar state else appTitle)
         , el [alignRight] (wallTab state)
         , el [alignRight] (feedTab state)
         , el [alignRight] (challengeTab state)
@@ -139,6 +139,22 @@ logo =  text ">> GG"
            , Border.rounded 6
            , Background.color background
            , Font.color foreground]
+
+appTitle: Element Msg
+appTitle = row [width fill, Background.color background] [
+    el [width <| px 20] (horizontalSeparator 1 foreground)
+    , text "GreenGen >>"
+        |> el [alignLeft]
+        |> el [Border.width 1
+            , Border.rounded 5
+            , padding 5
+            , Background.color background
+            , Font.color foreground
+            , Font.italic
+            , Font.family [ Font.typeface "Open Sans", Font.sansSerif]]
+    , horizontalSeparator 1 foreground
+ ]
+
 
 backButton : AppState -> Element Msg
 backButton _ = tabIconButton (Icons.back Icons.normal) Back
