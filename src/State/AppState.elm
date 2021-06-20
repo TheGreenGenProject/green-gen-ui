@@ -26,6 +26,7 @@ type Display = LoginPage
     | PinnedPostPage
     | SearchPage
     | UserPage UserId
+    | PseudoPage String
     | NotificationPage
     | NewPostPage
     | ChallengePage

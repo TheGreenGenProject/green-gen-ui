@@ -267,13 +267,15 @@ unfollowHashtagStyle ht = row [spacing 5] [
 
 userStyle: String -> Maybe UserId -> Element Msg
 userStyle pseudo userId =
-    Input.button [Font.italic, Font.semiBold, Font.color (if userId==Nothing then black else blue)]
-        { onPress = Maybe.map (DisplayPage << UserPage) userId, label = Element.text ("@" ++ pseudo) }
+    let page = userId |> Maybe.map (UserPage) |> Maybe.withDefault (PseudoPage pseudo) in
+    Input.button [Font.italic, Font.semiBold, Font.color blue]
+        { onPress = DisplayPage page |> Just, label = Element.text ("@" ++ pseudo) }
 
 userPseudoStyle: String -> Maybe UserId -> Element Msg
 userPseudoStyle pseudo userId =
+    let page = userId |> Maybe.map (UserPage) |> Maybe.withDefault (PseudoPage pseudo) in
     Input.button [Font.italic, Font.semiBold, Font.color foreground]
-        { onPress = Maybe.map (DisplayPage << UserPage) userId, label = Element.text ("@" ++ pseudo) }
+        { onPress = DisplayPage page |> Just, label = Element.text ("@" ++ pseudo) }
 
 linkStyle: Url -> String -> Element msg
 linkStyle (Url url) txt =

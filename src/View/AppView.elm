@@ -56,6 +56,7 @@ displayCurrentPage state = case state.display of
     State.AppState.BlockedPage             -> displayBlocked state
     State.AppState.WallPage                -> displayWall state
     State.AppState.UserPage userId         -> displayUserWall state userId
+    State.AppState.PseudoPage pseudo       -> displayUserWallByPseudo state pseudo
     State.AppState.FeedPage                -> displayFeed state
     State.AppState.EventPage               -> displayEvent state
     State.AppState.PinnedPostPage          -> displayPinnedPost state
@@ -85,6 +86,9 @@ displayWall = wallScreen
 
 displayUserWall: AppState -> UserId -> Element Msg
 displayUserWall state _ = wallScreen state
+
+displayUserWallByPseudo: AppState -> String -> Element Msg
+displayUserWallByPseudo state _ = wallScreen state
 
 displayFeed: AppState -> Element Msg
 displayFeed = feedScreen

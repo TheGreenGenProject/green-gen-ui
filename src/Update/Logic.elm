@@ -18,7 +18,7 @@ import Query.Poll exposing (answerPollOption, postPoll)
 import Query.QueryUtils exposing (errorToString)
 import Query.Search exposing (performSearch)
 import Query.Tip exposing (postTip)
-import Query.Wall exposing (fetchUserWall, fetchWall)
+import Query.Wall exposing (fetchUserWall, fetchWall, fetchWallByPseudo)
 import State.AppState as AppState exposing (AppState, Display(..), isUserLoggedIn)
 import State.Cache as Cache exposing (simulatePollAnswer)
 import State.ChallengeState as ChallengeState
@@ -329,6 +329,7 @@ loadPageContent state page = case (state.user, page) of
     (LoggedIn user, SearchPage)                       -> (performSearch state.cache user state.search.filter state.search.currentPage)
     (LoggedIn user, NotificationPage)                 -> (fetchNotifications state.cache user state.notifications.currentPage)
     (LoggedIn user, UserPage userId)                  -> (fetchUserWall state.cache user userId state.wall.currentPage)
+    (LoggedIn user, PseudoPage pseudo)                -> (fetchWallByPseudo state.cache user pseudo)
     (LoggedIn user, ChallengePage)                    -> (fetchUserChallengePosts state.cache user {tab=state.challenge.currentTab, page=Page.first})
     (LoggedIn user, ChallengeDetailsPage challengeId) -> (fetchChallengeDetails state.cache user challengeId)
     _                                                 -> none
