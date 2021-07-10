@@ -6,9 +6,11 @@ import Data.Poll exposing (PollOption)
 import Data.Post exposing (Source)
 import Data.Schedule exposing (UTCTimestamp)
 import Data.User exposing (UserId)
+import Data.VerificationCode exposing (VerificationCode)
 
 
 type alias FormState = {
+    registrationForm: RegistrationFormState,
     newTipWizard: NewTipWizardState,
     newFreeTextWizard: NewFreeTextWizardState,
     newChallengeWizard: NewChallengeWizardState,
@@ -17,12 +19,86 @@ type alias FormState = {
 
 empty: FormState
 empty = {
+    registrationForm   = emptyRegistrationForm,
     newTipWizard       = emptyTipWizard,
     newFreeTextWizard  = emptyFreeTextWizard,
     newChallengeWizard = emptyChallengeWizard,
-    newPollWizard = emptyPollWizard
+    newPollWizard      = emptyPollWizard
  }
 
+-- Registration
+
+type RegistrationSubmissionStage =
+    FillingNewRegistration
+    | SubmittingRegistration
+    | RegistrationSubmitted
+    | RegistrationSubmissionFailed
+    | SubmittingValidationCode
+    | ValidationCodeFailed
+    | RegistrationSuccessful
+
+type alias RegistrationFormState = {
+    submissionState: RegistrationSubmissionStage,
+    email: Maybe String,
+    pseudo: Maybe String,
+    password: Maybe String,
+    passwordVerification: Maybe String,
+    introduction: Maybe String,
+    verification: Maybe VerificationCode,
+    error: Maybe String,
+    checkingPseudo: Maybe Bool,
+    serverValidatedPseudo: Maybe Bool
+ }
+
+emptyRegistrationForm = {
+    submissionState       = FillingNewRegistration,
+    email                 = Nothing,
+    pseudo                = Nothing,
+    password              = Nothing,
+    passwordVerification  = Nothing,
+    introduction          = Nothing,
+    verification          = Nothing,
+    error                 = Nothing,
+    checkingPseudo        = Nothing,
+    serverValidatedPseudo = Nothing
+ }
+
+updateRegistrationFormState: FormState -> RegistrationFormState -> FormState
+updateRegistrationFormState formState registrationForm = {formState |
+    registrationForm = registrationForm }
+
+checkingPseudoAvailability: FormState -> FormState
+checkingPseudoAvailability formState =
+    let registrationForm = formState.registrationForm in
+    {formState | registrationForm = {registrationForm| checkingPseudo = Just True, serverValidatedPseudo = Nothing} }
+
+pseudoAvailabilityChecked: FormState -> Bool -> FormState
+pseudoAvailabilityChecked formState valid =
+    let registrationForm = formState.registrationForm in
+    {formState | registrationForm = {registrationForm| checkingPseudo = Just False, serverValidatedPseudo = Just valid} }
+
+changeRegistrationState: RegistrationSubmissionStage -> FormState -> FormState
+changeRegistrationState submissionState formState =
+    let registrationForm = formState.registrationForm in
+    {formState | registrationForm = {registrationForm| submissionState = submissionState} }
+
+submittingRegistration: FormState -> FormState
+submittingRegistration = changeRegistrationState SubmittingRegistration
+
+registrationSubmitted: FormState -> FormState
+registrationSubmitted = changeRegistrationState RegistrationSubmitted
+
+registrationSubmissionFailed: FormState -> FormState
+registrationSubmissionFailed = changeRegistrationState RegistrationSubmissionFailed
+
+validatingAccount: FormState -> FormState
+validatingAccount = changeRegistrationState SubmittingValidationCode
+
+accountVerified: FormState -> FormState
+accountVerified = changeRegistrationState RegistrationSuccessful
+
+accountVerificationFailed: FormState -> FormState
+accountVerificationFailed = changeRegistrationState ValidationCodeFailed
 
 -- Tips
 

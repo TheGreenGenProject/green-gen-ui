@@ -11,12 +11,13 @@ import Data.Poll exposing (PollId, PollOption)
 import Data.Post exposing (PinnedPost, Post, PostId)
 import Data.Schedule exposing (UTCTimestamp)
 import Data.User exposing (UserId)
+import Data.VerificationCode exposing (VerificationCode)
 import Data.Wall exposing (Wall)
 import Http
 import State.AppState exposing (AppState, AuthError, Display(..))
 import State.Cache exposing (Cache)
 import State.ChallengeState exposing (ChallengePagedTab, ChallengeTab)
-import State.FormState exposing (NewChallengeWizardState, NewFreeTextWizardState, NewPollWizardState, NewTipWizardState)
+import State.FormState exposing (NewChallengeWizardState, NewFreeTextWizardState, NewPollWizardState, NewTipWizardState, RegistrationFormState)
 import State.SearchState exposing (SearchResult)
 import State.UserState exposing (UserInfo, UserState(..))
 
@@ -63,6 +64,10 @@ type Msg =
     | CheckNotifications
     | CheckFeed
     -- Form
+    | FillingRegistrationForm RegistrationFormState
+    | CheckPseudoAvailability (Maybe String)
+    | RegisterNewAccount
+    | VerifyAccount
     | FillingNewTipWizard NewTipWizardState
     | PostNewTip
     | FillingNewFreeTextWizard NewFreeTextWizardState
@@ -71,9 +76,11 @@ type Msg =
     | PostNewChallenge NewChallengeWizardState
     | FillingNewPollWizard NewPollWizardState
     | PostNewPoll NewPollWizardState
-    -- Http
+    -- Http feedback
     | HttpAuthenticated (Result AuthError UserInfo)
     | HttpLoggedOff (Result Http.Error ())
+    | HttpNewAccountRegistered (Result Http.Error ())
+    | HttpNewAccountVerified (Result Http.Error ())
     | HttpPostLiked (Result Http.Error ())
     | HttpPostUnliked (Result Http.Error ())
     | HttpPostPinned (Result Http.Error ())
@@ -90,6 +97,7 @@ type Msg =
     | HttpFeedChecked (Result Http.Error Bool)
     | HttpSearchResultFetched (Result Http.Error (Cache, SearchResult))
     | HttpFeedFetched (Result Http.Error (Cache, Feed))
+    | HttpPseudoAvailabilityChecked (Result Http.Error (String, Bool))
     | HttpNewTipPosted (Result Http.Error ())
     | HttpNewFreeTextPosted (Result Http.Error ())
     | HttpNewChallengePosted (Result Http.Error ())

@@ -19,6 +19,7 @@ import View.LoginScreen exposing (loginFailedScreen, loginScreen)
 import View.NewPostScreen exposing (newPostScreen)
 import View.NotificationScreen exposing (notificationScreen)
 import View.PinnedScreen exposing (pinnedScreen)
+import View.RegistrationScreen exposing (registrationScreen)
 import View.SearchScreen exposing (searchScreen)
 import View.Style exposing(..)
 import View.Theme exposing (background, foreground)
@@ -52,6 +53,7 @@ displayCurrentPage: AppState -> Element Msg
 displayCurrentPage state = case state.display of
     State.AppState.LoginPage               -> displayLoginPage state
     State.AppState.LoginFailedPage err     -> displayLoginFailedPage err state
+    State.AppState.RegistrationPage        -> displayRegistrationPage state
     State.AppState.LoggedOffPage           -> displayLogoffPage state
     State.AppState.BlockedPage             -> displayBlocked state
     State.AppState.WallPage                -> displayWall state
@@ -80,6 +82,9 @@ displayLoginFailedPage = loginFailedScreen
 
 displayLogoffPage: AppState -> Element Msg
 displayLogoffPage = logoffScreen
+
+displayRegistrationPage: AppState -> Element Msg
+displayRegistrationPage = registrationScreen
 
 displayWall: AppState -> Element Msg
 displayWall = wallScreen

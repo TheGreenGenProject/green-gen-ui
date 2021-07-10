@@ -19,6 +19,14 @@ isEmpty = String.trim >> String.isEmpty
 nonEmpty: String -> Bool
 nonEmpty = not << isEmpty
 
+take: Int -> String -> String
+take n str = str
+    |> String.toList
+    |> List.take n
+    |> List.map (String.fromChar)
+    |> String.join ""
+
+
 {-- Hashtags --}
 
 hashtagsFrom: String -> List Hashtag
@@ -94,4 +102,10 @@ format2Digits: Int -> String
 format2Digits n =
     (if n >= 0 && n <= 9 then "0"  else "") ++ (String.fromInt n)
 
-
+format4Digits: Int -> String
+format4Digits n =
+    (if n >= 0 && n < 10 then "000"
+     else if n >= 10 && n < 100 then "00"
+     else if n >= 100 && n < 1000 then "0"
+     else "") ++
+    (String.fromInt n)

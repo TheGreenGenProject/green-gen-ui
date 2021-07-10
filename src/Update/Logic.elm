@@ -16,6 +16,7 @@ import Query.Notification exposing (fetchNotifications, hasUnreadNotifications, 
 import Query.Pinned exposing (fetchPinnedPosts, pin, unpin)
 import Query.Poll exposing (answerPollOption, postPoll)
 import Query.QueryUtils exposing (errorToString)
+import Query.Registration exposing (checkPseudoAvailability, register, verifyAccount)
 import Query.Search exposing (performSearch)
 import Query.Tip exposing (postTip)
 import Query.Wall exposing (fetchUserWall, fetchWall, fetchWallByPseudo)
@@ -64,6 +65,8 @@ update msg state = case msg of
         update (DisplayPage NotificationPage) {state| notifications = NotificationState.moveToPage state.notifications page }
     ChangeSearchPage page ->
          update (DisplayPage SearchPage) {state| search = SearchState.moveToPage state.search page }
+    DisplayPage RegistrationPage -> {state | display = RegistrationPage }
+        |> nocmd
     DisplayPage page  -> {state |
         display = if (isUserLoggedIn state) then page else LoginPage,
         previous = (if (isUserLoggedIn state) then [page] else []) ++ state.previous }
@@ -135,6 +138,20 @@ update msg state = case msg of
     EnteringSearch content -> {state |
         search = SearchState.input state.search content }
         |> nocmd
+    FillingRegistrationForm content ->
+        let updated = {state | forms = FormState.updateRegistrationFormState state.forms content }
+        in update (CheckPseudoAvailability content.pseudo) updated
+    CheckPseudoAvailability maybePseudo -> case maybePseudo of
+        Nothing     -> state |> nocmd
+        Just pseudo ->
+            if String.length pseudo < 3
+            then state |> nocmd
+            else {state | forms = FormState.checkingPseudoAvailability state.forms }
+                |> cmd (checkPseudoAvailability pseudo)
+    RegisterNewAccount -> state
+        |> cmd (register state.forms.registrationForm)
+    VerifyAccount -> {state | forms = FormState.validatingAccount state.forms }
+        |> cmd (verifyAccount state.forms.registrationForm)
     FillingNewTipWizard tipState -> { state |
         forms = FormState.updateNewTipWizardState state.forms tipState }
         |> nocmd
@@ -165,13 +182,31 @@ update msg state = case msg of
     HttpAuthenticated (Ok userInfo)    ->
         -- FIXME we need to execute several commands on a successful authentication
         -- following code is probably subject to race conditions
-        let (state1, com1) = update (DisplayPage FeedPage) {state | user = LoggedIn userInfo }
+        let (state1, com1) = update (DisplayPage FeedPage) {state | user = LoggedIn userInfo, cache = Cache.addUser state.cache userInfo.id userInfo }
             (state2, com2) = state1 |> cmd Clock.scheduleClockTick
             (state3, com3) = update CheckNotifications state2
             (state4, com4) = update CheckFeed state3
             (state5, com5) = update (RefreshHashtagTrend 25) state4
         in state5 |> allOf [com1, com2, com3, com4, com5]
     HttpAuthenticated (Err err)        -> {state | display = (LoginFailedPage err), user = NotLogged }
+        |> nocmd
+    HttpPseudoAvailabilityChecked (Ok (pseudo,checked)) ->
+        (if Just pseudo == state.forms.registrationForm.pseudo
+        then {state | forms = FormState.pseudoAvailabilityChecked state.forms checked}
+        else state) |> nocmd
+    HttpPseudoAvailabilityChecked (Err err)             -> Debug.log ("Error while checking pseudo availability " ++ (errorToString err) )
+        state |> nocmd
+    HttpNewAccountRegistered (Ok ())   -> {state|
+        forms = FormState.registrationSubmitted state.forms }
+        |> nocmd
+    HttpNewAccountRegistered (Err err) -> Debug.log ("Error while registering the account: " ++ (errorToString err))
+        {state| forms = FormState.registrationSubmissionFailed state.forms }
+        |> nocmd
+    HttpNewAccountVerified (Ok ())   -> {state|
+        forms = FormState.accountVerified state.forms }
+        |> nocmd
+    HttpNewAccountVerified (Err err) -> Debug.log ("Error while registering the account: " ++ (errorToString err))
+        {state| forms = FormState.accountVerificationFailed state.forms }
         |> nocmd
     HttpHashtagTrendRefreshed (Ok trend) -> {state |
         cache = Cache.updateHashtagTrend state.cache trend }

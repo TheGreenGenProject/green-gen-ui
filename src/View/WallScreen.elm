@@ -23,7 +23,7 @@ import View.Icons as Icons
 import View.PostRenderer exposing (renderPostId)
 import View.ScreenUtils
 import View.Style exposing (multiLineQuotedText, paged, verticalSeparator)
-import View.Theme exposing (background, foreground, lightGrey, lightPurple)
+import View.Theme exposing (background, foreground, lightPurple)
 
 
 wallScreen: AppState -> Element Msg

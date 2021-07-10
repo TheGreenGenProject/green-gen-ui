@@ -16,6 +16,9 @@ large = [width 48, height 48]
 
 extraLarge = [width 96, height 96]
 
+spinning:  List (Attribute msg) ->  List (Attribute msg)
+spinning attrs = attrs ++ [spin]
+
 
 wall = Icons.homeOutlined
 
@@ -46,6 +49,8 @@ like = Icons.heartFilled
 unlike = Icons.heartOutlined
 
 user = Icons.userOutlined
+
+email = Icons.mailOutlined
 
 password = Icons.lockOutlined
 
@@ -92,4 +97,10 @@ arrowDown = Icons.caretDownFilled
 plus = Icons.plusCircleFilled
 
 minus = Icons.minusCircleFilled
+
+spinningWheel attrs = Icons.loadingOutlined (attrs ++ [spin])
+
+valid = Icons.checkCircleOutlined
+
+invalid = Icons.closeCircleOutlined
 

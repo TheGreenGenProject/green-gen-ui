@@ -18,6 +18,7 @@ type AuthError = HttpError Http.Error | AuthenticationFailed
 
 type Display = LoginPage
     | LoginFailedPage AuthError
+    | RegistrationPage
     | LoggedOffPage
     | BlockedPage
     | WallPage

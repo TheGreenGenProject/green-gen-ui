@@ -284,6 +284,11 @@ linkStyle (Url url) txt =
           , Font.italic]
         { url = url, label = Element.text txt }
 
+internalPageLinkStyle: Display -> String -> Element Msg
+internalPageLinkStyle page txt =
+    Input.button [Font.italic, Font.semiBold]
+    { onPress = DisplayPage page |> Just , label = Element.text txt }
+
 italicTextStyle: String -> Element msg
 italicTextStyle txt =
     el [Background.color background

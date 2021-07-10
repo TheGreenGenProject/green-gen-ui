@@ -7,23 +7,24 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input exposing (labelLeft)
 import Query.QueryUtils exposing (errorToString)
-import State.AppState exposing (AppState, AuthError(..))
+import State.AppState exposing (AppState, AuthError(..), Display(..))
 import State.UserState exposing (UserState(..))
 import Update.Msg exposing (Msg(..))
 import View.Icons as Icons exposing (normal)
-import View.Style exposing (errorTextStyle, placeholderStyle)
-import View.Theme as Theme
+import View.Style exposing (errorTextStyle, internalPageLinkStyle, placeholderStyle)
+import View.Theme as Theme exposing (background)
 
 loginScreen: AppState -> Element Msg
-loginScreen state = column [
-        centerX,
-        centerY,
-        spacing 10,
-        padding 10,
-        Border.rounded 20,
-        Background.color Theme.background,
-        Font.color Theme.foreground ]
-    (loginComponents state)
+loginScreen state = column [centerX, centerY, spacing 30]
+        [ column [
+            centerX, centerY,
+            spacing 10,
+            padding 10,
+            width <| maximum 500 fill,
+            Border.rounded 20,
+            Background.color Theme.background,
+            Font.color Theme.foreground] (loginComponents state)
+         , signUpLink]
 
 loginFailedScreen: AuthError -> AppState -> Element Msg
 loginFailedScreen err state = column [
@@ -59,6 +60,11 @@ loginComponents state = [
         })
     ]
 
+signUpLink = paragraph [width fill, centerX, spacing 5, Font.size 13,  Font.italic, Font.color background] [
+    "If you don't have yet an account, please use our " |> text
+    , internalPageLinkStyle RegistrationPage "Sign-Up"
+    , " page instead." |> text
+ ]
 
 -- Helpers
 

@@ -10,8 +10,8 @@ isEmpty maybe = case maybe of
     Nothing -> True
     Just _  -> False
 
-isDefined: Maybe a -> Bool
-isDefined = not << isEmpty
+nonEmpty: Maybe a -> Bool
+nonEmpty = not << isEmpty
 
 maybeString: String -> Maybe String
 maybeString str =
