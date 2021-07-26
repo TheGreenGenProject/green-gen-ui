@@ -1,6 +1,7 @@
 module Query.Pinned exposing (pin, unpin, fetchPinnedPosts)
 
 import Data.Page as Page exposing (Page)
+import Data.Pinned exposing (Pinned(..))
 import Data.Post as Post exposing (PinnedPost(..), PostId)
 import Http
 import Query.CacheQueryUtils exposing (fetchFromIdAndCacheAll)
@@ -42,7 +43,7 @@ fetchPinnedPosts: Cache -> UserInfo -> Page -> Cmd Msg
 fetchPinnedPosts cache user page = Debug.log "Fetching pinned posts"
     fetchPinnedPostList user page
     |> Task.andThen (\pinned           -> fetchFromIdAndCacheAll cache user (List.map postId pinned) |> thread pinned)
-    |> Task.andThen (\(cache1, pinned) -> Task.succeed (addAllPostPinned cache1 pinned, pinned))
+    |> Task.andThen (\(cache1, pinned) -> Task.succeed (addAllPostPinned cache1 pinned, Pinned page pinned))
     |> Task.attempt HttpPinnedPostsFetched
 
 fetchPinnedPostList: UserInfo -> Page -> Task Http.Error (List PinnedPost)

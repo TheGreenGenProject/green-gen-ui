@@ -1,6 +1,6 @@
 module View.ChallengeScreen exposing (challengeScreen)
 
-import Data.Page as PostPage
+import Data.Page as Page
 import Data.Post exposing (PostId)
 import Data.Schedule exposing (UTCTimestamp)
 import Element exposing (Element, centerX, column, fill, height, padding, row, scrollbarY, spacing, text, width)
@@ -9,12 +9,12 @@ import Element.Font as Font
 import Element.Input as Input
 import State.AppState exposing (AppState)
 import State.Cache exposing (Cache)
-import State.ChallengeState as ChallengeState exposing (ChallengeTab(..), ChallengeState)
+import State.ChallengeState as ChallengeState exposing (ChallengeState, ChallengeTab(..))
 import State.PostPage as PostPage exposing (PostPage)
 import Update.Msg exposing (Msg(..))
+import View.InfiniteScroll exposing (infiniteScroll)
 import View.PostRenderer exposing (renderPostId)
 import View.ScreenUtils
-import View.Style exposing (paged)
 import View.Theme exposing (background)
 
 challengeScreen: AppState -> Element Msg
@@ -49,19 +49,16 @@ challengeTabButton label msg selected = Input.button [
  ] { onPress = Just msg, label = label |> text}
 
 renderChallengeTabContent: AppState -> Element Msg
-renderChallengeTabContent state = case state.challenge.posts of
+renderChallengeTabContent state = case ChallengeState.allUpToCurrentPage state.challenge of
     Nothing -> renderNoPostPage
-    Just posts -> if PostPage.isEmpty posts && PostPage.isFirst posts.number then renderNoPostPage
+    Just posts -> if PostPage.isEmpty posts && Page.isFirst posts.number then renderNoPostPage
                   else renderPostPage state.timestamp state.cache posts
-                    |> paged (ChallengeState.currentPage state.challenge)
-                             (\p -> ChangeChallengePage p)
-                             (ChallengeState.hasMorePost state.challenge)
+                     |> infiniteScroll "challenge" (ChangeChallengePage (Page.next state.challenge.currentPage))
 
 renderPostPage: UTCTimestamp -> Cache -> PostPage -> Element Msg
 renderPostPage tmstp cache page = column [
         width fill
         , height fill
-        , scrollbarY
         , centerX
         , spacing 5
         , padding 10 ]

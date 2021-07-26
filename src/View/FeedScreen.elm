@@ -1,31 +1,31 @@
 module View.FeedScreen exposing (..)
 
+import Data.Page as Page
 import Data.Post exposing (Post, PostId)
 import Data.Schedule exposing (UTCTimestamp)
-import Element exposing (Element, centerX, column, fill, height, padding, scrollbarY, spacing, width)
+import Element exposing (Element, centerX, column, fill, height, padding, spacing, width)
 import State.AppState exposing (AppState)
 import State.Cache exposing (Cache)
 import State.FeedState as FeedState exposing (FeedState)
 import State.PostPage exposing (PostPage)
 import Update.Msg exposing (Msg(..))
+import View.InfiniteScroll exposing (infiniteScroll)
 import View.PostRenderer exposing (renderPostId)
 import View.ScreenUtils
-import View.Style exposing (paged)
 
 
 feedScreen: AppState -> Element Msg
 feedScreen state = column [
         width fill
         , height fill
-        , scrollbarY
         , centerX
         , spacing 5
         , padding 5 ]
     [ renderFeedState state.timestamp state.cache state.feed ]
-    |> paged state.feed.currentPage (\p -> ChangeFeedPage p) (FeedState.hasMorePost state.feed)
+    |> infiniteScroll "feed" (ChangeFeedPage (Page.next state.feed.currentPage))
 
 renderFeedState: UTCTimestamp -> Cache -> FeedState -> Element Msg
-renderFeedState tmstp cache state = case FeedState.currentPage state of
+renderFeedState tmstp cache state = case FeedState.allUpToCurrentPage state of
     Just page -> renderPostPage tmstp cache page
     Nothing   -> renderNoPostPage
 

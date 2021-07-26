@@ -2,7 +2,9 @@ module State.ChallengeState exposing (..)
 
 import Data.Page as Page exposing (Page)
 import Data.Post exposing (PostId)
-import State.PostPage as PostPage exposing (PostPage)
+import State.PostPage exposing (PostPage)
+import State.PostPageCache as PostPageCache exposing (PostPageCache)
+import Utils.MaybeUtils as MaybeUtils
 
 
 type ChallengeTab = OnGoingTab | OnTracksTab | FailedTab | UpcomingTab | ReportDueTab | FinishedTab | AuthoredTab
@@ -14,30 +16,50 @@ type alias ChallengePagedTab = {
 
 type alias ChallengeState = {
     currentTab: ChallengeTab,
-    posts: Maybe PostPage
+    currentPage: Page,
+    postCache: PostPageCache
  }
 
 empty: ChallengeState
 empty = {
     currentTab = OnGoingTab,
-    posts = Nothing
+    currentPage = Page.first,
+    postCache = PostPageCache.empty
  }
 
-from: List PostId -> ChallengePagedTab -> ChallengeState
-from posts pagedTab = {
+from: List PostId -> ChallengePagedTab -> ChallengeState -> ChallengeState
+from posts pagedTab state = {
     currentTab = pagedTab.tab,
-    posts = { number = pagedTab.page, posts = posts } |> Just
+    currentPage = pagedTab.page,
+    postCache = state.postCache
+        |> PostPageCache.add { number = pagedTab.page, posts = posts }
+        |> PostPageCache.loading  pagedTab.page
  }
 
 changeTab: ChallengeTab -> ChallengeState -> ChallengeState
-changeTab tab state = {state| currentTab = tab , posts = Nothing}
+changeTab tab state = {state|
+    currentTab = tab ,
+    currentPage = Page.first,
+    postCache = PostPageCache.empty
+ }
 
-hasMorePost: ChallengeState -> Bool
-hasMorePost state = state.posts
-    |> Maybe.map (PostPage.isLast >> not)
-    |> Maybe.withDefault False
+allUpToCurrentPage: ChallengeState -> Maybe PostPage
+allUpToCurrentPage state = state.postCache
+    |> PostPageCache.getAllUpTo state.currentPage
 
-currentPage: ChallengeState -> Page
-currentPage state = state.posts
-    |> Maybe.map (.number)
-    |> Maybe.withDefault Page.first
+isLoadingMore: ChallengeState -> Bool
+isLoadingMore state = state.postCache.loading
+    |> MaybeUtils.nonEmpty
+
+noMoreDataToLoad: ChallengeState -> Bool
+noMoreDataToLoad state = state.postCache.noMoreData
+
+moveToPage: ChallengeState -> Page -> ChallengeState
+moveToPage state page =
+    if state.postCache.noMoreData then state
+    else if state.currentPage == page then state
+    else if isLoadingMore state then state
+    else { state|
+        currentPage = page,
+        postCache = state.postCache |> PostPageCache.loading page
+ }

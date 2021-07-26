@@ -3,40 +3,53 @@ module State.WallState exposing (..)
 import Data.Page as Page exposing (Page)
 import Data.User exposing (UserId)
 import Data.Wall exposing (Wall(..))
-import State.PostPage as PostPage exposing (PostPage)
+import State.PostPage exposing (PostPage)
+import State.PostPageCache as PostPageCache exposing (PostPageCache)
+import Utils.MaybeUtils as MaybeUtils
 
 
 type alias WallState = {
     user: Maybe UserId,
     currentPage: Page,
-    posts: Maybe PostPage
+    postCache: PostPageCache
  }
 
 empty: WallState
 empty = {
     user = Nothing,
     currentPage = Page.first,
-    posts = Nothing
+    postCache = PostPageCache.empty
  }
 
-from: Wall -> WallState
-from (Wall userId page posts) = {
-    user = Just userId,
+refresh: WallState
+refresh = empty
+
+from: WallState -> Wall -> WallState
+from state (Wall user page posts) = {
+    user = Just user,
     currentPage = page,
-    posts = { number = page, posts = posts } |> Just
+    postCache = state.postCache
+        |> PostPageCache.add { number = page, posts = posts }
+        |> PostPageCache.loading page
  }
 
-currentPage: WallState -> Maybe PostPage
-currentPage state = state.posts
+allUpToCurrentPage: WallState -> Maybe PostPage
+allUpToCurrentPage state = state.postCache
+    |> PostPageCache.getAllUpTo state.currentPage
+
+isLoadingMore: WallState -> Bool
+isLoadingMore state = state.postCache.loading
+    |> MaybeUtils.nonEmpty
+
+noMoreDataToLoad: WallState -> Bool
+noMoreDataToLoad state = state.postCache.noMoreData
 
 moveToPage: WallState -> Page -> WallState
-moveToPage state page = {state|
-    currentPage = page,
-    posts = if state.currentPage == page then state.posts else Nothing
+moveToPage state page =
+    if state.postCache.noMoreData then state
+    else if state.currentPage == page then state
+    else if isLoadingMore state then state
+    else { state|
+        currentPage = page,
+        postCache = state.postCache |> PostPageCache.loading page
  }
-
-hasMorePost: WallState -> Bool
-hasMorePost state = state.posts
-    |> Maybe.map (PostPage.isLast >> not)
-    |> Maybe.withDefault False
-

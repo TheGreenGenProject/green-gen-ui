@@ -411,12 +411,12 @@ containsLike: Cache -> PostId -> Bool
 containsLike cache postId = Set.member (Data.Post.toString postId) cache.liked
 
 setLiked: Cache -> PostId -> Cache
-setLiked cache postId = Debug.log ("Set post " ++ (Data.Post.toString postId) ++ " as liked") {cache|
+setLiked cache postId = { cache|
     liked = cache.liked |> Set.insert (Data.Post.toString postId)
   }
 
 unsetLiked: Cache -> PostId -> Cache
-unsetLiked cache postId = Debug.log ("Set post " ++ (Data.Post.toString postId) ++ " as NOT liked") {cache|
+unsetLiked cache postId = { cache|
     liked = cache.liked |> Set.remove (Data.Post.toString postId)
   }
 

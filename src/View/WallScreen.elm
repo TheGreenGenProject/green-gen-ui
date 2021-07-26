@@ -1,6 +1,7 @@
 module View.WallScreen exposing (wallScreen)
 
 import Basics as Int
+import Data.Page as Page
 import Data.Post exposing (Post, PostId)
 import Data.Rank as Rank exposing (Score(..), ScoreBreakdown)
 import Data.Schedule exposing (UTCTimestamp(..))
@@ -20,9 +21,10 @@ import Utils.DateUtils as DateUtils
 import View.Chart.ChartUtils as ChartUtils
 import View.Chart.Donut as Donut
 import View.Icons as Icons
+import View.InfiniteScroll exposing (infiniteScroll)
 import View.PostRenderer exposing (renderPostId)
 import View.ScreenUtils
-import View.Style exposing (multiLineQuotedText, paged, verticalSeparator)
+import View.Style exposing (multiLineQuotedText, verticalSeparator)
 import View.Theme exposing (background, foreground, lightPurple)
 
 
@@ -30,12 +32,12 @@ wallScreen: AppState -> Element Msg
 wallScreen state = column [
         width fill
         , height fill
-        , scrollbarY
         , centerX
         , spacing 5
         , padding 5 ]
-    [ renderUserHeader state.cache state.wall, renderWallState state.timestamp state.cache state.wall]
-    |> paged state.wall.currentPage (\p -> ChangeWallPage p) (WallState.hasMorePost state.wall)
+    [ renderUserHeader state.cache state.wall
+      , renderWallState state.timestamp state.cache state.wall ]
+    |> infiniteScroll "wall" (ChangeWallPage (Page.next state.wall.currentPage))
 
 renderUserHeader: Cache -> WallState -> Element Msg
 renderUserHeader cache state =
@@ -71,7 +73,7 @@ renderFollowingButton cache maybeUserId = maybeUserId
     |> Maybe.withDefault Element.none
 
 renderWallState: UTCTimestamp -> Cache -> WallState -> Element Msg
-renderWallState tmstp cache state = case WallState.currentPage state of
+renderWallState tmstp cache state = case WallState.allUpToCurrentPage state of
     Just page -> renderPostPage tmstp cache page
     Nothing   -> renderNoPostPage
 

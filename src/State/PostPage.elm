@@ -16,5 +16,3 @@ isLast { posts } = posts == []
 
 isEmpty: PostPage -> Bool
 isEmpty { posts } = posts == []
-
-

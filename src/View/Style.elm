@@ -19,7 +19,7 @@ import Update.Msg exposing (Msg(..))
 import Utils.DateUtils exposing (LocalDate, toLocalDate)
 import Utils.TextUtils as TextUtils exposing (QuotedString(..), format2Digits)
 import View.Icons as Icons
-import View.Theme as Theme exposing (background, black, blue, darkRed, errorForeground, foreground, grey)
+import View.Theme as Theme exposing (background, blue, darkRed, errorForeground, foreground, grey)
 
 empty: Element Msg
 empty = Element.none
@@ -63,7 +63,7 @@ multiLineQuotedText txt = let lines = String.split ("\n") txt in
 
 quotedText: String -> Element Msg
 quotedText str =
-    let quoted = TextUtils.parseQuotedText str |> Debug.log "Quoted Text"
+    let quoted = TextUtils.parseQuotedText str
         quoteToString = \s -> case s of
             Str x -> x |> text
             UserQuote x -> userStyle (String.dropLeft 1 x) Nothing

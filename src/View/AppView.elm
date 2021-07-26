@@ -9,6 +9,7 @@ import Element.Font as Font
 import Html exposing (Html)
 import Element exposing (..)
 import State.AppState exposing (AppState, AuthError, Display(..))
+import State.FeedState
 import Update.Msg exposing (Msg(..))
 import View.ChallengeDetailsView exposing (challengeDetailsScreen)
 import View.ChallengeScreen exposing (challengeScreen)
@@ -31,9 +32,9 @@ import View.WizardNewTipPage exposing (newWizardNewTipScreen)
 
 
 viewApp: AppState -> Html Msg
-viewApp state = Element.layout [width fill, height fill]
+viewApp state = Element.layout [width fill]
     (column [ width fill, height fill, padding 5, spacing 10 ]
-            [ menuBar state, displayCurrentPage state])
+            [ menuBar state, (displayCurrentPage state)])
 
 menuBar : AppState -> Element Msg
 menuBar state =
@@ -169,11 +170,11 @@ backButton : AppState -> Element Msg
 backButton _ = tabIconButton (Icons.back Icons.normal) Back
 
 wallTab : AppState -> Element Msg
-wallTab state = screenTabIcon state WallPage (Icons.wall Icons.normal) (DisplayPage WallPage)
+wallTab state = screenTabIcon state WallPage (Icons.wall Icons.normal) (RefreshWall)
 
 feedTab : AppState -> Element Msg
 feedTab state =
-    screenTabIconWithRefresh state FeedPage state.feed.newPostsAvailable (Icons.feed Icons.normal) (DisplayPage FeedPage)
+    screenTabIconWithRefresh state FeedPage state.feed.newPostsAvailable (Icons.feed Icons.normal) (RefreshFeed)
 
 challengeTab : AppState -> Element Msg
 challengeTab state =
@@ -183,7 +184,7 @@ eventTab : AppState -> Element Msg
 eventTab state = screenTabIcon state EventPage (Icons.event Icons.normal) (DisplayPage EventPage)
 
 pinnedTab : AppState -> Element Msg
-pinnedTab state = screenTabIcon state PinnedPostPage (Icons.pinned Icons.normal) (DisplayPage PinnedPostPage)
+pinnedTab state = screenTabIcon state PinnedPostPage (Icons.pinned Icons.normal) (RefreshPinnedPosts)
 
 searchTab : AppState -> Element Msg
 searchTab state = screenTabIcon state SearchPage (Icons.search Icons.normal) (DisplayPage SearchPage)
@@ -194,6 +195,3 @@ notificationTab state =
 
 newTab : AppState -> Element Msg
 newTab state = screenTabButton state NewPostPage "+" (DisplayPage NewPostPage)
-
-searchField : AppState -> Element Msg
-searchField = searchBar

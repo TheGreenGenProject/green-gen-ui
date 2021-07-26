@@ -31,6 +31,7 @@ import State.SearchState as SearchState
 import State.UserState exposing (UserInfo, UserState(..))
 import State.WallState as WallState
 import Update.Msg exposing(..)
+import View.InfiniteScroll exposing (loadMoreIfNeeded, loadMoreOrLessIfNeeded)
 
 
 update: Msg -> AppState -> (AppState, Cmd Msg)
@@ -56,15 +57,29 @@ update msg state = case msg of
         {state| timestamp = now }
         |> cmd Clock.scheduleClockTick
     ChangeWallPage page ->
-        update (DisplayPage WallPage) {state| wall = WallState.moveToPage state.wall page }
+        if WallState.isLoadingMore state.wall then state |> nocmd
+        else if Page.isAfter page state.wall.currentPage && WallState.noMoreDataToLoad state.wall then state |> nocmd
+        else update (DisplayPage WallPage) {state| wall = WallState.moveToPage state.wall page }
+    RefreshWall ->
+        update (DisplayPage WallPage) {state| wall = WallState.refresh }
     ChangeFeedPage page ->
-        update (DisplayPage FeedPage) {state| feed = FeedState.moveToPage state.feed page }
+        if FeedState.isLoadingMore state.feed then state |> nocmd
+        else if Page.isAfter page state.feed.currentPage && FeedState.noMoreDataToLoad state.feed then state |> nocmd
+        else update (DisplayPage FeedPage) {state| feed = FeedState.moveToPage state.feed page }
+    RefreshFeed ->
+        update (DisplayPage FeedPage) {state| feed = FeedState.refresh }
     ChangePinnedPage page ->
-        update (DisplayPage PinnedPostPage) {state| pinned = PinnedState.moveToPage state.pinned page }
+        if PinnedState.isLoadingMore state.pinned then state |> nocmd
+        else if Page.isAfter page state.pinned.currentPage && PinnedState.noMoreDataToLoad state.pinned then state |> nocmd
+        else update (DisplayPage PinnedPostPage) {state| pinned = PinnedState.moveToPage state.pinned page }
+    RefreshPinnedPosts ->
+        update (DisplayPage PinnedPostPage) {state| pinned = PinnedState.refresh }
     ChangeNotificationPage page ->
         update (DisplayPage NotificationPage) {state| notifications = NotificationState.moveToPage state.notifications page }
     ChangeSearchPage page ->
-         update (DisplayPage SearchPage) {state| search = SearchState.moveToPage state.search page }
+        if SearchState.isLoadingMore state.search then state |> nocmd
+        else if Page.isAfter page state.search.currentPage && SearchState.noMoreDataToLoad state.search then state |> nocmd
+        else update (DisplayPage SearchPage) {state| search = SearchState.moveToPage state.search page }
     DisplayPage RegistrationPage -> {state | display = RegistrationPage }
         |> nocmd
     DisplayPage page  -> {state |
@@ -99,6 +114,10 @@ update msg state = case msg of
         |> ifLogged (\user -> flagComment user messageId)
     UnflagComment messageId -> {state| cache = Cache.setFlaggedByUser state.cache messageId False }
         |> ifLogged (\user -> unflagComment user messageId)
+    LoadMore id loadMoreMsg -> let _ = Debug.log "LoadMore msg received: " loadMoreMsg in
+        state |> ifLogged (\_ -> loadMoreIfNeeded id loadMoreMsg)
+    LoadMoreOrLess id loadLess loadMore -> let _ = Debug.log "LoadMoreOrLess msg received: " loadLess in
+        state |> ifLogged (\_ -> loadMoreOrLessIfNeeded id loadLess loadMore)
     LoadMoreComment postId page -> state
         |> ifLogged (\user -> fetchConversation state.cache user postId page)
     PerformSearchFromField ->
@@ -122,11 +141,13 @@ update msg state = case msg of
     ReportChallengeStepStatus challengeId step status -> {state|
         cache = Cache.simulateChallengeStepReports state.cache challengeId {step = step, status = status}}
         |> ifLogged (\user -> reportStepStatus user challengeId step status)
-    ChangeChallengePage page -> state
-        |> ifLogged (\user -> fetchUserChallengePosts state.cache user {tab = state.challenge.currentTab, page=page})
+    ChangeChallengePage page ->
+        if ChallengeState.isLoadingMore state.challenge then state |> nocmd
+        else if Page.isAfter page state.challenge.currentPage && ChallengeState.noMoreDataToLoad state.challenge then state |> nocmd
+        else state |> ifLogged (\user -> fetchUserChallengePosts state.cache user {tab = state.challenge.currentTab, page=page})
     ChangeChallengeTab tab -> {state|
         challenge = state.challenge |> ChallengeState.changeTab tab }
-        |> ifLogged (\user -> fetchUserChallengePosts state.cache user  {tab = tab, page = Page.first})
+        |> ifLogged (\user -> fetchUserChallengePosts state.cache user {tab = tab, page = Page.first})
     AnswerPoll pollId option -> {state| cache = simulatePollAnswer state.cache pollId option }
         |> ifLogged (\user -> answerPollOption state.cache user pollId option)
     -----------------------
@@ -225,34 +246,30 @@ update msg state = case msg of
     HttpMarkNotificationAsRead _       -> state |> nocmd
 
     HttpWallFetched (Ok (cache, wall)) -> {state |
-        wall = (WallState.from wall),
+        wall = (WallState.from state.wall wall),
         cache = Cache.merge cache state.cache }
         |> nocmd
     HttpWallFetched (Err err)          -> Debug.log ("Error while receiving wall " ++ (errorToString err) )
-        {state | display = WallPage, wall = WallState.empty }
-        |> nocmd
+        state |> nocmd
     HttpFeedFetched (Ok (cache, feed)) -> {state |
         display = FeedPage,
-        feed = (FeedState.from feed),
-        cache = Cache.merge cache state.cache }
+        feed    = FeedState.from state.feed feed,
+        cache   = Cache.merge cache state.cache }
         |> nocmd
     HttpFeedFetched (Err err)          -> Debug.log ("Error while receiving feed " ++ (errorToString err))
-        {state | display = FeedPage, feed = FeedState.empty }
-        |> nocmd
+        state |> nocmd
     HttpFeedChecked (Ok newPosts) -> {state| feed = FeedState.updateNewPostsAvailable state.feed newPosts }
         |> ifLogged (\_ -> scheduleFeedCheck feedDelay)
     HttpFeedChecked (Err err) -> Debug.log ("Error while checking new feed: " ++ (errorToString err)) state
         |> ifLogged (\_ -> scheduleFeedCheck feedDelay)
     -- Post pinning
-    HttpPinnedPostsFetched (Ok (cache, pinned)) -> let merged = Cache.merge cache state.cache in
-        Debug.log ("Processing " ++ (pinned |> List.length |> String.fromInt) ++ " pinned posts") {state |
-            display = PinnedPostPage,
-            pinned = PinnedState.from pinned,
-            cache = merged }
-            |> nocmd
-    HttpPinnedPostsFetched (Err err) -> Debug.log ("Error while receiving pinned posts " ++ (errorToString err))
-        {state | display = PinnedPostPage, pinned = PinnedState.empty }
+    HttpPinnedPostsFetched (Ok (cache, pinned)) -> { state |
+        display = PinnedPostPage,
+        pinned  = PinnedState.from state.pinned pinned,
+        cache   = Cache.merge cache state.cache }
         |> nocmd
+    HttpPinnedPostsFetched (Err err) -> Debug.log ("Error while receiving pinned posts " ++ (errorToString err))
+        state |> nocmd
     HttpSearchResultFetched (Ok (cache, result)) -> {state |
         display = SearchPage,
         search = SearchState.withResults state.search result,
@@ -294,7 +311,7 @@ update msg state = case msg of
         {state| forms = FormState.newChallengePosted state.forms }
         |> nocmd
     HttpChallengePostsFetched (Ok (cache, {tab, page}, challenges)) -> {state |
-        challenge = ChallengeState.from challenges {tab=tab, page=page}
+        challenge = ChallengeState.from challenges {tab=tab, page=page} state.challenge
         , cache = Cache.merge cache state.cache }
         |> nocmd
     HttpChallengePostsFetched (Err err) -> Debug.log ("Error while getting challenge posts: " ++ (errorToString err))
@@ -330,6 +347,8 @@ update msg state = case msg of
     HttpCommentUnflagged _               -> state |> nocmd
     HttpLoggedOff _                      -> {state | display = LoggedOffPage, user = NotLogged }
         |> nocmd
+
+    NoOp  -> state |> nocmd
     other -> Debug.log ("Unprocessed message " ++ (Debug.toString other)) state
         |> nocmd
 

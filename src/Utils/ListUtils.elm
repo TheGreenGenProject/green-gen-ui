@@ -10,7 +10,8 @@ module Utils.ListUtils exposing (
     , find
     , replace
     , delete
-    , nonEmptyToMaybe)
+    , nonEmptyToMaybe
+    , takeWhile)
 
 
 fromMaybe: Maybe a -> List a
@@ -68,6 +69,11 @@ replace elt index xs =
 delete: Int -> List a -> List a
 delete index xs =
     (xs |> List.take index) ++ (xs |> List.drop (index+1))
+
+takeWhile: (a -> Bool) -> List a -> List a
+takeWhile predicate xs = case xs of
+    [] -> []
+    y :: ys -> if predicate y then y :: takeWhile predicate ys else takeWhile predicate ys
 
 
 

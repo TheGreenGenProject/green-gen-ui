@@ -1,9 +1,10 @@
 module View.SearchScreen exposing (searchScreen)
 
+import Data.Page as Page
 import Data.Post exposing (Post, PostId)
 import Data.Schedule exposing (UTCTimestamp)
 import Data.User as User
-import Element exposing (Element, centerX, centerY, column, el, fill, height, padding, row, scrollbarY, spacing, text, width)
+import Element exposing (Element, centerX, centerY, column, el, fill, height, padding, row, spacing, text, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
@@ -14,9 +15,10 @@ import State.SearchState as SearchState exposing (SearchFilter(..), SearchState)
 import Update.Msg exposing (Msg(..))
 import View.Chart.ColorScheme
 import View.Chart.WordCloud exposing (hashtagCloud)
+import View.InfiniteScroll exposing (infiniteScroll)
 import View.PostRenderer exposing (renderPostId)
 import View.ScreenUtils
-import View.Style exposing (empty, followHashtagStyle, paged, searchBar, unfollowHashtagStyle)
+import View.Style exposing (empty, followHashtagStyle, unfollowHashtagStyle)
 import View.Theme exposing (background, foreground)
 
 
@@ -25,18 +27,17 @@ searchScreen state = column [
         width fill
         , height fill
         , centerX
-        , spacing 5 ] [
+        , spacing 5] [
         renderSearchFilter state.cache state.search.filter
         , renderSearchState state.timestamp state.cache state.search ]
 
-
 renderSearchState: UTCTimestamp -> Cache -> SearchState -> Element Msg
-renderSearchState tmstp cache state = case SearchState.firstPage state of
+renderSearchState tmstp cache state = case SearchState.allUpToCurrentPage state of
     Just page -> if PostPage.isEmpty page
         then renderHashtagCloud cache
-        else el [width fill, height fill]
-            (renderPostPage tmstp cache page |> paged state.currentPage (\p -> ChangeSearchPage p) True)
-    Nothing   -> renderNoPostPage
+        else (el [width fill, height fill] (renderPostPage tmstp cache page))
+         |> infiniteScroll "search" (ChangeSearchPage (Page.next state.currentPage))
+    Nothing   -> renderHashtagCloud cache
 
 renderPostPage: UTCTimestamp -> Cache -> PostPage -> Element Msg
 renderPostPage tmstp cache page = column [
@@ -44,8 +45,7 @@ renderPostPage tmstp cache page = column [
         , height fill
         , centerX
         , spacing 5
-        , padding 10
-        , scrollbarY]
+        , padding 10]
     <| List.map (renderSinglePost tmstp cache) page.posts
 
 renderSinglePost: UTCTimestamp -> Cache -> PostId -> Element Msg
@@ -63,9 +63,6 @@ renderSearchFilter cache filter = case filter of
         |> row [spacing 10, padding 10]
     ByAuthor userId    -> let pseudo = userId |> Cache.getUserPseudo cache |> Maybe.withDefault (User.toString userId) in
         row [spacing 10] [el [Font.italic, Font.semiBold] (pseudo |> text)]
-
-searchField : AppState -> Element Msg
-searchField = searchBar
 
 renderHashtagCloud: Cache -> Element Msg
 renderHashtagCloud cache = let whiteScheme = {default = foreground, colors = [foreground] }

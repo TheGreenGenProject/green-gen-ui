@@ -1,43 +1,59 @@
 module State.PinnedState exposing (..)
 
 import Data.Page as Page exposing (Page)
+import Data.Pinned as Pinned exposing (Pinned(..))
 import Data.Post exposing (PinnedPost(..), Post, PostId)
-import State.Cache as Cache exposing (Cache)
-import State.PostPage as PostPage exposing (PostPage)
+import State.PostPage exposing (PostPage)
+import State.PostPageCache as PostPageCache exposing (PostPageCache)
+import Utils.MaybeUtils as MaybeUtils
 
 
 type alias PinnedState = {
     currentPage: Page,
-    posts: Maybe PostPage
+    postCache: PostPageCache
  }
 
 empty: PinnedState
-empty = { currentPage = Page.first, posts = Nothing }
+empty = {
+    currentPage = Page.first,
+    postCache = PostPageCache.empty
+ }
 
-from: List PinnedPost -> PinnedState
-from pinned = let ids   = List.map postId pinned in
-    {
-        currentPage = Page.first,
-        posts = { number = Page.first, posts = ids } |> Just
-    }
+refresh: PinnedState
+refresh = empty
+
+from: PinnedState -> Pinned -> PinnedState
+from state (Pinned page posts) = {
+    currentPage = page,
+    postCache = state.postCache
+        |> PostPageCache.add { number = page, posts = (Pinned page posts) |> Pinned.postIds }
+        |> PostPageCache.loading page
+ }
 
 isEmpty: PinnedState -> Bool
-isEmpty state = state.currentPage == Page.first &&
-    (state.posts == Nothing || state.posts == Just { number = Page.first, posts = []})
-
-currentPage: PinnedState -> Maybe PostPage
-currentPage state = state.posts
+isEmpty state = state.postCache
+    |> PostPageCache.isEmpty
 
 moveToPage: PinnedState -> Page -> PinnedState
-moveToPage state page = {state|
-    currentPage = page,
-    posts = if state.currentPage == page then state.posts else Nothing
-  }
+moveToPage state page =
+    if state.postCache.noMoreData then state
+    else if state.currentPage == page then state
+    else if isLoadingMore state then state
+    else { state|
+        currentPage = page,
+        postCache = state.postCache |> PostPageCache.loading page
+     }
+
+allUpToCurrentPage: PinnedState -> Maybe PostPage
+allUpToCurrentPage state = state.postCache
+    |> PostPageCache.getAllUpTo state.currentPage
+
+isLoadingMore: PinnedState -> Bool
+isLoadingMore state = state.postCache.loading
+    |> MaybeUtils.nonEmpty
+
+noMoreDataToLoad: PinnedState -> Bool
+noMoreDataToLoad state = state.postCache.noMoreData
 
 postId: PinnedPost -> PostId
 postId (PinnedPost id _) = id
-
-hasMorePost: PinnedState -> Bool
-hasMorePost state = state.posts
-    |> Maybe.map (PostPage.isLast >> not)
-    |> Maybe.withDefault False

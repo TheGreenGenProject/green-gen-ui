@@ -1,11 +1,12 @@
 module State.SearchState exposing (..)
 
-import Array
 import Data.Hashtag exposing (Hashtag(..))
 import Data.Page as Page exposing (Page)
 import Data.Post exposing (Post, PostId)
 import Data.User exposing (UserId)
-import State.PostPage as PostPage exposing (PostPage)
+import State.PostPage exposing (PostPage)
+import State.PostPageCache as PostPageCache exposing (PostPageCache)
+import Utils.MaybeUtils as MaybeUtils
 
 type SearchResult = SearchResult Page (List PostId)
 
@@ -19,7 +20,7 @@ type alias SearchState = {
     filter: SearchFilter,
     history: List SearchFilter,
     currentPage: Page,
-    results: List PostPage
+    postCache: PostPageCache
   }
 
 empty: SearchState
@@ -28,7 +29,7 @@ empty = {
     filter = EmptySearch,
     history = [],
     currentPage = Page.first,
-    results = []
+    postCache = PostPageCache.empty
   }
 
 -- Input a value in the search field
@@ -42,7 +43,7 @@ applyInput state = {state|
     filter = toSearchFilter state.field,
     history = state.filter :: state.history,
     currentPage = Page.first,
-    results = []
+    postCache = PostPageCache.empty
   }
 
 -- Create a ready search from hashtagss
@@ -52,7 +53,7 @@ fromHashtags state hashtags = {state|
     filter = ByHashtag hashtags,
     history = state.filter :: state.history,
     currentPage = Page.first,
-    results = []
+    postCache = PostPageCache.empty
    }
 
 -- Create a ready search from a user pseudo
@@ -62,14 +63,16 @@ fromUserId state userId = {state|
     filter = ByAuthor userId,
     history = state.filter :: state.history,
     currentPage = Page.first,
-    results = []
+    postCache = PostPageCache.empty
    }
 
 -- Applies the result of the search
 withResults: SearchState -> SearchResult -> SearchState
 withResults state (SearchResult page ps) = {state|
     currentPage = page,
-    results = [PostPage page ps]
+    postCache = state.postCache
+        |> PostPageCache.add (PostPage page ps)
+        |> PostPageCache.loading page
   }
 
 -- Create a search filter from the content of the String
@@ -83,10 +86,7 @@ toSearchFilter str = if String.trim str == ""
 
 -- Check if the last performed search has some results
 hasResult: SearchState -> Bool
-hasResult state = state.results
-    |> List.map (\pp -> List.length pp.posts)
-    |> List.sum
-    |> (<) 0
+hasResult state = PostPageCache.nonEmpty state.postCache
 
 clearSearch: SearchState -> SearchState
 clearSearch = clearFilter << clearResults
@@ -104,23 +104,29 @@ clearResults: SearchState -> SearchState
 clearResults state = {state|
     field = "",
     currentPage = Page.first,
-    results = []
+    postCache = PostPageCache.empty
   }
 
 currentPage: SearchState -> Maybe PostPage
-currentPage state = state.results
-    |> Array.fromList
-    |> Array.get ((Page.number state.currentPage) - 1)
+currentPage state = state.postCache
+    |> PostPageCache.get state.currentPage
+
+allUpToCurrentPage: SearchState -> Maybe PostPage
+allUpToCurrentPage state = state.postCache
+    |> PostPageCache.getAllUpTo state.currentPage
+
+isLoadingMore: SearchState -> Bool
+isLoadingMore state = state.postCache.loading |> MaybeUtils.nonEmpty
+
+noMoreDataToLoad: SearchState -> Bool
+noMoreDataToLoad state = state.postCache.noMoreData
 
 firstPage: SearchState -> Maybe PostPage
-firstPage state = state.results |> List.head
+firstPage state = state.postCache
+    |> PostPageCache.get Page.first
 
 moveToPage: SearchState -> Page -> SearchState
 moveToPage state page = {state| currentPage = page }
 
--- FIXME
 hasMorePost: SearchState -> Bool
-hasMorePost state = state.results
-    |> List.head
-    |> Maybe.map PostPage.isLast
-    |> Maybe.withDefault False
+hasMorePost state = not state.postCache.noMoreData

@@ -7,11 +7,11 @@ import Data.Hash exposing (Hash)
 import Data.Hashtag exposing (Hashtag)
 import Data.Notification exposing (Notification, NotificationId)
 import Data.Page exposing (Page)
+import Data.Pinned exposing (Pinned)
 import Data.Poll exposing (PollId, PollOption)
 import Data.Post exposing (PinnedPost, Post, PostId)
 import Data.Schedule exposing (UTCTimestamp)
 import Data.User exposing (UserId)
-import Data.VerificationCode exposing (VerificationCode)
 import Data.Wall exposing (Wall)
 import Http
 import State.AppState exposing (AppState, AuthError, Display(..))
@@ -31,8 +31,11 @@ type Msg =
     | RefreshHashtagTrend Int
     | DisplayPage State.AppState.Display
     | ChangeWallPage Page
+    | RefreshWall
     | ChangeFeedPage Page
+    | RefreshFeed
     | ChangePinnedPage Page
+    | RefreshPinnedPosts
     | ChangeNotificationPage Page
     | ChangeSearchPage Page
     | ChangeChallengeTab ChallengeTab
@@ -51,6 +54,8 @@ type Msg =
     | PostNewComment PostId String
     | FlagComment MessageId
     | UnflagComment MessageId
+    | LoadMore String Msg
+    | LoadMoreOrLess String Msg Msg
     | LoadMoreComment PostId Page
     | EnteringSearch String
     | PerformSearchFromField
@@ -85,7 +90,7 @@ type Msg =
     | HttpPostUnliked (Result Http.Error ())
     | HttpPostPinned (Result Http.Error ())
     | HttpPostUnpinned (Result Http.Error ())
-    | HttpPinnedPostsFetched (Result Http.Error (Cache, List PinnedPost))
+    | HttpPinnedPostsFetched (Result Http.Error (Cache, Pinned))
     | HttpUserFollowed (Result Http.Error ())
     | HttpUserUnfollowed (Result Http.Error ())
     | HttpHashtagFollowed (Result Http.Error ())
