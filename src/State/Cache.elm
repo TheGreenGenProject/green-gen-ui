@@ -165,12 +165,11 @@ getPost: Cache -> PostId -> Maybe Post
 getPost cache id = Dict.get (Data.Post.toString id) cache.posts
 
 getPostList: Cache -> List PostId -> List Post
-getPostList cache ids = Debug.log ("Get cached post list " ++ (Debug.toString ids)
-  ++ " from set of " ++ (Debug.toString (Dict.keys cache.posts))) (ids
+getPostList cache ids = ids
     |> List.map (\id -> case getPost cache id of
         Just x  -> [x]
         Nothing -> [ ]
-    ) |> List.concat)
+    ) |> List.concat
 
 {-- Users --}
 addUser: Cache -> UserId -> UserInfo -> Cache

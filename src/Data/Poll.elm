@@ -29,7 +29,7 @@ normalizePollStats: Poll -> PollStats -> PollStats
 normalizePollStats poll (PollStats stats) =
     let (PollStats empty) = emptyPollStats poll
         containOption = (\xs opt -> xs |> List.filter (\x -> x.option==opt) |> not << List.isEmpty)
-        notProvided = empty |> List.filter (\entry -> containOption stats entry.option |> not) |> Debug.log "Not provided: "
+        notProvided = empty |> List.filter (\entry -> containOption stats entry.option |> not)
     in stats ++ notProvided |> PollStats
 
 optionIndex: Poll -> PollOption -> Maybe Int

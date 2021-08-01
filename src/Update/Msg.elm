@@ -18,6 +18,7 @@ import State.AppState exposing (AppState, AuthError, Display(..))
 import State.Cache exposing (Cache)
 import State.ChallengeState exposing (ChallengePagedTab, ChallengeTab)
 import State.FormState exposing (NewChallengeWizardState, NewFreeTextWizardState, NewPollWizardState, NewTipWizardState, RegistrationFormState)
+import State.NotificationState exposing (NotificationPage, NotificationTab)
 import State.SearchState exposing (SearchResult)
 import State.UserState exposing (UserInfo, UserState(..))
 
@@ -36,7 +37,9 @@ type Msg =
     | RefreshFeed
     | ChangePinnedPage Page
     | RefreshPinnedPosts
+    | ChangeNotificationTab NotificationTab
     | ChangeNotificationPage Page
+    | RefreshNotifications
     | ChangeSearchPage Page
     | ChangeChallengeTab ChallengeTab
     | ChangeChallengePage Page
@@ -96,7 +99,7 @@ type Msg =
     | HttpHashtagFollowed (Result Http.Error ())
     | HttpHashtagUnfollowed (Result Http.Error ())
     | HttpWallFetched (Result Http.Error (Cache, Wall))
-    | HttpUnreadNotificationsFetched (Result Http.Error (Cache, List Notification))
+    | HttpNotificationsFetched (Result Http.Error (Cache, NotificationPage))
     | HttpMarkNotificationAsRead (Result Http.Error ())
     | HttpNotificationsChecked (Result Http.Error Bool)
     | HttpFeedChecked (Result Http.Error Bool)

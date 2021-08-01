@@ -75,7 +75,14 @@ update msg state = case msg of
     RefreshPinnedPosts ->
         update (DisplayPage PinnedPostPage) {state| pinned = PinnedState.refresh }
     ChangeNotificationPage page ->
-        update (DisplayPage NotificationPage) {state| notifications = NotificationState.moveToPage state.notifications page }
+        if NotificationState.isLoadingMore state.notifications then state |> nocmd
+        else if Page.isAfter page state.notifications.currentPage && NotificationState.noMoreDataToLoad state.notifications then state |> nocmd
+        else update (DisplayPage NotificationPage) {state| notifications = NotificationState.moveToPage state.notifications page }
+    RefreshNotifications ->
+            update (DisplayPage NotificationPage) {state| notifications = NotificationState.refresh }
+    ChangeNotificationTab tab -> {state|
+        notifications = state.notifications |> NotificationState.changeTab tab }
+        |> ifLogged (\user -> fetchNotifications state.cache user tab Page.first)
     ChangeSearchPage page ->
         if SearchState.isLoadingMore state.search then state |> nocmd
         else if Page.isAfter page state.search.currentPage && SearchState.noMoreDataToLoad state.search then state |> nocmd
@@ -283,11 +290,11 @@ update msg state = case msg of
         |> ifLogged (\_ -> scheduleNotificationCheck notificationDelay)
     HttpNotificationsChecked (Err err) -> Debug.log ("Error while checking notifications: " ++ (errorToString err)) state
         |> ifLogged (\_ -> scheduleNotificationCheck notificationDelay)
-    HttpUnreadNotificationsFetched (Ok (cache, notifs)) -> {state |
-        notifications = NotificationState.from state.notifications.currentPage notifs,
+    HttpNotificationsFetched (Ok (cache, notifs)) -> {state |
+        notifications = NotificationState.from notifs.number notifs.notifications state.notifications,
         cache = Cache.merge cache state.cache }
         |> nocmd
-    HttpUnreadNotificationsFetched (Err err) -> Debug.log ("Error while receiving unread notifications: " ++ (errorToString err))
+    HttpNotificationsFetched (Err err) -> Debug.log ("Error while receiving notifications: " ++ (errorToString err))
         state |> nocmd
     HttpNewTipPosted (Ok _) -> {state |
         display = NewPostPage,
@@ -381,7 +388,7 @@ loadPageContent state page = case (state.user, page) of
     (LoggedIn user, FeedPage)                         -> (fetchFeed state.cache user state.feed.currentPage)
     (LoggedIn user, PinnedPostPage)                   -> (fetchPinnedPosts state.cache user state.pinned.currentPage)
     (LoggedIn user, SearchPage)                       -> (performSearch state.cache user state.search.filter state.search.currentPage)
-    (LoggedIn user, NotificationPage)                 -> (fetchNotifications state.cache user state.notifications.currentPage)
+    (LoggedIn user, NotificationPage)                 -> (fetchNotifications state.cache user state.notifications.currentTab state.notifications.currentPage)
     (LoggedIn user, UserPage userId)                  -> (fetchUserWall state.cache user userId state.wall.currentPage)
     (LoggedIn user, PseudoPage pseudo)                -> (fetchWallByPseudo state.cache user pseudo)
     (LoggedIn user, ChallengePage)                    -> (fetchUserChallengePosts state.cache user {tab=state.challenge.currentTab, page=Page.first})

@@ -3,6 +3,7 @@ module State.PinnedState exposing (..)
 import Data.Page as Page exposing (Page)
 import Data.Pinned as Pinned exposing (Pinned(..))
 import Data.Post exposing (PinnedPost(..), Post, PostId)
+import State.PageCache as PageCache
 import State.PostPage exposing (PostPage)
 import State.PostPageCache as PostPageCache exposing (PostPageCache)
 import Utils.MaybeUtils as MaybeUtils
@@ -16,7 +17,7 @@ type alias PinnedState = {
 empty: PinnedState
 empty = {
     currentPage = Page.first,
-    postCache = PostPageCache.empty
+    postCache = PageCache.empty
  }
 
 refresh: PinnedState
@@ -27,12 +28,12 @@ from state (Pinned page posts) = {
     currentPage = page,
     postCache = state.postCache
         |> PostPageCache.add { number = page, posts = (Pinned page posts) |> Pinned.postIds }
-        |> PostPageCache.loading page
+        |> PageCache.loading page
  }
 
 isEmpty: PinnedState -> Bool
 isEmpty state = state.postCache
-    |> PostPageCache.isEmpty
+    |> PageCache.isEmpty
 
 moveToPage: PinnedState -> Page -> PinnedState
 moveToPage state page =
@@ -41,7 +42,7 @@ moveToPage state page =
     else if isLoadingMore state then state
     else { state|
         currentPage = page,
-        postCache = state.postCache |> PostPageCache.loading page
+        postCache = state.postCache |> PageCache.loading page
      }
 
 allUpToCurrentPage: PinnedState -> Maybe PostPage

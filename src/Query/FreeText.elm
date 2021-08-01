@@ -13,7 +13,7 @@ import Utils.TextUtils as TextUtils
 
 
 postFreeText: UserInfo -> NewFreeTextWizardState -> Cmd Msg
-postFreeText user newFreeText = Debug.log ("Posting free text" ++ (Debug.toString newFreeText))
+postFreeText user newFreeText =
     createNewFreeTextPost user newFreeText
     |> Task.attempt HttpNewFreeTextPosted
 

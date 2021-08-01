@@ -16,7 +16,7 @@ import Utils.TextUtils as TextUtils
 
 
 postTip: UserInfo -> NewTipWizardState -> Cmd Msg
-postTip user newTip = Debug.log ("Posting new tip" ++ (Debug.toString newTip))
+postTip user newTip =
     createNewTip user newTip
     |> Task.andThen (\tipId -> createNewTipPost user newTip tipId)
     |> Task.attempt HttpNewTipPosted

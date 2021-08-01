@@ -3,6 +3,7 @@ module State.WallState exposing (..)
 import Data.Page as Page exposing (Page)
 import Data.User exposing (UserId)
 import Data.Wall exposing (Wall(..))
+import State.PageCache as PageCache
 import State.PostPage exposing (PostPage)
 import State.PostPageCache as PostPageCache exposing (PostPageCache)
 import Utils.MaybeUtils as MaybeUtils
@@ -18,7 +19,7 @@ empty: WallState
 empty = {
     user = Nothing,
     currentPage = Page.first,
-    postCache = PostPageCache.empty
+    postCache = PageCache.empty
  }
 
 refresh: WallState
@@ -30,7 +31,7 @@ from state (Wall user page posts) = {
     currentPage = page,
     postCache = state.postCache
         |> PostPageCache.add { number = page, posts = posts }
-        |> PostPageCache.loading page
+        |> PageCache.loading page
  }
 
 allUpToCurrentPage: WallState -> Maybe PostPage
@@ -51,5 +52,5 @@ moveToPage state page =
     else if isLoadingMore state then state
     else { state|
         currentPage = page,
-        postCache = state.postCache |> PostPageCache.loading page
+        postCache = state.postCache |> PageCache.loading page
  }

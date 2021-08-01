@@ -3,6 +3,7 @@ module State.FeedState exposing (..)
 import Data.Feed exposing (Feed(..))
 import Data.Page as Page exposing (Page)
 import Data.Post exposing (PostId)
+import State.PageCache as PageCache
 import State.PostPage exposing (PostPage)
 import State.PostPageCache as PostPageCache exposing (PostPageCache)
 import Utils.MaybeUtils as MaybeUtils
@@ -17,7 +18,7 @@ empty: FeedState
 empty = {
     newPostsAvailable = False,
     currentPage = Page.first,
-    postCache = PostPageCache.empty
+    postCache = PageCache.empty
  }
 
 refresh: FeedState
@@ -29,7 +30,7 @@ from state (Feed page posts) = {
     currentPage = page,
     postCache = state.postCache
         |> PostPageCache.add { number = page, posts = posts }
-        |> PostPageCache.loading page
+        |> PageCache.loading page
  }
 
 allUpToCurrentPage: FeedState -> Maybe PostPage
@@ -50,12 +51,12 @@ moveToPage state page =
     else if isLoadingMore state then state
     else { state|
         currentPage = page,
-        postCache = state.postCache |> PostPageCache.loading page
+        postCache = state.postCache |> PageCache.loading page
      }
 
 lastPost: FeedState -> Maybe PostId
 lastPost state = state.postCache
-    |> PostPageCache.get Page.first
+    |> PageCache.get Page.first
     |> Maybe.map (\x -> x.posts)
     |> Maybe.andThen (List.head)
 

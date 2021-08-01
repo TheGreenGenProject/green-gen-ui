@@ -5,37 +5,54 @@ import Data.Notification as Notification exposing (Notification, NotificationCon
 import Data.Page as Page
 import Data.Schedule exposing (UTCTimestamp)
 import Data.User exposing (UserId)
-import Element exposing (Element, alignLeft, centerX, column, el, fill, height, padding, row, scrollbarY, spacing, text, width)
+import Element exposing (Element, alignLeft, centerX, column, el, fill, height, padding, row, spacing, text, width)
+import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import State.AppState exposing (AppState)
 import State.Cache as Cache exposing (Cache)
-import State.NotificationState as NotificationState exposing (NotificationState)
+import State.NotificationState as NotificationState exposing (NotificationState, NotificationTab(..))
 import Update.Msg exposing (Msg(..))
 import Utils.DateUtils as DateUtils
 import View.Icons as Icons
+import View.InfiniteScroll exposing (infiniteScroll)
 import View.ScreenUtils as ScreenUtils
-import View.Style exposing (notifHeaderStyle, paged, userStyle, viewChallengeButtonStyle)
+import View.Style exposing (notifHeaderStyle, userStyle, viewChallengeButtonStyle)
+import View.Theme exposing (background)
 
 
 notificationScreen: AppState -> Element Msg
-notificationScreen state =
-    if (List.isEmpty state.notifications.latest) && (Page.isFirst state.notifications.currentPage)
-    then renderEmptyNotificationScreen
-    else renderNotifications state.timestamp state.cache state.notifications.latest
-        |> paged state.notifications.currentPage (\p -> ChangeNotificationPage p) (NotificationState.hasMoreNotifications state.notifications)
+notificationScreen state = column [
+    width fill
+    , height fill
+    , centerX
+    , spacing 5
+    , padding 5 ]
+    [ notificationTabs state.notifications
+     , if NotificationState.hasNotifications state.notifications
+       then renderNotifications state.timestamp state.cache state.notifications
+       else renderEmptyNotificationScreen]
+    |> infiniteScroll "notifications" (ChangeNotificationPage (Page.next state.notifications.currentPage))
 
+notificationTabs: NotificationState -> Element Msg
+notificationTabs state = row [spacing 5] [
+    notifTabButton "Unread" (ChangeNotificationTab UnreadTab) (state.currentTab==UnreadTab)
+    , notifTabButton "All" (ChangeNotificationTab AllTab) (state.currentTab==AllTab)
+ ]
 
 -- Rendering
-renderNotifications: UTCTimestamp -> Cache -> List Notification -> Element Msg
-renderNotifications now cache notifs = column [
+renderNotifications: UTCTimestamp -> Cache -> NotificationState -> Element Msg
+renderNotifications now cache state = column [
         width fill
         , height fill
-        , scrollbarY
         , centerX
         , spacing 5
         , padding 10
-    ] (List.map (renderNotification now cache) notifs)
+    ] (NotificationState.getAllUpTo state.currentPage state.latest
+        |> Maybe.map (.notifications)
+        |> Maybe.withDefault []
+        |> List.map (renderNotification now cache)
+      )
 
 renderNotification:  UTCTimestamp -> Cache -> Notification -> Element Msg
 renderNotification now cache notif = row [
@@ -56,7 +73,6 @@ renderHeader notif =
 renderContent: Cache -> Notification -> Element Msg
 renderContent cache notif = let read = notif.status == Read
                                 elmt = el [width fill, alignLeft, (if read then Font.italic else Font.semiBold), Font.size 12]
-                                pseudo = (\userId -> Cache.getUserPseudo cache userId |> Maybe.withDefault "<Unknown>")
     in
         case notif.content of
             PlatformMessageNotification msg                  -> text msg                                                       |> elmt
@@ -104,3 +120,14 @@ notifLogo notif = let logo = case notif.content of PlatformMessageNotification _
         onPress = if(Notification.isRead notif) then Nothing else MarkNotificationRead notif.id |> Just,
         label = logo
     }
+
+
+notifTabButton: String -> Msg -> Bool -> Element Msg
+notifTabButton label msg selected = Input.button [
+    Font.size 14
+    , Font.color background
+    , if selected then Font.italic else Font.regular
+    , Border.color background
+    , Border.widthEach { bottom = (if selected then 3 else 0), top = 0, left = 0, right = 0 }
+    , padding 5
+ ] { onPress = Just msg, label = label |> text}

@@ -2,6 +2,7 @@ module State.ChallengeState exposing (..)
 
 import Data.Page as Page exposing (Page)
 import Data.Post exposing (PostId)
+import State.PageCache as PageCache
 import State.PostPage exposing (PostPage)
 import State.PostPageCache as PostPageCache exposing (PostPageCache)
 import Utils.MaybeUtils as MaybeUtils
@@ -24,7 +25,7 @@ empty: ChallengeState
 empty = {
     currentTab = OnGoingTab,
     currentPage = Page.first,
-    postCache = PostPageCache.empty
+    postCache = PageCache.empty
  }
 
 from: List PostId -> ChallengePagedTab -> ChallengeState -> ChallengeState
@@ -33,14 +34,14 @@ from posts pagedTab state = {
     currentPage = pagedTab.page,
     postCache = state.postCache
         |> PostPageCache.add { number = pagedTab.page, posts = posts }
-        |> PostPageCache.loading  pagedTab.page
+        |> PageCache.loading  pagedTab.page
  }
 
 changeTab: ChallengeTab -> ChallengeState -> ChallengeState
 changeTab tab state = {state|
     currentTab = tab ,
     currentPage = Page.first,
-    postCache = PostPageCache.empty
+    postCache = PageCache.empty
  }
 
 allUpToCurrentPage: ChallengeState -> Maybe PostPage
@@ -61,5 +62,5 @@ moveToPage state page =
     else if isLoadingMore state then state
     else { state|
         currentPage = page,
-        postCache = state.postCache |> PostPageCache.loading page
+        postCache = state.postCache |> PageCache.loading page
  }

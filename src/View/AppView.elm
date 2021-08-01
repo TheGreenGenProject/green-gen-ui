@@ -191,7 +191,7 @@ searchTab state = screenTabIcon state SearchPage (Icons.search Icons.normal) (Di
 
 notificationTab : AppState -> Element Msg
 notificationTab state =
-    screenTabIconWithRefresh state NotificationPage state.notifications.unread (Icons.notifications Icons.normal) (DisplayPage NotificationPage)
+    screenTabIconWithRefresh state NotificationPage state.notifications.unread (Icons.notifications Icons.normal) (RefreshNotifications)
 
 newTab : AppState -> Element Msg
 newTab state = screenTabButton state NewPostPage "+" (DisplayPage NewPostPage)
