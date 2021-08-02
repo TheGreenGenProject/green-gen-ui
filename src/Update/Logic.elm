@@ -1,5 +1,6 @@
 module Update.Logic exposing (update)
 
+import Browser.Dom
 import Data.Challenge exposing (ChallengeOutcomeStatus(..))
 import Data.Page as Page exposing (Page(..))
 import Platform.Cmd exposing (Cmd(..), none)
@@ -30,6 +31,7 @@ import State.PinnedState as PinnedState
 import State.SearchState as SearchState
 import State.UserState exposing (UserInfo, UserState(..))
 import State.WallState as WallState
+import Task
 import Update.Msg exposing(..)
 import View.InfiniteScroll exposing (loadMoreIfNeeded, loadMoreOrLessIfNeeded)
 
@@ -56,6 +58,9 @@ update msg state = case msg of
     SetCurrentTime now ->
         {state| timestamp = now }
         |> cmd Clock.scheduleClockTick
+    SetWindowSize width height ->
+        {state| windowSize = { width = width, height = height } }
+        |> nocmd
     ChangeWallPage page ->
         if WallState.isLoadingMore state.wall then state |> nocmd
         else if Page.isAfter page state.wall.currentPage && WallState.noMoreDataToLoad state.wall then state |> nocmd
@@ -214,8 +219,8 @@ update msg state = case msg of
             (state2, com2) = state1 |> cmd Clock.scheduleClockTick
             (state3, com3) = update CheckNotifications state2
             (state4, com4) = update CheckFeed state3
-            (state5, com5) = update (RefreshHashtagTrend 25) state4
-        in state5 |> allOf [com1, com2, com3, com4, com5]
+            (state5, com5) = update (RefreshHashtagTrend 50) state4
+        in state5 |> allOf [com1, com2, com3, com4, com5, initWindowSize]
     HttpAuthenticated (Err err)        -> {state | display = (LoginFailedPage err), user = NotLogged }
         |> nocmd
     HttpPseudoAvailabilityChecked (Ok (pseudo,checked)) ->
@@ -364,6 +369,12 @@ update msg state = case msg of
 
 notificationDelay = 30000.0
 feedDelay = 30000.0
+
+initWindowSize: Cmd Msg
+initWindowSize =
+    Browser.Dom.getViewport
+    |> Task.map (\vp -> SetWindowSize (vp.scene.width |> round) (vp.scene.height |> round))
+    |> Task.perform (identity)
 
 nocmd: AppState -> (AppState, Cmd Msg)
 nocmd state = (state, Cmd.none)

@@ -1,8 +1,10 @@
 module Main exposing (main)
 
 import Browser
+import Browser.Events exposing (onResize)
+import Element
 import State.AppState exposing (AppState)
-import Update.Msg exposing (Msg)
+import Update.Msg exposing (Msg(..))
 import Update.Logic exposing (update)
 import View.AppView exposing (viewApp)
 
@@ -18,4 +20,5 @@ main = Browser.element {
   }
 
 subscriptions: AppState -> Sub Msg
-subscriptions _ = Sub.none
+subscriptions _ =
+    onResize (\width height -> SetWindowSize width height)

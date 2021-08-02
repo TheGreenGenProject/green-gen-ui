@@ -1,7 +1,7 @@
 module View.Chart.WordCloud exposing (wordCloud, hashtagCloud)
 
 import Data.Hashtag exposing (Hashtag(..))
-import Element exposing (Element, alignBottom, alignLeft, alignRight, alignTop, centerX, centerY, column, el, row, spacing)
+import Element exposing (Element, alignBottom, alignLeft, alignRight, alignTop, centerX, centerY, column, el, fill, height, row, spacing, width)
 import Element.Font as Font
 import Tuple exposing (first)
 import Update.Msg exposing (Msg)
@@ -22,13 +22,14 @@ hashtagCloud scheme maxSize tags = wordCloud
 wordCloud: (a -> Element msg) -> ColorScheme -> Int -> List (Int, a) -> Element msg
 wordCloud toElement scheme maxSize tags = let desc = tags |> List.sortBy first |> List.reverse in
     recWordCloud toElement scheme maxSize desc
+    |> el [width fill, height fill, centerX, centerY]
 
 recWordCloud: (a -> Element msg) -> ColorScheme -> Int ->  List (Int, a) -> Element msg
 recWordCloud toElement scheme maxSize tags = let size = maxSize |> max 5 in
     case tags of
         []         -> Element.none
         (_, ht) :: rest -> let {first, second, third, fourth } = split4 rest in
-            column [centerX, centerY] [
+            column [width fill, height fill, centerX, centerY] [
                 row [alignBottom, spacing 10] [
                    el [alignLeft, alignBottom] (recWordCloud toElement (cycle 1 scheme) (size // 2 + 1) first)
                    , el [alignRight, alignTop] (recWordCloud toElement (cycle 4 scheme) (size // 2 - 2) fourth)]

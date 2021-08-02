@@ -1,5 +1,6 @@
 module View.SearchScreen exposing (searchScreen)
 
+import Basics as Int
 import Data.Page as Page
 import Data.Post exposing (Post, PostId)
 import Data.Schedule exposing (UTCTimestamp)
@@ -8,7 +9,7 @@ import Element exposing (Element, centerX, centerY, column, el, fill, height, pa
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
-import State.AppState exposing (AppState)
+import State.AppState exposing (AppState, WindowSize)
 import State.Cache as Cache exposing (Cache)
 import State.PostPage as PostPage exposing (PostPage)
 import State.SearchState as SearchState exposing (SearchFilter(..), SearchState)
@@ -29,15 +30,15 @@ searchScreen state = column [
         , centerX
         , spacing 5] [
         renderSearchFilter state.cache state.search.filter
-        , renderSearchState state.timestamp state.cache state.search ]
+        , renderSearchState state ]
 
-renderSearchState: UTCTimestamp -> Cache -> SearchState -> Element Msg
-renderSearchState tmstp cache state = case SearchState.allUpToCurrentPage state of
+renderSearchState: AppState -> Element Msg
+renderSearchState state = case SearchState.allUpToCurrentPage state.search of
     Just page -> if PostPage.isEmpty page
-        then renderHashtagCloud cache
-        else (el [width fill, height fill] (renderPostPage tmstp cache page))
-         |> infiniteScroll "search" (ChangeSearchPage (Page.next state.currentPage))
-    Nothing   -> renderHashtagCloud cache
+        then renderHashtagCloud state
+        else (el [width fill, height fill] (renderPostPage state.timestamp state.cache page))
+         |> infiniteScroll "search" (ChangeSearchPage (Page.next state.search.currentPage))
+    Nothing   -> renderHashtagCloud state
 
 renderPostPage: UTCTimestamp -> Cache -> PostPage -> Element Msg
 renderPostPage tmstp cache page = column [
@@ -64,9 +65,18 @@ renderSearchFilter cache filter = case filter of
     ByAuthor userId    -> let pseudo = userId |> Cache.getUserPseudo cache |> Maybe.withDefault (User.toString userId) in
         row [spacing 10] [el [Font.italic, Font.semiBold] (pseudo |> text)]
 
-renderHashtagCloud: Cache -> Element Msg
-renderHashtagCloud cache = let whiteScheme = {default = foreground, colors = [foreground] }
-    in cache.hashtagTrend
-        |> Maybe.map (\trend -> el [Background.color background, centerX, centerY, padding 20, Border.rounded 20] (hashtagCloud whiteScheme 96 trend))
+renderHashtagCloud: AppState -> Element Msg
+renderHashtagCloud state =
+    let whiteScheme = {default = foreground, colors = [foreground] }
+        fontSize = computeFontFromWindowSize state.windowSize
+    in state.cache.hashtagTrend
+        |> Maybe.map (\trend -> el [centerX, centerY] (hashtagCloud whiteScheme fontSize trend))
+        |> Maybe.map (el [width fill, height fill, centerX, centerY, Background.color background, Border.rounded 20])
+        |> Maybe.map (el [width fill, height fill, centerX, centerY, padding 20])
         |> Maybe.withDefault Element.none
 
+computeFontFromWindowSize: WindowSize -> Int
+computeFontFromWindowSize {width, height} =
+    let refWindowWidth = 200
+        scaled = Element.modular (Int.toFloat 48) 1.25
+    in scaled (width // refWindowWidth) |> round

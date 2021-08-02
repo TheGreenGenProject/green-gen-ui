@@ -38,8 +38,14 @@ type Display = LoginPage
     | WizardNewFreePostPage
     | WizardNewPollPage
 
+type alias WindowSize = {
+    width: Int,
+    height: Int
+ }
+
 type alias AppState = {
     timestamp: UTCTimestamp,
+    windowSize: WindowSize,
     display: Display,
     previous: List Display,
     user: UserState,
@@ -56,6 +62,7 @@ type alias AppState = {
 empty: AppState
 empty = {
     timestamp     = UTC(0),
+    windowSize    = { width = 0, height = 0 },
     display       = LoginPage,
     previous      = [],
     user          = State.UserState.NotLogged,
