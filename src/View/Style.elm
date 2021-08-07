@@ -57,6 +57,12 @@ verticalSeparator thickness color = row [height fill] [
     , el [ ] (empty)
  ]
 
+standard: Element Msg -> Element Msg
+standard = el [Background.color background, Font.color foreground]
+
+invert: Element Msg -> Element Msg
+invert = el [Background.color foreground, Font.color background]
+
 multiLineQuotedText: String -> Element Msg
 multiLineQuotedText txt = let lines = String.split ("\n") txt in
     column [spacing 2] (lines |> List.map (quotedText))
@@ -96,9 +102,7 @@ buttonStyle txt msg =
 
 followButtonStyle: UserId -> Element Msg
 followButtonStyle id =
-    Input.button [Background.color background
-                  , Font.color foreground
-                  , Font.size 10
+    Input.button [Font.size 10
                   , paddingXY 2 2
                   , Border.width 1
                   , Border.rounded 4]
@@ -106,9 +110,7 @@ followButtonStyle id =
 
 unfollowButtonStyle: UserId -> Element Msg
 unfollowButtonStyle id =
-    Input.button [Background.color background
-                  , Font.color foreground
-                  , Font.size 10
+    Input.button [Font.size 10
                   , paddingXY 2 2
                   , Border.width 1
                   , Border.rounded 4]
@@ -116,50 +118,38 @@ unfollowButtonStyle id =
 
 likeButtonStyle: PostId -> Element Msg
 likeButtonStyle id =
-    Input.button [Background.color background
-                  , Font.color foreground
-                  , Font.size 10
+    Input.button [Font.size 10
                   , paddingXY 1 1]
         { onPress = Just (LikePost id), label = Icons.unlike <| Icons.tiny }
 
 unlikeButtonStyle: PostId -> Element Msg
 unlikeButtonStyle id =
-    Input.button [Background.color background
-                  , Font.color foreground
-                  , Font.size 10
+    Input.button [Font.size 10
                   , paddingXY 1 1]
         { onPress = Just (UnlikePost id), label = Icons.like <| Icons.tiny }
 
 pinButtonStyle: PostId -> Element Msg
 pinButtonStyle id =
-    Input.button [Background.color background
-                  , Font.color foreground
-                  , Font.size 10
+    Input.button [Font.size 10
                   , paddingXY 1 1]
         { onPress = Just (PinPost id), label = Icons.unpinned <| Icons.tiny }
 
 unpinButtonStyle: PostId -> Element Msg
 unpinButtonStyle id =
-    Input.button [Background.color background
-                  , Font.color foreground
-                  , Font.size 10
+    Input.button [Font.size 10
                   , paddingXY 1 1]
         { onPress = Just (UnpinPost id), label = Icons.pinned <| Icons.tiny }
 
 openConversationButtonStyle: PostId -> Element Msg
 openConversationButtonStyle id =
-    Input.button [Background.color background
-                      , Font.color foreground
-                      , Font.size 10
-                      , paddingXY 1 1]
+    Input.button [Font.size 10
+                  , paddingXY 1 1]
             { onPress = Just (OpenPostConversation id), label = Icons.openConversation <| Icons.tiny }
 
 closeConversationButtonStyle: PostId -> Element Msg
 closeConversationButtonStyle id =
-    Input.button [Background.color background
-                      , Font.color foreground
-                      , Font.size 10
-                      , paddingXY 1 1]
+    Input.button [Font.size 10
+                  , paddingXY 1 1]
             { onPress = Just (ClosePostConversation id), label = Icons.closeConversation <| Icons.tiny }
 
 viewChallengeButtonStyle: ChallengeId -> Element Msg
@@ -274,7 +264,7 @@ userStyle pseudo userId =
 userPseudoStyle: String -> Maybe UserId -> Element Msg
 userPseudoStyle pseudo userId =
     let page = userId |> Maybe.map (UserPage) |> Maybe.withDefault (PseudoPage pseudo) in
-    Input.button [Font.italic, Font.semiBold, Font.color foreground]
+    Input.button [Font.italic, Font.semiBold]
         { onPress = DisplayPage page |> Just, label = Element.text ("@" ++ pseudo) }
 
 linkStyle: Url -> String -> Element msg
@@ -341,11 +331,7 @@ postHeaderStyle e = el
     ] e
 
 headerDateStyle: Element msg -> Element msg
-headerDateStyle e = el
-    [ Background.color background
-      , Font.color foreground
-      , Font.size 10
-    ] e
+headerDateStyle = el [Font.size 8]
 
 postBodyStyle: Element msg -> Element msg
 postBodyStyle e = paragraph [width fill, Font.size 10] [e]

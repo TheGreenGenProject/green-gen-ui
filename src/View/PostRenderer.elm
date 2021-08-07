@@ -27,7 +27,7 @@ import View.Chart.Donut as Donut
 import View.Icons as Icons
 import View.ScreenUtils exposing (neverElement)
 import View.Style exposing (..)
-import View.Theme exposing (background, darkGrey, darkRed, foreground, grey, lightGrey, lightPurple, orange)
+import View.Theme exposing (background, darkGrey, darkRed, foreground, lightGrey, lightPurple, orange)
 
 
 renderPostId: UTCTimestamp -> Cache -> PostId -> Element Msg
@@ -84,8 +84,6 @@ renderChallengePost cache post = case post.content of
             , column [spacing 10, alignTop, width fill] [
                 challenge.title |> quotedText |> el [Font.semiBold, Font.size 10]
                 , challenge.content |> multiLineQuotedText |> postBodyStyle]
-            --, verticalSeparator 5 background
-            --, el [alignTop] (renderChallengeSuccessMeasure challenge.measure)
             ]
         Nothing        -> id |> Challenge.toString |> text |> postBodyStyle
     _                  -> neverElement
@@ -107,20 +105,15 @@ renderFreeTextPost cache post = case post.content of
 renderHeader: UTCTimestamp -> Cache -> Post -> Element Msg
 renderHeader tmstp cache post =
     let isFollowing = Cache.containsFollowingUser cache post.author
-        hasLiked = Cache.containsLike cache post.id
-        isPinned = Cache.containsPinned cache post.id
-        openedConversation = Cache.isConversationOpened cache post.id
     in
-        row [width fill, spacing 5] [
-            el [alignLeft] (postLogo post)
-            , el [alignLeft] (renderUser cache post.author)
+        row [width fill, spacing 5, paddingEach {left=0,top=0,bottom=2,right=0}, Border.widthEach {left=0,top=0,bottom=2,right=0}, Border.color background] [
+            el [alignLeft] (postLogo post |> standard)
+            , el [alignLeft] (renderUser cache post.author |> size 10)
             , el [alignLeft] ((if isFollowing then unfollowButtonStyle else followButtonStyle) post.author)
-            , el [alignLeft, paddingEach {left=10,top=0,bottom=0,right=10}] (specialPostActions cache post)
-            , el [alignRight] ((if hasLiked then unlikeButtonStyle else likeButtonStyle) post.id)
-            , el [alignRight] ((if isPinned then unpinButtonStyle else pinButtonStyle) post.id)
-            , el [alignRight] ((if openedConversation then closeConversationButtonStyle else openConversationButtonStyle) post.id)
-            , el [alignRight] (renderDate tmstp post.created)]
-            |> postHeaderStyle
+            , el [alignLeft] (renderDate tmstp post.created)
+            , el [alignRight, paddingEach {left=10,top=0,bottom=0,right=0}] (specialPostActions cache post)
+        ]
+
 
 specialPostActions: Cache -> Post -> Element Msg
 specialPostActions cache post = case post.content of
@@ -128,21 +121,26 @@ specialPostActions cache post = case post.content of
                                             Just OnTracks    -> "Report"
                                             Just NotYetTaken -> "Take challenge"
                                             Just Failed      -> "Failed"
-                                            _                -> "View"
+                                            _                -> "View challenge"
         in buttonBarStyle [Font.size 9, Font.semiBold] [(challengeText, DisplayPage (ChallengeDetailsPage id))]
     _                -> Element.none
-
 
 renderFooter: Cache -> Post -> Element Msg
 renderFooter cache post =
     let likes = Cache.getLikeCount cache post.id
         comments = Cache.getConversationSize cache post.id
+        hasLiked = Cache.containsLike cache post.id
+        isPinned = Cache.containsPinned cache post.id
+        openedConversation = Cache.isConversationOpened cache post.id
     in
     (el [width fill]
-        (row [width fill, spacing 10]
-            ([el [alignLeft, alignTop, Font.italic, Font.size 9] ("Liked " ++ (String.fromInt likes) ++ " time(s)" |> text)
-             , el [alignLeft, alignTop, Font.italic, Font.size 9] ("Commented " ++ (String.fromInt comments) ++ " time(s)" |> text)] ++
-            [paragraph [] (post.hashtags |> List.map (el [alignRight] << hashtagStyle))]))
+        (row [width fill, spacing 5, alignLeft]
+            ([el [] ((if isPinned then unpinButtonStyle else pinButtonStyle) post.id |> invert)
+             , el [] ((if hasLiked then unlikeButtonStyle else likeButtonStyle) post.id |> invert)
+             , el [Font.italic, Font.size 8] ("x" ++ (String.fromInt likes) |> text)
+             , el [] ((if openedConversation then closeConversationButtonStyle else openConversationButtonStyle) post.id |> invert)
+             , el [Font.italic, Font.size 8] ("x " ++ (String.fromInt comments) |> text)
+             ]))
         |> postFooterStyle)
 
 renderSource: Cache -> Source -> Element Msg
@@ -169,7 +167,7 @@ renderCommentDate reftime timestamp =
 
 postLogo: Post -> Element Msg
 postLogo post =
-    let render = el [width <| px 20, height <| px 20, Border.width 2, Border.rounded 2, centerX, centerY]
+    let render = el [width <| px 20, height <| px 20, Border.width 2, centerX, centerY]
         center = el [centerX, centerY] >> render
     in
         case post.content of
