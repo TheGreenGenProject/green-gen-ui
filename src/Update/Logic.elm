@@ -18,6 +18,7 @@ import Query.Pinned exposing (fetchPinnedPosts, pin, unpin)
 import Query.Poll exposing (answerPollOption, postPoll)
 import Query.QueryUtils exposing (errorToString)
 import Query.Registration exposing (checkPseudoAvailability, register, verifyAccount)
+import Query.Repost exposing (repost)
 import Query.Search exposing (performSearch)
 import Query.Tip exposing (postTip)
 import Query.Wall exposing (fetchUserWall, fetchWall, fetchWallByPseudo)
@@ -25,7 +26,7 @@ import State.AppState as AppState exposing (AppState, Display(..), isUserLoggedI
 import State.Cache as Cache exposing (simulatePollAnswer)
 import State.ChallengeState as ChallengeState
 import State.FeedState as FeedState
-import State.FormState as FormState exposing (clearNewChallengeWizardState, clearNewFreeTextWizardState, clearNewPollWizardState, clearNewTipWizardState)
+import State.FormState as FormState exposing (clearNewChallengeWizardState, clearNewFreeTextWizardState, clearNewPollWizardState, clearNewRepostWizardState, clearNewTipWizardState)
 import State.NotificationState as NotificationState
 import State.PinnedState as PinnedState
 import State.SearchState as SearchState
@@ -106,6 +107,8 @@ update msg state = case msg of
         |> ifLogged (\user -> followHashtag user hashtag)
     UnfollowHashtag hashtag -> {state| cache = Cache.removeFollowingHashtag state.cache hashtag }
         |> ifLogged (\user -> unfollowHashtag user hashtag)
+    Repost postId ->
+        update (DisplayPage WizardRepostPage) { state | forms = FormState.repost state.forms postId }
     LikePost postId -> {state| cache = Cache.addLike state.cache postId }
         |> ifLogged (\user -> like state.cache user postId)
     UnlikePost postId -> {state| cache = Cache.removeLike state.cache postId }
@@ -191,6 +194,9 @@ update msg state = case msg of
     PostNewTip -> { state |
         forms = FormState.postingNewTip state.forms }
         |> ifLogged (\user -> postTip user state.forms.newTipWizard)
+    PostNewRepost -> { state |
+        forms = FormState.reposting state.forms }
+        |> ifLogged (\user -> repost user state.forms.newRepostWizard)
     FillingNewFreeTextWizard freeTextState -> { state |
         forms = FormState.updateNewFreeTextWizardState state.forms freeTextState }
         |> nocmd
@@ -307,6 +313,11 @@ update msg state = case msg of
         |> nocmd
     HttpNewTipPosted (Err err) -> Debug.log ("Error while posting new tip: " ++ (errorToString err))
         {state| forms = FormState.newTipPosted state.forms }
+        |> nocmd
+    HttpNewRepostPosted (Ok _) ->
+        update Back {state| forms = clearNewRepostWizardState state.forms }
+    HttpNewRepostPosted (Err err) -> Debug.log ("Error while reposting: " ++ (errorToString err))
+        {state| forms = FormState.reposted state.forms }
         |> nocmd
     HttpNewFreeTextPosted (Ok _) -> {state |
         display = NewPostPage,

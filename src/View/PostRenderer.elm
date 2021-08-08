@@ -37,24 +37,25 @@ renderPostId tmstp cache postId = postId
     |> Maybe.withDefault ("<Unable to render post " ++ (Post.toString postId) ++ ">" |> text)
 
 renderPost: UTCTimestamp -> Cache -> Post -> Element Msg
-renderPost tmstp cache post = column [width fill, alignLeft, spacing 5, padding 10 ]
-    [renderHeader tmstp cache post
-     , renderPostContent cache post
-     , renderFooter cache post
-     , renderConversation tmstp cache post.id]
+renderPost tmstp cache post = let reposted = isRepost post in
+    column [width fill, alignLeft, spacing 5, padding 10 ]
+        [renderHeader tmstp cache post
+         , renderPostContent tmstp cache post
+         , if not reposted then renderFooter cache post else Element.none
+         , renderConversation tmstp cache post.id]
 
-renderPostContent: Cache -> Post -> Element Msg
-renderPostContent cache post = case post.content of
-    RePost _         -> renderRepostPost cache post
+renderPostContent: UTCTimestamp -> Cache -> Post -> Element Msg
+renderPostContent tmstp cache post = case post.content of
+    RePost _         -> renderRepostPost tmstp cache post
     EventPost _      -> renderEventPost cache post
     ChallengePost _  -> renderChallengePost cache post
     TipPost _        -> renderTipPost cache post
     PollPost _       -> renderPollPost cache post
     FreeTextPost _ _ -> renderFreeTextPost cache post
 
-renderPostContentById: Cache -> PostId -> Element Msg
-renderPostContentById cache postId = case Cache.getPost cache postId of
-    Just post -> renderPostContent cache post
+renderPostContentById: UTCTimestamp -> Cache -> PostId -> Element Msg
+renderPostContentById tmstp cache postId = case Cache.getPost cache postId of
+    Just post -> renderPostContent tmstp cache post
     Nothing   -> neverElement
 
 -- Render each type of post
@@ -68,10 +69,15 @@ renderTipPost cache post = case post.content of
                     Nothing  -> id |> Tip.toString |> text |> postBodyStyle
     _          -> neverElement
 
-renderRepostPost: Cache -> Post -> Element Msg
-renderRepostPost cache post = case post.content of
-    RePost id -> renderPostContentById cache id
+renderRepostPost: UTCTimestamp -> Cache -> Post -> Element Msg
+renderRepostPost tmstp cache post = case post.content of
+    RePost id -> el [width fill, height fill, paddingEach {left=20,top=5, bottom=5,right=0}] (renderPostId tmstp cache id)
     _         -> neverElement
+
+isRepost: Post -> Bool
+isRepost post = case post.content of
+    RePost _ -> True
+    _        -> False
 
 renderChallengePost: Cache -> Post -> Element Msg
 renderChallengePost cache post = case post.content of
@@ -114,7 +120,6 @@ renderHeader tmstp cache post =
             , el [alignRight, paddingEach {left=10,top=0,bottom=0,right=0}] (specialPostActions cache post)
         ]
 
-
 specialPostActions: Cache -> Post -> Element Msg
 specialPostActions cache post = case post.content of
     ChallengePost id -> let challengeText = case Cache.getChallengeOutcomeStatus cache id of
@@ -136,6 +141,7 @@ renderFooter cache post =
     (el [width fill]
         (row [width fill, spacing 5, alignLeft]
             ([el [] ((if isPinned then unpinButtonStyle else pinButtonStyle) post.id |> invert)
+             , el [Font.italic, Font.size 8] (repostButtonStyle post.id |> invert)
              , el [] ((if hasLiked then unlikeButtonStyle else likeButtonStyle) post.id |> invert)
              , el [Font.italic, Font.size 8] ("x" ++ (String.fromInt likes) |> text)
              , el [] ((if openedConversation then closeConversationButtonStyle else openConversationButtonStyle) post.id |> invert)

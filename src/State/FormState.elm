@@ -2,8 +2,9 @@ module State.FormState exposing (..)
 
 
 import Data.Challenge exposing (SuccessMeasure)
+import Data.Hashtag exposing (Hashtag)
 import Data.Poll exposing (PollOption)
-import Data.Post exposing (Source)
+import Data.Post exposing (PostId, Source)
 import Data.Schedule exposing (UTCTimestamp)
 import Data.User exposing (UserId)
 import Data.VerificationCode exposing (VerificationCode)
@@ -12,6 +13,7 @@ import Data.VerificationCode exposing (VerificationCode)
 type alias FormState = {
     registrationForm: RegistrationFormState,
     newTipWizard: NewTipWizardState,
+    newRepostWizard: NewRepostWizardState,
     newFreeTextWizard: NewFreeTextWizardState,
     newChallengeWizard: NewChallengeWizardState,
     newPollWizard: NewPollWizardState
@@ -21,6 +23,7 @@ empty: FormState
 empty = {
     registrationForm   = emptyRegistrationForm,
     newTipWizard       = emptyTipWizard,
+    newRepostWizard    = emptyRepostWizard,
     newFreeTextWizard  = emptyFreeTextWizard,
     newChallengeWizard = emptyChallengeWizard,
     newPollWizard      = emptyPollWizard
@@ -130,6 +133,35 @@ newTipPosted: FormState -> FormState
 newTipPosted formState = let wizard = formState.newTipWizard in
     {formState | newTipWizard = {wizard| posting = False} }
 
+-- Repost
+
+type alias NewRepostWizardState = {
+    posting: Bool,
+    repost: Maybe PostId
+ }
+
+emptyRepostWizard = {
+    posting  = False,
+    repost   = Nothing
+ }
+
+repost: FormState -> PostId -> FormState
+repost formState postId =
+    let repostState = formState.newRepostWizard
+        newRepostState = {repostState| repost = Just postId }
+    in {formState | newRepostWizard = newRepostState }
+
+clearNewRepostWizardState: FormState -> FormState
+clearNewRepostWizardState formState = {formState |
+    newRepostWizard = emptyRepostWizard }
+
+reposting: FormState -> FormState
+reposting formState = let wizard = formState.newRepostWizard in
+    {formState | newRepostWizard = {wizard| posting = True} }
+
+reposted: FormState -> FormState
+reposted formState = let wizard = formState.newRepostWizard in
+    {formState | newRepostWizard = {wizard| posting = False} }
 
 -- Free Text
 

@@ -152,6 +152,12 @@ closeConversationButtonStyle id =
                   , paddingXY 1 1]
             { onPress = Just (ClosePostConversation id), label = Icons.closeConversation <| Icons.tiny }
 
+repostButtonStyle: PostId -> Element Msg
+repostButtonStyle id =
+    Input.button [Font.size 10
+                  , paddingXY 1 1]
+            { onPress = Just (Repost id), label = Icons.repost <| Icons.tiny }
+
 viewChallengeButtonStyle: ChallengeId -> Element Msg
 viewChallengeButtonStyle id =
     Input.button [Font.size 11

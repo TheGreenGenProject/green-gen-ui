@@ -34,6 +34,7 @@ type Display = LoginPage
     | ChallengeDetailsPage ChallengeId
     | WizardNewEventPage
     | WizardNewTipPage
+    | WizardRepostPage
     | WizardNewChallengePage
     | WizardNewFreePostPage
     | WizardNewPollPage

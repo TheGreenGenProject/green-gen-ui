@@ -18,7 +18,7 @@ import Http
 import State.AppState exposing (AppState, AuthError, Display(..))
 import State.Cache exposing (Cache)
 import State.ChallengeState exposing (ChallengePagedTab, ChallengeTab)
-import State.FormState exposing (NewChallengeWizardState, NewFreeTextWizardState, NewPollWizardState, NewTipWizardState, RegistrationFormState)
+import State.FormState exposing (NewChallengeWizardState, NewFreeTextWizardState, NewPollWizardState, NewRepostWizardState, NewTipWizardState, RegistrationFormState)
 import State.NotificationState exposing (NotificationPage, NotificationTab)
 import State.SearchState exposing (SearchResult)
 import State.UserState exposing (UserInfo, UserState(..))
@@ -49,6 +49,7 @@ type Msg =
     | UnfollowUser UserId
     | FollowHashtag Hashtag
     | UnfollowHashtag Hashtag
+    | Repost PostId
     | LikePost PostId
     | UnlikePost PostId
     | PinPost PostId
@@ -80,6 +81,7 @@ type Msg =
     | VerifyAccount
     | FillingNewTipWizard NewTipWizardState
     | PostNewTip
+    | PostNewRepost
     | FillingNewFreeTextWizard NewFreeTextWizardState
     | PostNewFreeText
     | FillingNewChallengeWizard NewChallengeWizardState
@@ -109,6 +111,7 @@ type Msg =
     | HttpFeedFetched (Result Http.Error (Cache, Feed))
     | HttpPseudoAvailabilityChecked (Result Http.Error (String, Bool))
     | HttpNewTipPosted (Result Http.Error ())
+    | HttpNewRepostPosted (Result Http.Error ())
     | HttpNewFreeTextPosted (Result Http.Error ())
     | HttpNewChallengePosted (Result Http.Error ())
     | HttpChallengePostsFetched (Result Http.Error (Cache, ChallengePagedTab, List PostId))

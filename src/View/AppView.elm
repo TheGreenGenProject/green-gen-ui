@@ -13,6 +13,7 @@ import State.FeedState
 import Update.Msg exposing (Msg(..))
 import View.ChallengeDetailsView exposing (challengeDetailsScreen)
 import View.ChallengeScreen exposing (challengeScreen)
+import View.WizardRepostPage exposing (newWizardRepostScreen)
 import View.FeedScreen exposing (feedScreen)
 import View.Icons as Icons
 import View.LoggedOffScreen exposing (logoffScreen)
@@ -70,6 +71,7 @@ displayCurrentPage state = case state.display of
     State.AppState.WizardNewEventPage      -> displayWizardNewEvent state
     State.AppState.WizardNewPollPage       -> displayWizardNewPollPost state
     State.AppState.WizardNewTipPage        -> displayWizardNewTipPost state
+    State.AppState.WizardRepostPage        -> displayWizardNewRepost state
     State.AppState.WizardNewFreePostPage   -> displayWizardNewFreeTextPost state
     State.AppState.ChallengePage           -> displayChallenge state
     State.AppState.ChallengeDetailsPage id -> displayChallengeDetails state id
@@ -122,6 +124,9 @@ displayWizardNewChallengePost = newWizardNewChallengeScreen
 
 displayWizardNewTipPost: AppState -> Element Msg
 displayWizardNewTipPost = newWizardNewTipScreen
+
+displayWizardNewRepost: AppState -> Element Msg
+displayWizardNewRepost = newWizardRepostScreen
 
 displayWizardNewPollPost: AppState -> Element Msg
 displayWizardNewPollPost = newWizardNewPollScreen
