@@ -17,7 +17,7 @@ import Update.Msg exposing (Msg(..))
 import View.Chart.ColorScheme
 import View.Chart.WordCloud exposing (hashtagCloud)
 import View.InfiniteScroll exposing (infiniteScroll)
-import View.PostRenderer exposing (renderPostId)
+import View.PostRenderer exposing (renderLoadingPostPage, renderPostId)
 import View.ScreenUtils
 import View.Style exposing (empty, followHashtagStyle, unfollowHashtagStyle)
 import View.Theme exposing (background, foreground)
@@ -38,7 +38,7 @@ renderSearchState state = case SearchState.allUpToCurrentPage state.search of
         then renderHashtagCloud state
         else (el [width fill, height fill] (renderPostPage state.timestamp state.cache page))
          |> infiniteScroll "search" (ChangeSearchPage (Page.next state.search.currentPage))
-    Nothing   -> renderHashtagCloud state
+    Nothing   -> renderLoadingPosts
 
 renderPostPage: UTCTimestamp -> Cache -> PostPage -> Element Msg
 renderPostPage tmstp cache page = column [
@@ -54,6 +54,9 @@ renderSinglePost = renderPostId
 
 renderNoPostPage: Element Msg
 renderNoPostPage = View.ScreenUtils.emptyScreen "No search results"
+
+renderLoadingPosts: Element Msg
+renderLoadingPosts = renderLoadingPostPage 2
 
 renderSearchFilter: Cache -> SearchFilter -> Element Msg
 renderSearchFilter cache filter = case filter of

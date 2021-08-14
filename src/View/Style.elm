@@ -19,7 +19,7 @@ import Update.Msg exposing (Msg(..))
 import Utils.DateUtils exposing (LocalDate, toLocalDate)
 import Utils.TextUtils as TextUtils exposing (QuotedString(..), format2Digits)
 import View.Icons as Icons
-import View.Theme as Theme exposing (background, blue, darkRed, errorForeground, foreground, grey)
+import View.Theme as Theme exposing (background, blue, darkRed, errorForeground, foreground, grey, lightGrey)
 
 empty: Element Msg
 empty = Element.none
@@ -56,6 +56,21 @@ verticalSeparator thickness color = row [height fill] [
     el [height fill, Font.color color, Border.widthEach {left = 0, top = 0, bottom = 0, right = thickness} ] empty
     , el [ ] (empty)
  ]
+
+loadingFixedTextLine: Int -> Int -> Element Msg
+loadingFixedTextLine font w = "" |> text
+    |> el [width <| px w, Background.color grey, Border.rounded 8, Font.size font]
+    |> el [padding 4]
+
+loadingTextLine: Int -> Element Msg
+loadingTextLine font = "" |> text
+    |> el [width fill, Background.color grey, Border.rounded 8, Font.size font]
+    |> el [width fill, padding 4]
+
+loadingTextBlock: Int -> Int -> Element Msg
+loadingTextBlock font rowCount = column [width fill, height fill, alignTop]
+    (loadingFixedTextLine font 100 :: (List.range 1 (rowCount - 1) |> List.map (\_ -> loadingTextLine font)))
+
 
 standard: Element Msg -> Element Msg
 standard = el [Background.color background, Font.color foreground]

@@ -21,6 +21,6 @@ getAllUpTo page cache =
             |> List.concatMap (\p -> (PageCache.get (Page p) cache)
             |> Maybe.map (.posts)
             |> Maybe.withDefault [])
-    in if List.isEmpty allPosts
+    in if List.isEmpty sortedKeys
         then Nothing
         else { number = page, posts = allPosts } |> Just

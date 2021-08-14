@@ -7,10 +7,10 @@ import Element exposing (Element, centerX, column, fill, height, padding, spacin
 import State.AppState exposing (AppState)
 import State.Cache exposing (Cache)
 import State.FeedState as FeedState exposing (FeedState)
-import State.PostPage exposing (PostPage)
+import State.PostPage as PostPage exposing (PostPage)
 import Update.Msg exposing (Msg(..))
 import View.InfiniteScroll exposing (infiniteScroll)
-import View.PostRenderer exposing (renderPostId)
+import View.PostRenderer exposing (renderLoadingPostPage, renderPostId)
 import View.ScreenUtils
 
 
@@ -26,8 +26,8 @@ feedScreen state = column [
 
 renderFeedState: UTCTimestamp -> Cache -> FeedState -> Element Msg
 renderFeedState tmstp cache state = case FeedState.allUpToCurrentPage state of
-    Just page -> renderPostPage tmstp cache page
-    Nothing   -> renderNoPostPage
+    Just page -> if PostPage.isEmpty page then renderNoPostPage else renderPostPage tmstp cache page
+    Nothing   -> renderLoadingPosts
 
 renderPostPage: UTCTimestamp -> Cache -> PostPage -> Element Msg
 renderPostPage tmstp cache page = column [
@@ -43,3 +43,6 @@ renderSinglePost = renderPostId
 
 renderNoPostPage: Element Msg
 renderNoPostPage = View.ScreenUtils.emptyScreen "No posts"
+
+renderLoadingPosts: Element Msg
+renderLoadingPosts = renderLoadingPostPage 2

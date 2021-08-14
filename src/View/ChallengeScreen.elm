@@ -13,7 +13,7 @@ import State.ChallengeState as ChallengeState exposing (ChallengeState, Challeng
 import State.PostPage as PostPage exposing (PostPage)
 import Update.Msg exposing (Msg(..))
 import View.InfiniteScroll exposing (infiniteScroll)
-import View.PostRenderer exposing (renderPostId)
+import View.PostRenderer exposing (renderLoadingPostPage, renderPostId)
 import View.ScreenUtils
 import View.Theme exposing (background)
 
@@ -50,7 +50,7 @@ challengeTabButton label msg selected = Input.button [
 
 renderChallengeTabContent: AppState -> Element Msg
 renderChallengeTabContent state = case ChallengeState.allUpToCurrentPage state.challenge of
-    Nothing -> renderNoPostPage
+    Nothing -> renderLoadingPosts
     Just posts -> if PostPage.isEmpty posts && Page.isFirst posts.number then renderNoPostPage
                   else renderPostPage state.timestamp state.cache posts
                      |> infiniteScroll "challenge" (ChangeChallengePage (Page.next state.challenge.currentPage))
@@ -69,3 +69,6 @@ renderSinglePost = renderPostId
 
 renderNoPostPage: Element Msg
 renderNoPostPage = View.ScreenUtils.emptyScreen "No challenges"
+
+renderLoadingPosts: Element Msg
+renderLoadingPosts = renderLoadingPostPage 2

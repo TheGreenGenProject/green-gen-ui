@@ -7,10 +7,10 @@ import Element exposing (Element, centerX, column, fill, height, padding, spacin
 import State.AppState exposing (AppState)
 import State.Cache exposing (Cache)
 import State.PinnedState as PinnedState exposing (PinnedState)
-import State.PostPage exposing (PostPage)
+import State.PostPage as PostPage exposing (PostPage)
 import Update.Msg exposing (Msg(..))
 import View.InfiniteScroll exposing (infiniteScroll)
-import View.PostRenderer exposing (renderPostId)
+import View.PostRenderer exposing (renderLoadingPostPage, renderPostId)
 import View.ScreenUtils
 
 
@@ -25,11 +25,10 @@ pinnedScreen state = column [
     |> infiniteScroll "pinned" (ChangePinnedPage (Page.next state.pinned.currentPage))
 
 renderPinnedState: UTCTimestamp -> Cache -> PinnedState -> Element Msg
-renderPinnedState tmstp cache state = if PinnedState.isEmpty state
-    then renderNoPinnedPostPage
-    else case PinnedState.allUpToCurrentPage state of
-        Just page -> renderPostPage tmstp cache page
-        Nothing   -> renderNoPinnedPostPage
+renderPinnedState tmstp cache state =
+    case PinnedState.allUpToCurrentPage state of
+        Just page -> if PostPage.isEmpty page then renderNoPinnedPostPage else renderPostPage tmstp cache page
+        Nothing   -> renderLoadingPosts
 
 renderPostPage: UTCTimestamp -> Cache -> PostPage -> Element Msg
 renderPostPage tmstp cache page = column [
@@ -45,3 +44,6 @@ renderSinglePost = renderPostId
 
 renderNoPinnedPostPage: Element Msg
 renderNoPinnedPostPage = View.ScreenUtils.emptyScreen "No pinned post"
+
+renderLoadingPosts: Element Msg
+renderLoadingPosts = renderLoadingPostPage 2

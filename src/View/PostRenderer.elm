@@ -321,3 +321,17 @@ renderMoreMessageSeparator cache postId =
         }
        , horizontalSeparator 1 background
  ]
+
+-- Render a loading post
+renderLoadingSinglePost:  Element Msg
+renderLoadingSinglePost =
+    column [width fill, alignLeft, spacing 5, padding 10 ]
+        [row [alignLeft] [loadingFixedTextLine 12 16, loadingFixedTextLine 12 100, loadingFixedTextLine 12 35]
+         |> el [width fill, spacing 5, paddingEach {left=0,top=0,bottom=2,right=0}, Border.widthEach {left=0,top=0,bottom=2,right=0}, Border.color background]
+         , loadingTextBlock 12 3
+         , row [alignLeft, width fill] (loadingFixedTextLine 8 12 |> List.repeat 5)]
+
+renderLoadingPostPage: Int -> Element Msg
+renderLoadingPostPage count = List.range 1 count
+    |> List.map (\_ -> renderLoadingSinglePost)
+    |> column [width fill , height fill, centerX, spacing 5, padding 10]
