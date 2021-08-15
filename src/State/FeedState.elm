@@ -4,8 +4,7 @@ import Data.Feed exposing (Feed(..))
 import Data.Page as Page exposing (Page)
 import Data.Post exposing (PostId)
 import State.PageCache as PageCache
-import State.PostPage exposing (PostPage)
-import State.PostPageCache as PostPageCache exposing (PostPageCache)
+import State.PostPageCache as PostPageCache exposing (PostPage, PostPageCache)
 import Utils.MaybeUtils as MaybeUtils
 
 type alias FeedState = {
@@ -29,7 +28,7 @@ from state (Feed page posts) = {
     newPostsAvailable = False,
     currentPage = page,
     postCache = state.postCache
-        |> PostPageCache.add { number = page, posts = posts }
+        |> PostPageCache.add { number = page, items = posts }
         |> PageCache.loading page
  }
 
@@ -57,7 +56,7 @@ moveToPage state page =
 lastPost: FeedState -> Maybe PostId
 lastPost state = state.postCache
     |> PageCache.get Page.first
-    |> Maybe.map (\x -> x.posts)
+    |> Maybe.map (\x -> x.items)
     |> Maybe.andThen (List.head)
 
 updateNewPostsAvailable: FeedState -> Bool -> FeedState

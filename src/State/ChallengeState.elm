@@ -3,8 +3,7 @@ module State.ChallengeState exposing (..)
 import Data.Page as Page exposing (Page)
 import Data.Post exposing (PostId)
 import State.PageCache as PageCache
-import State.PostPage exposing (PostPage)
-import State.PostPageCache as PostPageCache exposing (PostPageCache)
+import State.PostPageCache as PostPageCache exposing (PostPage, PostPageCache)
 import Utils.MaybeUtils as MaybeUtils
 
 
@@ -33,7 +32,7 @@ from posts pagedTab state = {
     currentTab = pagedTab.tab,
     currentPage = pagedTab.page,
     postCache = state.postCache
-        |> PostPageCache.add { number = pagedTab.page, posts = posts }
+        |> PostPageCache.add { number = pagedTab.page, items = posts }
         |> PageCache.loading  pagedTab.page
  }
 

@@ -3,14 +3,15 @@ module View.ChallengeScreen exposing (challengeScreen)
 import Data.Page as Page
 import Data.Post exposing (PostId)
 import Data.Schedule exposing (UTCTimestamp)
-import Element exposing (Element, centerX, column, fill, height, padding, row, scrollbarY, spacing, text, width)
+import Element exposing (Element, centerX, column, fill, height, padding, row, spacing, text, width)
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import State.AppState exposing (AppState)
 import State.Cache exposing (Cache)
 import State.ChallengeState as ChallengeState exposing (ChallengeState, ChallengeTab(..))
-import State.PostPage as PostPage exposing (PostPage)
+import State.GenericPage as GenericPage
+import State.PostPageCache exposing (PostPage)
 import Update.Msg exposing (Msg(..))
 import View.InfiniteScroll exposing (infiniteScroll)
 import View.PostRenderer exposing (renderLoadingPostPage, renderPostId)
@@ -51,7 +52,7 @@ challengeTabButton label msg selected = Input.button [
 renderChallengeTabContent: AppState -> Element Msg
 renderChallengeTabContent state = case ChallengeState.allUpToCurrentPage state.challenge of
     Nothing -> renderLoadingPosts
-    Just posts -> if PostPage.isEmpty posts && Page.isFirst posts.number then renderNoPostPage
+    Just posts -> if GenericPage.isEmpty posts && Page.isFirst posts.number then renderNoPostPage
                   else renderPostPage state.timestamp state.cache posts
                      |> infiniteScroll "challenge" (ChangeChallengePage (Page.next state.challenge.currentPage))
 
@@ -62,7 +63,7 @@ renderPostPage tmstp cache page = column [
         , centerX
         , spacing 5
         , padding 10 ]
-    <| List.map (renderSinglePost tmstp cache) page.posts
+    <| List.map (renderSinglePost tmstp cache) page.items
 
 renderSinglePost: UTCTimestamp -> Cache -> PostId -> Element Msg
 renderSinglePost = renderPostId

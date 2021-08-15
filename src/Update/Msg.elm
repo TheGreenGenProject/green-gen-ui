@@ -20,7 +20,7 @@ import State.Cache exposing (Cache)
 import State.ChallengeState exposing (ChallengePagedTab, ChallengeTab)
 import State.FormState exposing (NewChallengeWizardState, NewFreeTextWizardState, NewPollWizardState, NewRepostWizardState, NewTipWizardState, RegistrationFormState)
 import State.NotificationState exposing (NotificationPage, NotificationTab)
-import State.SearchState exposing (SearchResult)
+import State.SearchState exposing (PostSearchResult, UserSearchResult)
 import State.UserState exposing (UserInfo, UserState(..))
 
 type Msg =
@@ -42,7 +42,8 @@ type Msg =
     | ChangeNotificationTab NotificationTab
     | ChangeNotificationPage Page
     | RefreshNotifications
-    | ChangeSearchPage Page
+    | ChangeSearchPostPage Page
+    | ChangeSearchUserPage Page
     | ChangeChallengeTab ChallengeTab
     | ChangeChallengePage Page
     | FollowUser UserId
@@ -107,7 +108,8 @@ type Msg =
     | HttpMarkNotificationAsRead (Result Http.Error ())
     | HttpNotificationsChecked (Result Http.Error Bool)
     | HttpFeedChecked (Result Http.Error Bool)
-    | HttpSearchResultFetched (Result Http.Error (Cache, SearchResult))
+    | HttpPostSearchResultFetched (Result Http.Error (Cache, PostSearchResult))
+    | HttpUserSearchResultFetched (Result Http.Error (Cache, UserSearchResult))
     | HttpFeedFetched (Result Http.Error (Cache, Feed))
     | HttpPseudoAvailabilityChecked (Result Http.Error (String, Bool))
     | HttpNewTipPosted (Result Http.Error ())

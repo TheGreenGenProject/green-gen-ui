@@ -6,8 +6,9 @@ import Data.Schedule exposing (UTCTimestamp)
 import Element exposing (Element, centerX, column, fill, height, padding, spacing, width)
 import State.AppState exposing (AppState)
 import State.Cache exposing (Cache)
+import State.GenericPage as GenericPage
 import State.PinnedState as PinnedState exposing (PinnedState)
-import State.PostPage as PostPage exposing (PostPage)
+import State.PostPageCache exposing (PostPage)
 import Update.Msg exposing (Msg(..))
 import View.InfiniteScroll exposing (infiniteScroll)
 import View.PostRenderer exposing (renderLoadingPostPage, renderPostId)
@@ -27,7 +28,7 @@ pinnedScreen state = column [
 renderPinnedState: UTCTimestamp -> Cache -> PinnedState -> Element Msg
 renderPinnedState tmstp cache state =
     case PinnedState.allUpToCurrentPage state of
-        Just page -> if PostPage.isEmpty page then renderNoPinnedPostPage else renderPostPage tmstp cache page
+        Just page -> if GenericPage.isEmpty page then renderNoPinnedPostPage else renderPostPage tmstp cache page
         Nothing   -> renderLoadingPosts
 
 renderPostPage: UTCTimestamp -> Cache -> PostPage -> Element Msg
@@ -37,7 +38,7 @@ renderPostPage tmstp cache page = column [
         , centerX
         , spacing 5
         , padding 10 ]
-    <| List.map (renderSinglePost tmstp cache) page.posts
+    <| List.map (renderSinglePost tmstp cache) page.items
 
 renderSinglePost: UTCTimestamp -> Cache -> PostId -> Element Msg
 renderSinglePost = renderPostId

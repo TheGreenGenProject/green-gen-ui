@@ -4,8 +4,7 @@ import Data.Page as Page exposing (Page)
 import Data.Pinned as Pinned exposing (Pinned(..))
 import Data.Post exposing (PinnedPost(..), Post, PostId)
 import State.PageCache as PageCache
-import State.PostPage exposing (PostPage)
-import State.PostPageCache as PostPageCache exposing (PostPageCache)
+import State.PostPageCache as PostPageCache exposing (PostPage, PostPageCache)
 import Utils.MaybeUtils as MaybeUtils
 
 
@@ -27,7 +26,7 @@ from: PinnedState -> Pinned -> PinnedState
 from state (Pinned page posts) = {
     currentPage = page,
     postCache = state.postCache
-        |> PostPageCache.add { number = page, posts = (Pinned page posts) |> Pinned.postIds }
+        |> PostPageCache.add { number = page, items = (Pinned page posts) |> Pinned.postIds }
         |> PageCache.loading page
  }
 

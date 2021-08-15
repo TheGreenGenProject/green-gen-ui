@@ -89,9 +89,13 @@ update msg state = case msg of
     ChangeNotificationTab tab -> {state|
         notifications = state.notifications |> NotificationState.changeTab tab }
         |> ifLogged (\user -> fetchNotifications state.cache user tab Page.first)
-    ChangeSearchPage page ->
-        if SearchState.isLoadingMore state.search then state |> nocmd
-        else if Page.isAfter page state.search.currentPage && SearchState.noMoreDataToLoad state.search then state |> nocmd
+    ChangeSearchPostPage page ->
+        if SearchState.isLoadingMorePost state.search then state |> nocmd
+        else if Page.isAfter page state.search.currentPage && SearchState.noMorePostToLoad state.search then state |> nocmd
+        else update (DisplayPage SearchPage) {state| search = SearchState.moveToPage state.search page }
+    ChangeSearchUserPage page ->
+        if SearchState.isLoadingMoreUser state.search then state |> nocmd
+        else if Page.isAfter page state.search.currentPage && SearchState.noMoreUserToLoad state.search then state |> nocmd
         else update (DisplayPage SearchPage) {state| search = SearchState.moveToPage state.search page }
     DisplayPage RegistrationPage -> {state | display = RegistrationPage }
         |> nocmd
@@ -288,12 +292,20 @@ update msg state = case msg of
         |> nocmd
     HttpPinnedPostsFetched (Err err) -> Debug.log ("Error while receiving pinned posts " ++ (errorToString err))
         state |> nocmd
-    HttpSearchResultFetched (Ok (cache, result)) -> {state |
+    HttpPostSearchResultFetched (Ok (cache, result)) -> {state |
         display = SearchPage,
-        search = SearchState.withResults state.search result,
+        search = SearchState.withPostResults state.search result,
         cache = Cache.merge cache state.cache }
         |> nocmd
-    HttpSearchResultFetched (Err err)  -> Debug.log ("Error while receiving search result " ++ (errorToString err))
+    HttpPostSearchResultFetched (Err err)  -> Debug.log ("Error while receiving search result " ++ (errorToString err))
+        {state | display = SearchPage, search = SearchState.empty }
+        |> nocmd
+    HttpUserSearchResultFetched (Ok (cache, result)) -> {state |
+        display = SearchPage,
+        search = SearchState.withUserResults state.search result,
+        cache = Cache.merge cache state.cache }
+        |> nocmd
+    HttpUserSearchResultFetched (Err err)  -> Debug.log ("Error while receiving search result " ++ (errorToString err))
         {state | display = SearchPage, search = SearchState.empty }
         |> nocmd
     HttpNotificationsChecked (Ok hasUnread) -> {state |

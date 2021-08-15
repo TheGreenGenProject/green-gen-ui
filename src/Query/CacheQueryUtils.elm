@@ -1,6 +1,7 @@
 module Query.CacheQueryUtils exposing (
     fetchAndCacheUserInfo
     , fetchAndCachePostInfo
+    , fetchAndCacheAllUsers
     , fetchAndCacheAllUsersFromPosts
     , fetchAndCacheAllUsersFromNotifications
     , fetchAndCacheAllPosts
@@ -117,6 +118,12 @@ fetchAndCacheAllUsersFromNotifications: Cache -> UserInfo -> List Notification -
 fetchAndCacheAllUsersFromNotifications cache user notifs = notifs
     |> Data.Notification.usersFromNotifications
     |> List.map (\id -> fetchAndCacheUserInfo cache user id)
+    |> Task.sequence
+    |> Task.andThen (\xs -> List.foldl Cache.merge cache xs |> Task.succeed)
+
+fetchAndCacheAllUsers: Cache -> UserInfo -> List UserId -> Task Http.Error Cache
+fetchAndCacheAllUsers cache user userIds = userIds
+    |> List.map (\userId -> fetchAndCacheUserInfo cache user userId)
     |> Task.sequence
     |> Task.andThen (\xs -> List.foldl Cache.merge cache xs |> Task.succeed)
 

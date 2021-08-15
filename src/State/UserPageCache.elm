@@ -1,20 +1,20 @@
-module State.PostPageCache exposing (..)
+module State.UserPageCache exposing (..)
 
 import Data.Page as Page exposing (Page(..))
-import Data.Post exposing (PostId)
+import Data.User exposing (UserId)
 import Dict exposing (Dict)
 import State.GenericPage exposing (GenericPage)
 import State.PageCache as PageCache exposing (PageCache)
 import Utils.ListUtils as ListUtils
 
 
-type alias PostPage = GenericPage PostId
-type alias PostPageCache = PageCache PostPage
+type alias UserPage = GenericPage UserId
+type alias UserPageCache = PageCache UserPage
 
-add: PostPage -> PostPageCache -> PostPageCache
+add: UserPage -> UserPageCache -> UserPageCache
 add page cache = PageCache.add page page.number cache
 
-getAllUpTo: Page -> PostPageCache -> Maybe PostPage
+getAllUpTo: Page -> UserPageCache -> Maybe UserPage
 getAllUpTo page cache =
     let sortedKeys = cache.cache
             |> Dict.keys |> List.sort

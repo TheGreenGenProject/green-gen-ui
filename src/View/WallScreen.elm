@@ -13,7 +13,8 @@ import Element.Font as Font
 import Element.Input as Input
 import State.AppState exposing (AppState)
 import State.Cache as Cache exposing (Cache)
-import State.PostPage as PostPage exposing (PostPage)
+import State.GenericPage as GenericPage
+import State.PostPageCache exposing (PostPage)
 import State.UserState exposing (UserInfo, UserState)
 import State.WallState as WallState exposing (WallState)
 import Update.Msg exposing (Msg(..))
@@ -24,7 +25,7 @@ import View.Icons as Icons
 import View.InfiniteScroll exposing (infiniteScroll)
 import View.PostRenderer exposing (renderLoadingPostPage, renderPostId)
 import View.ScreenUtils
-import View.Style exposing (loadingFixedTextLine, loadingTextBlock, loadingTextLine, multiLineQuotedText, verticalSeparator)
+import View.Style exposing (loadingFixedTextLine, loadingTextBlock, multiLineQuotedText, verticalSeparator)
 import View.Theme exposing (background, foreground, lightPurple)
 
 
@@ -76,7 +77,7 @@ renderFollowingButton cache maybeUserId = maybeUserId
 
 renderWallState: UTCTimestamp -> Cache -> WallState -> Element Msg
 renderWallState tmstp cache state = case WallState.allUpToCurrentPage state of
-    Just page -> if PostPage.isEmpty page then renderNoPostPage else renderPostPage tmstp cache page
+    Just page -> if GenericPage.isEmpty page then renderNoPostPage else renderPostPage tmstp cache page
     Nothing   -> renderLoadingPosts
 
 renderPostPage: UTCTimestamp -> Cache -> PostPage -> Element Msg
@@ -86,7 +87,7 @@ renderPostPage tmstp cache page = column [
         , centerX
         , spacing 5
         , padding 10 ]
-    <| List.map (renderSinglePost tmstp cache) page.posts
+    <| List.map (renderSinglePost tmstp cache) page.items
 
 renderSinglePost: UTCTimestamp -> Cache -> PostId -> Element Msg
 renderSinglePost = renderPostId

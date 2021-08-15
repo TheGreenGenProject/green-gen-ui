@@ -4,8 +4,7 @@ import Data.Page as Page exposing (Page)
 import Data.User exposing (UserId)
 import Data.Wall exposing (Wall(..))
 import State.PageCache as PageCache
-import State.PostPage exposing (PostPage)
-import State.PostPageCache as PostPageCache exposing (PostPageCache)
+import State.PostPageCache as PostPageCache exposing (PostPage, PostPageCache)
 import Utils.MaybeUtils as MaybeUtils
 
 
@@ -30,7 +29,7 @@ from state (Wall user page posts) = {
     user = Just user,
     currentPage = page,
     postCache = state.postCache
-        |> PostPageCache.add { number = page, posts = posts }
+        |> PostPageCache.add { number = page, items = posts }
         |> PageCache.loading page
  }
 
