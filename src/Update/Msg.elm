@@ -13,14 +13,13 @@ import Data.Post exposing (PinnedPost, Post, PostId)
 import Data.Schedule exposing (UTCTimestamp)
 import Data.User exposing (UserId)
 import Data.Wall exposing (Wall)
-import Element exposing (Device)
 import Http
 import State.AppState exposing (AppState, AuthError, Display(..))
 import State.Cache exposing (Cache)
 import State.ChallengeState exposing (ChallengePagedTab, ChallengeTab)
 import State.FormState exposing (NewChallengeWizardState, NewFreeTextWizardState, NewPollWizardState, NewRepostWizardState, NewTipWizardState, RegistrationFormState)
 import State.NotificationState exposing (NotificationPage, NotificationTab)
-import State.SearchState exposing (PostSearchResult, UserSearchResult)
+import State.SearchState exposing (PostSearchResult, PostType, SearchFilter, UserSearchResult)
 import State.UserState exposing (UserInfo, UserState(..))
 
 type Msg =
@@ -44,6 +43,7 @@ type Msg =
     | RefreshNotifications
     | ChangeSearchPostPage Page
     | ChangeSearchUserPage Page
+    | ChangeSearchPostTypeFilter PostType
     | ChangeChallengeTab ChallengeTab
     | ChangeChallengePage Page
     | FollowUser UserId

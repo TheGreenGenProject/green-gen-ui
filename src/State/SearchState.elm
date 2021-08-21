@@ -13,10 +13,16 @@ type SearchResult a = SearchResult Page (List a)
 type alias PostSearchResult = SearchResult PostId
 type alias UserSearchResult = SearchResult UserId
 
+type PostType = AllPostTypes
+    | PollPosts
+    | ChallengePosts
+    | TipPosts
+    | FreeTextPosts
+
 type SearchFilter =
     EmptySearch
-    | ByHashtag (List Hashtag)
-    | ByAuthor UserId
+    | ByHashtag (List Hashtag) PostType
+    | ByAuthor UserId PostType
     | ByUserPrefix String
 
 type alias SearchState = {
@@ -48,6 +54,26 @@ isUserSearchFilter filter = case filter of
     ByUserPrefix _ -> True
     _              -> False
 
+postTypeFilter: SearchFilter -> Maybe PostType
+postTypeFilter filter = case filter of
+    ByHashtag _ pt -> Just pt
+    ByAuthor _ pt  -> Just pt
+    _              -> Nothing
+
+allPostTypes: List PostType
+allPostTypes = [AllPostTypes, TipPosts, ChallengePosts, PollPosts, FreeTextPosts]
+
+changePostTypeFilter: SearchState -> PostType -> SearchState
+changePostTypeFilter state postType =
+    let newFilter = case state.filter of
+                    ByHashtag hashtags _ -> ByHashtag hashtags postType
+                    ByAuthor userId _    -> ByAuthor userId postType
+                    unchanged            -> unchanged
+    in {state | filter = newFilter,
+        currentPage = Page.first,
+        postCache = PageCache.empty,
+        userCache = PageCache.empty}
+
 -- Input a value in the search field
 input: SearchState -> String -> SearchState
 input state txt = {state| field = txt}
@@ -67,7 +93,7 @@ applyInput state = {state|
 fromHashtags: SearchState -> List Hashtag -> SearchState
 fromHashtags state hashtags = {state|
     field = "",
-    filter = ByHashtag hashtags,
+    filter = ByHashtag hashtags AllPostTypes,
     history = state.filter :: state.history,
     currentPage = Page.first,
     postCache = PageCache.empty,
@@ -78,7 +104,7 @@ fromHashtags state hashtags = {state|
 fromUserId: SearchState -> UserId -> SearchState
 fromUserId state userId = {state|
     field = "",
-    filter = ByAuthor userId,
+    filter = ByAuthor userId AllPostTypes,
     history = state.filter :: state.history,
     currentPage = Page.first,
     postCache = PageCache.empty,
@@ -127,7 +153,7 @@ toSearchFilter str =
     else str |> String.split " "
              |> List.filter (not << String.isEmpty << String.trim)
              |> List.map Hashtag
-             |> ByHashtag
+             |> (\x -> ByHashtag x AllPostTypes)
 
 isOneUserPseudoPrefix: String -> Bool
 isOneUserPseudoPrefix str =

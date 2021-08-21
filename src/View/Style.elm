@@ -187,13 +187,15 @@ buttonBarStyle attrs buttons = buttons
     |> List.intersperse (el attrs ("|" |> text))
     |> row attrs
 
-tabButton: String -> msg -> Element msg
-tabButton txt msg =
-    Input.button [ Background.color background
-                  , Font.color foreground
-                  , Border.rounded 5
-                  , padding 5]
-        { onPress = Just msg, label = Element.text txt }
+tabButton: String -> Msg -> Bool -> Element Msg
+tabButton label msg selected = Input.button [
+    Font.size 14
+    , Font.color background
+    , if selected then Font.italic else Font.regular
+    , Border.color background
+    , Border.widthEach { bottom = (if selected then 3 else 0), top = 0, left = 0, right = 0 }
+    , padding 5
+ ] { onPress = Just msg, label = label |> text}
 
 tabIconButton: Element msg -> msg -> Element msg
 tabIconButton icon msg =

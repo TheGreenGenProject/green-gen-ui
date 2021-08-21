@@ -97,6 +97,8 @@ update msg state = case msg of
         if SearchState.isLoadingMoreUser state.search then state |> nocmd
         else if Page.isAfter page state.search.currentPage && SearchState.noMoreUserToLoad state.search then state |> nocmd
         else update (DisplayPage SearchPage) {state| search = SearchState.moveToPage state.search page }
+    ChangeSearchPostTypeFilter postType ->
+        update (DisplayPage SearchPage) {state | search = SearchState.changePostTypeFilter state.search postType}
     DisplayPage RegistrationPage -> {state | display = RegistrationPage }
         |> nocmd
     DisplayPage page  -> {state |

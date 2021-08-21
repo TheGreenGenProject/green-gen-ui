@@ -5,7 +5,7 @@ import Data.Page as Page
 import Data.Post exposing (Post, PostId)
 import Data.Schedule exposing (UTCTimestamp)
 import Data.User as User exposing (UserId)
-import Element exposing (Element, centerX, centerY, column, el, fill, height, padding, row, spacing, text, width)
+import Element exposing (Element, alignLeft, centerX, centerY, column, el, fill, height, padding, row, spacing, text, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
@@ -13,7 +13,7 @@ import State.AppState exposing (AppState, WindowSize)
 import State.Cache as Cache exposing (Cache)
 import State.GenericPage as GenericPage
 import State.PostPageCache exposing (PostPage)
-import State.SearchState as SearchState exposing (SearchFilter(..), SearchState)
+import State.SearchState as SearchState exposing (PostType(..), SearchFilter(..), SearchState, allPostTypes, postTypeFilter)
 import State.UserPageCache exposing (UserPage)
 import Update.Msg exposing (Msg(..))
 import View.Chart.ColorScheme
@@ -21,7 +21,7 @@ import View.Chart.WordCloud exposing (hashtagCloud)
 import View.InfiniteScroll exposing (infiniteScroll)
 import View.PostRenderer exposing (renderLoadingPostPage, renderPostId)
 import View.ScreenUtils
-import View.Style exposing (empty, followHashtagStyle, unfollowHashtagStyle)
+import View.Style exposing (empty, followHashtagStyle, tabButton, unfollowHashtagStyle)
 import View.Theme exposing (background, foreground)
 import View.UserListRenderer exposing (renderLoadingUserPage, renderUserId)
 
@@ -31,7 +31,8 @@ searchScreen state = column [
         width fill
         , height fill
         , centerX
-        , spacing 5] [
+        , spacing 5
+        , padding 5] [
         renderSearchFilter state.cache state.search.filter
         , renderSearchState state ]
 
@@ -56,6 +57,13 @@ renderUserSearchState state = case SearchState.allUpToCurrentUserPage state.sear
         else (el [width fill, height fill] (renderUserPage state.cache page))
          |> infiniteScroll "search-users" (ChangeSearchPostPage (Page.next state.search.currentPage))
     Nothing   -> renderLoadingUsers
+
+renderPostSearchFilterTabs: SearchFilter -> Element Msg
+renderPostSearchFilterTabs filter = case postTypeFilter filter of
+    Nothing -> Element.none
+    Just pt ->  allPostTypes
+        |> List.map (\x -> renderPostTypeTab x (x==pt))
+        |> row [alignLeft, spacing 5]
 
 renderPostPage: UTCTimestamp -> Cache -> PostPage -> Element Msg
 renderPostPage tmstp cache page = column [
@@ -89,13 +97,14 @@ renderLoadingUsers = renderLoadingUserPage 2
 
 renderSearchFilter: Cache -> SearchFilter -> Element Msg
 renderSearchFilter cache filter = case filter of
-    EmptySearch        -> empty
-    ByHashtag []       -> empty
-    ByUserPrefix _     -> empty
-    ByHashtag hashtags -> hashtags
+    EmptySearch          -> empty
+    ByHashtag [] _       -> empty
+    ByUserPrefix _       -> empty
+    ByHashtag hashtags _ -> hashtags
         |> List.map (\ht -> if Cache.containsFollowingHashtag cache ht then unfollowHashtagStyle ht else followHashtagStyle ht)
         |> row [spacing 10, padding 10]
-    ByAuthor userId    -> let pseudo = userId |> Cache.getUserPseudo cache |> Maybe.withDefault (User.toString userId) in
+        |> above (renderPostSearchFilterTabs filter)
+    ByAuthor userId  _   -> let pseudo = userId |> Cache.getUserPseudo cache |> Maybe.withDefault (User.toString userId) in
         row [spacing 10] [el [Font.italic, Font.semiBold] (pseudo |> text)]
 
 renderHashtagCloud: AppState -> Element Msg
@@ -116,3 +125,17 @@ computeFontFromWindowSize {width, height} =
 
 renderNoResultPage: Element Msg
 renderNoResultPage = View.ScreenUtils.emptyScreen "No results"
+
+renderPostTypeTab: PostType -> Bool -> Element Msg
+renderPostTypeTab pt selected =
+    let renderTabButton: String -> Element Msg
+        renderTabButton label = tabButton label (ChangeSearchPostTypeFilter pt) selected
+    in case pt of
+        AllPostTypes   -> renderTabButton "All"
+        TipPosts       -> renderTabButton "Tips"
+        ChallengePosts -> renderTabButton "Challenges"
+        PollPosts      -> renderTabButton "Polls"
+        FreeTextPosts  -> renderTabButton "Free posts"
+
+above: Element Msg -> Element Msg -> Element Msg
+above el1 el2 = column [width fill] [el1, el2]
