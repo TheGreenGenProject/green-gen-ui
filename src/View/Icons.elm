@@ -40,7 +40,7 @@ poll = Icons.pieChartOutlined
 
 post = Icons.userOutlined
 
-repost = Icons.sendOutlined
+repost = Icons.shareAltOutlined
 
 search = Icons.searchOutlined
 
