@@ -7,7 +7,8 @@ module View.Chart.Donut exposing (
     , doubleTinyDonut
     , ChartConfig
     , donutWithConfig
-    , doubleDonutWithConfig)
+    , doubleDonutWithConfig
+    , smallPieChart)
 
 import Basics
 import Color
@@ -48,6 +49,10 @@ smallDonut data = let config = {defaultConfig| outerRadius = 32.0, innerRadius =
 
 tinyDonut: List (Float, Element.Color) -> Element msg
 tinyDonut data = let config = {defaultConfig| outerRadius = 24.0, innerRadius = 16.0} in
+    donutWithConfig config data
+
+smallPieChart: List (Float, Element.Color) -> Element msg
+smallPieChart data = let config = {defaultConfig| outerRadius = 32.0, innerRadius = 5.0} in
     donutWithConfig config data
 
 donutWithConfig: ChartConfig -> List (Float, Element.Color) -> Element msg

@@ -26,13 +26,10 @@ decodePollStats: Decoder PollStats
 decodePollStats = succeed PollStats
     |> required "stats" (list decodePollStatsEntry)
 
-
--- {"pollId":{"value":{"uuid":"59748405-3efa-4a63-bfe1-af8312a05bb2"}},"stats":[{"option":{"value":"Not sure"},"count":1}]}
 decodePollStatsEntry: Decoder PollStatsEntry
 decodePollStatsEntry = succeed PollStatsEntry
     |> required "option" decodePollOption
     |> required "count" int
-
 
 decodePollId: Decoder PollId
 decodePollId = succeed PollId

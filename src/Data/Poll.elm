@@ -20,6 +20,9 @@ type alias PollStatsEntry = {
  }
 type PollStats = PollStats (List PollStatsEntry)
 
+optionAsString: PollOption -> String
+optionAsString (PollOption str) = str
+
 emptyPollStats: Poll -> PollStats
 emptyPollStats poll = poll.options
     |> List.map(\x -> {option=x, count=0})

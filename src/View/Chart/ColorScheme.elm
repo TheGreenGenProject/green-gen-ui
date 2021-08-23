@@ -31,6 +31,21 @@ wordCloudScheme = {
     ]
  }
 
+pollPieChartScheme = {
+    default = purple,
+    colors = [
+        orange
+        , charcoal
+        , darkRed
+        , background
+        , darkBlue
+        , yellow
+        , darkPurple
+        , green
+        , darkBrown
+    ]
+ }
+
 orangeToGreen = {
     default = lightOrange,
     colors = [
@@ -109,6 +124,9 @@ colorAt: Int -> ColorScheme -> Color
 colorAt n scheme = scheme.colors
     |> ListUtils.nth n
     |> Maybe.withDefault scheme.default
+
+cycledColorAt: Int -> ColorScheme -> Color
+cycledColorAt n scheme = colorAt ((modBy (size scheme) n)) scheme
 
 colorFor: Int -> Int -> Int -> ColorScheme -> Color
 colorFor minValue maxValue n scheme =

@@ -5,13 +5,13 @@ import Basics as Int
 import Data.Challenge as Challenge exposing (ChallengeOutcomeStatus(..), ChallengeStatistics, SuccessMeasure)
 import Data.Conversation as Conversation exposing (Message)
 import Data.Page exposing (Page(..))
-import Data.Poll as Poll exposing (Poll, PollOption(..), PollStats(..), emptyPollStats, normalizePollStats, respondents)
+import Data.Poll as Poll exposing (Poll, PollOption(..), PollStats(..), emptyPollStats, normalizePollStats, optionAsString, respondents)
 import Data.Post as Post exposing (Post, PostContent(..), PostId(..), Source(..))
 import Data.Schedule exposing (UTCTimestamp(..))
 import Data.Tip as Tip exposing (Tip)
 import Data.Url exposing (Url(..))
 import Data.User as User exposing (UserId(..))
-import Element exposing (Element, alignBottom, alignLeft, alignRight, alignTop, centerX, centerY, column, el, fill, height, padding, paddingEach, paragraph, px, row, spacing, text, width)
+import Element exposing (Element, alignBottom, alignLeft, alignRight, alignTop, centerX, centerY, column, el, fill, height, padding, paddingEach, px, row, spacing, text, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
@@ -23,11 +23,13 @@ import Update.Msg exposing (Msg(..))
 import Utils.DateUtils as DateUtils
 import Utils.TextUtils as TextUtils exposing (QuotedString(..))
 import Uuid
-import View.Chart.Donut as Donut
+import View.Chart.ChartUtils exposing (legend)
+import View.Chart.ColorScheme as ColorScheme
+import View.Chart.Donut as Donut exposing (smallPieChart)
 import View.Icons as Icons
 import View.ScreenUtils exposing (neverElement)
 import View.Style exposing (..)
-import View.Theme exposing (background, darkGrey, darkRed, foreground, lightGrey, lightPurple, orange)
+import View.Theme exposing (background, charcoal, darkGrey, darkRed, foreground, grey, lightPurple, orange)
 
 
 renderPostId: UTCTimestamp -> Cache -> PostId -> Element Msg
@@ -193,8 +195,8 @@ renderChallengeStatistics stats = let contestants = stats.acceptedCount
                                       failure = (stats.failureCount |> Int.toFloat) / total
     in column [spacing 5, Font.size 8] [
         Donut.doubleTinyDonut
-            [(skipped, lightGrey),(failure, darkRed), (partial, orange),(success, background)]
-            [(stats.elapsedPeriodCount |> Int.toFloat, lightPurple), (stats.totalPeriodCount |> Int.toFloat, lightGrey)]
+            [(skipped, charcoal),(failure, darkRed), (partial, orange),(success, background)]
+            [(stats.elapsedPeriodCount |> Int.toFloat, lightPurple), (stats.totalPeriodCount |> Int.toFloat, grey)]
         |>  el [centerX, centerY]
         , ((contestants |> String.fromInt) ++ " contestant(s)") |> bold |> el [alignRight]
      ]
@@ -211,16 +213,23 @@ renderAnsweredPoll cache poll =
     let (PollStats stats) = Cache.getPollStats cache poll.id
             |> Maybe.withDefault (emptyPollStats poll)
             |> normalizePollStats poll
-        sum = respondents (PollStats stats) |> Int.toFloat
-        percentages = stats
-            |> List.map (\entry -> (entry.option, 100.0 * (Int.toFloat entry.count) / sum))
+        respondentCount = respondents (PollStats stats)
+        sum = respondentCount |> Int.toFloat
+        pollScheme = ColorScheme.pollPieChartScheme
+        donutData = stats
+            |> List.indexedMap (\index entry -> (100.0 * (Int.toFloat entry.count) / sum, pollScheme |> ColorScheme.cycledColorAt index))
+        legendData = stats
+            |> List.indexedMap (\index entry -> (entry.option |> optionAsString, pollScheme |> ColorScheme.cycledColorAt index))
     in column [spacing 10] [
         poll.title |> multiLineQuotedText |> el [Font.bold] |> postBodyStyle
-        , column [spacing 5]
-          (percentages
-            |> List.map (\(PollOption opt, percentage) -> (opt ++ ": " ++ (String.fromFloat percentage) ++ "%")
-                |> multiLineQuotedText
-                |> postBodyStyle))
+        , row [width fill, height fill, spacing 5] [
+            column [height fill, paddingEach {left=0, top=0, bottom=0, right=5}, spacing 5, Font.size 8] [
+                el [centerX, centerY] (smallPieChart donutData)
+                , ((respondentCount |> String.fromInt) ++ " respondent(s)") |> bold |> el [alignRight]
+            ],
+            verticalSeparator 1 background,
+            legend [Font.size 11] legendData
+        ]
      ]
 
 renderUnansweredPoll: Cache -> Poll -> Element Msg
