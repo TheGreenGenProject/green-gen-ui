@@ -11,7 +11,7 @@ import Data.Schedule exposing (UTCTimestamp(..))
 import Data.Tip as Tip exposing (Tip)
 import Data.Url exposing (Url(..))
 import Data.User as User exposing (UserId(..))
-import Element exposing (Element, alignBottom, alignLeft, alignRight, alignTop, centerX, centerY, column, el, fill, height, padding, paddingEach, px, row, spacing, text, width)
+import Element exposing (Color, Element, alignBottom, alignLeft, alignRight, alignTop, centerX, centerY, column, el, fill, height, padding, paddingEach, px, row, spacing, text, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
@@ -27,6 +27,7 @@ import View.Chart.ChartUtils exposing (legend)
 import View.Chart.ColorScheme as ColorScheme
 import View.Chart.Donut as Donut exposing (smallPieChart)
 import View.Icons as Icons
+import View.PartnershipStyle as PartnershipStyle
 import View.ScreenUtils exposing (neverElement)
 import View.Style exposing (..)
 import View.Theme exposing (background, charcoal, darkGrey, darkRed, foreground, grey, lightPurple, orange)
@@ -39,12 +40,14 @@ renderPostId tmstp cache postId = postId
     |> Maybe.withDefault ("<Unable to render post " ++ (Post.toString postId) ++ ">" |> text)
 
 renderPost: UTCTimestamp -> Cache -> Post -> Element Msg
-renderPost tmstp cache post = let reposted = isRepost post in
+renderPost tmstp cache post =
+    let reposted = isRepost post in
     column [width fill, alignLeft, spacing 5, padding 10 ]
         [renderHeader tmstp cache post
          , renderPostContent tmstp cache post
          , if not reposted then renderFooter cache post else Element.none
          , renderConversation tmstp cache post.id]
+    |> PartnershipStyle.postDecoration cache post.id
 
 renderPostContent: UTCTimestamp -> Cache -> Post -> Element Msg
 renderPostContent tmstp cache post = case post.content of
@@ -123,14 +126,31 @@ renderHeader tmstp cache post =
         ]
 
 specialPostActions: Cache -> Post -> Element Msg
-specialPostActions cache post = case post.content of
-    ChallengePost id -> let challengeText = case Cache.getChallengeOutcomeStatus cache id of
-                                            Just OnTracks    -> "Report"
-                                            Just NotYetTaken -> "Take challenge"
-                                            Just Failed      -> "Failed"
-                                            _                -> "View challenge"
-        in buttonBarStyle [Font.size 9, Font.semiBold] [(challengeText, DisplayPage (ChallengeDetailsPage id))]
-    _                -> Element.none
+specialPostActions cache post =
+    let partnerUserId = Cache.partnerForPost cache post.id
+            |> Maybe.andThen (Cache.getPartner cache)
+            |> Maybe.map (.userId)
+        partnerAction = partnerUserId
+            |> Maybe.map(\userId -> buttonBarStyle [Font.size 9, Font.semiBold] [("View Partner", DisplayPage (UserPage userId))])
+            |> Maybe.withDefault Element.none
+    in
+    case post.content of
+        ChallengePost id -> let challengeText = case Cache.getChallengeOutcomeStatus cache id of
+                                                Just OnTracks    -> "Report"
+                                                Just NotYetTaken -> "Take challenge"
+                                                Just Failed      -> "Failed"
+                                                _                -> "View challenge"
+            in row [alignRight, spacing 3] ([
+                buttonBarStyle [Font.size 9, Font.semiBold] [(challengeText, DisplayPage (ChallengeDetailsPage id))]
+                , partnerAction
+               ] |> withVerticalSeparator 1 background)
+        _                -> partnerAction
+
+withVerticalSeparator: Int -> Color -> List (Element Msg) -> List (Element Msg)
+withVerticalSeparator w col xs = xs
+    |> List.filter (\el -> el /= Element.none)
+    |> List.intersperse (verticalSeparator w col)
+
 
 renderFooter: Cache -> Post -> Element Msg
 renderFooter cache post =

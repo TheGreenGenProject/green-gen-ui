@@ -1,7 +1,9 @@
-module Query.Json.SourceDecoder exposing (decodeSources, decodeSource)
+module Query.Json.SourceDecoder exposing (decodeSources, decodeSource, decodeUrl)
 
 import Data.Post exposing (Source(..))
-import Json.Decode as Decoder exposing (Decoder)
+import Data.Url exposing (Url(..))
+import Json.Decode as Decoder exposing (Decoder, string, succeed)
+import Json.Decode.Pipeline exposing (required)
 import Query.Json.DecoderUtils exposing (unitDecoder)
 
 -- Source
@@ -22,3 +24,7 @@ decodeSource = Decoder.oneOf [
 decodeSourceMySelf: Decoder Source
 decodeSourceMySelf = Decoder.field "MySelf" unitDecoder
     |> Decoder.map (\_ -> MySelf)
+
+decodeUrl: Decoder Url
+decodeUrl = succeed Url
+    |> required "url" string

@@ -17,26 +17,29 @@ module Query.CacheQueryUtils exposing (
     , fetchAndCacheAll
     , fetchAndCacheChallengeStatistics
     , fetchAndCachePoll
-    , fetchAndCachePollStatistics)
+    , fetchAndCachePollStatistics
+    , fetchAndCacheAllPostPartnership)
 
 import Data.Challenge as Challenge exposing (ChallengeId)
-import Data.Conversation exposing (Message, MessageId)
 import Data.Event exposing (EventId)
 import Data.Notification exposing (Notification)
+import Data.Partner as Partner exposing (PartnerId)
 import Data.Poll as Poll exposing (PollId)
 import Data.Post as Post exposing (Post, PostContent(..), PostId)
 import Data.Tip as Tip exposing (TipId)
 import Data.User as User exposing (UserId)
 import Http
-import Json.Decode as Decoder exposing (bool, int, list)
+import Json.Decode as Decoder exposing (bool, int, list, maybe)
 import Query.Json.ChallengeDecoder exposing (decodeChallenge, decodeChallengeStatistics)
 import Query.Json.DecoderUtils exposing (decodeIntWithDefault, jsonResolver)
+import Query.Json.PartnerDecoder exposing (decodePartner, decodePartnerId)
 import Query.Json.PollDecoder exposing (decodePoll, decodePollStats)
 import Query.Json.PostDecoder exposing (decodeHashtag, decodePost)
 import Query.Json.RankDecoder exposing (decodeBreakdown)
 import Query.Json.TipDecoder exposing (decodeTip)
 import Query.Json.UserDecoder exposing (decodeUserList, decodeUserProfile)
 import Query.QueryUtils exposing (authHeader, baseUrl, fetchAllPosts)
+import Query.TaskUtils exposing (thread)
 import State.Cache as Cache exposing (Cache)
 import State.UserState exposing (UserInfo)
 import Task exposing (Task)
@@ -62,6 +65,7 @@ fetchAndCacheAll cache user posts = cache
     |> Task.andThen (\cache6 -> fetchAndCacheFollowers cache6 user)
     |> Task.andThen (\cache7 -> fetchAndCacheFollowingHashtags cache7 user)
     |> Task.andThen (\cache8 -> fetchAndCacheAllMessageCounts cache8 user posts)
+    |> Task.andThen (\cache9 -> fetchAndCacheAllPostPartnership cache9 user posts)
 
 -- Cache users we are following
 fetchAndCacheFollowingUsers: Cache -> UserInfo -> Task Http.Error Cache
@@ -307,3 +311,45 @@ fetchAndCacheMessageCount cache user id = Http.task {
     , resolver = jsonResolver <| int
     , timeout = Nothing
  } |> Task.map (Cache.addConversationSize cache id)
+
+
+{-- Partnership --}
+fetchAndCacheAllPostPartnership: Cache -> UserInfo -> List Post -> Task Http.Error Cache
+fetchAndCacheAllPostPartnership cache user posts = posts
+    |> List.map (\post -> post.id)
+    |> List.map (\id -> fetchAndCachePartnership cache user id)
+    |> Task.sequence
+    |> Task.map (Cache.mergeAll cache)
+    |> Task.map (\cache1 -> (cache1, Cache.allMissingPostPartners cache1))
+    |> Task.andThen (\(cache2, partnerIds) -> fetchAndCacheAllPartners cache2 user partnerIds)
+
+fetchAndCacheAllPartners: Cache -> UserInfo -> List PartnerId -> Task Http.Error Cache
+fetchAndCacheAllPartners cache user partnerIds = partnerIds
+    |> List.map (fetchAndCachePartner cache user)
+    |> Task.sequence
+    |> Task.map (Cache.mergeAll cache)
+
+fetchAndCachePartner: Cache -> UserInfo -> PartnerId -> Task Http.Error Cache
+fetchAndCachePartner cache user id = Http.task {
+    method = "GET"
+    , headers = [authHeader user]
+    , url = baseUrl ++ absolute ["partnership", "by-id", id |> Partner.toString] []
+    , body = Http.emptyBody
+    , resolver = jsonResolver <| decodePartner
+    , timeout = Nothing
+ } |> Task.map (\res -> Cache.addPartner cache res.id res)
+
+fetchAndCachePartnership: Cache -> UserInfo -> PostId -> Task Http.Error Cache
+fetchAndCachePartnership cache user id =
+    fetchPartnership user id
+    |> Task.map (Cache.maybeCache (Cache.addPostWithPartnership cache id) cache)
+
+fetchPartnership: UserInfo -> PostId -> Task Http.Error (Maybe PartnerId)
+fetchPartnership user id = Http.task {
+    method = "GET"
+    , headers = [authHeader user]
+    , url = baseUrl ++ absolute ["partnership", "partner-for", "post", id |> Post.toString] []
+    , body = Http.emptyBody
+    , resolver = jsonResolver <| maybe decodePartnerId
+    , timeout = Nothing
+ }

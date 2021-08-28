@@ -63,9 +63,13 @@ update msg state = case msg of
         {state| windowSize = { width = width, height = height } }
         |> nocmd
     ChangeWallPage page ->
+        let displayCommand = state.wall.user
+                             |> Maybe.map (\x -> DisplayPage (UserPage x))
+                             |> Maybe.withDefault (DisplayPage WallPage)
+        in
         if WallState.isLoadingMore state.wall then state |> nocmd
         else if Page.isAfter page state.wall.currentPage && WallState.noMoreDataToLoad state.wall then state |> nocmd
-        else update (DisplayPage WallPage) {state| wall = WallState.moveToPage state.wall page }
+        else update (displayCommand) {state| wall = WallState.moveToPage state.wall page }
     RefreshWall ->
         update (DisplayPage WallPage) {state| wall = WallState.refresh }
     ChangeFeedPage page ->

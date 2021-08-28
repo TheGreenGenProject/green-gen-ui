@@ -16,6 +16,7 @@ lightOrange     = rgb255 252 175 62
 orange          = rgb255 245 121 0
 darkOrange      = rgb255 206 92 0
 lightYellow     = rgb255 255 233 79
+lighterYellow   = rgb255 255 245 150
 yellow          = rgb255 237 212 0
 darkYellow      = rgb255 196 160 0
 lightGreen      = rgb255 138 226 52

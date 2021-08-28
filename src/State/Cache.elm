@@ -4,6 +4,7 @@ import Data.Challenge exposing (Challenge, ChallengeId, ChallengeOutcomeStatus(.
 import Data.Conversation exposing (Message, MessageId)
 import Data.Event exposing (Event, EventId)
 import Data.Hashtag exposing (Hashtag)
+import Data.Partner exposing (Partner, PartnerId)
 import Data.Poll exposing (Poll, PollId, PollOption, PollStats(..), updatePollStats)
 import Data.Post exposing (PinnedPost(..), Post, PostContent, PostId)
 import Data.Rank exposing (ScoreBreakdown)
@@ -19,6 +20,7 @@ import Utils.MaybeUtils as MaybeUtils
 
 type alias PostKey      = String
 type alias UserKey      = String
+type alias PartnerKey   = String
 type alias EventKey     = String
 type alias TipKey       = String
 type alias PollKey      = String
@@ -30,6 +32,8 @@ type alias MessageKey   = String
 type alias Cache = {
     posts: Dict PostKey Post,
     users: Dict UserKey UserInfo,
+    partners: Dict PartnerKey Partner,
+    partnerships: Dict PostKey PartnerId,
     scores: Dict UserKey ScoreBreakdown,
     hashtagTrend: Maybe (List (Int, Hashtag)),
     events: Dict EventKey Event,
@@ -51,6 +55,8 @@ empty: Cache
 empty = {
     posts                    = Dict.empty,
     users                    = Dict.empty,
+    partners                 = Dict.empty,
+    partnerships             = Dict.empty,
     scores                   = Dict.empty,
     hashtagTrend             = Nothing,
     events                   = Dict.empty,
@@ -132,6 +138,8 @@ merge: Cache -> Cache -> Cache
 merge a b = {
     posts                    = Dict.union a.posts b.posts,
     users                    = Dict.union a.users b.users,
+    partners                 = Dict.union a.partners b.partners,
+    partnerships             = Dict.union a.partnerships b.partnerships,
     scores                   = Dict.union a.scores b.scores,
     hashtagTrend             = a.hashtagTrend |> MaybeUtils.orElse b.hashtagTrend,
     events                   = Dict.union a.events b.events,
@@ -147,6 +155,16 @@ merge a b = {
     conversations            = DictUtils.merge mergeConversationCacheEntries a.conversations b.conversations,
     flaggedMessages          = DictUtils.merge mergeFlaggedEntries a.flaggedMessages b.flaggedMessages
  }
+
+mergeAll: Cache -> List Cache -> Cache
+mergeAll cache xs = List.foldl merge cache xs
+
+-- Apply an operation on the cache if maybe is populated
+maybeCache: (a -> Cache) -> Cache -> Maybe a -> Cache
+maybeCache f cache maybe = maybe
+    |> Maybe.map (\x -> f x)
+    |> Maybe.withDefault cache
+
 
 -- FIXME Not ideal as it just keep the highest count ...
 mergeLikeCounts: Dict PostKey Int -> Dict PostKey Int -> Dict PostKey Int
@@ -197,6 +215,40 @@ addScoreBreakdown cache id content = {cache | scores = cache.scores |> Dict.inse
 
 getScoreBreakdown: Cache -> UserId -> Maybe ScoreBreakdown
 getScoreBreakdown cache id = Dict.get (Data.User.toString id) cache.scores
+
+{-- Partners --}
+addPartner: Cache -> PartnerId -> Partner -> Cache
+addPartner cache id content = {cache | partners = cache.partners |> Dict.insert (Data.Partner.toString id) content }
+
+getPartner: Cache -> PartnerId -> Maybe Partner
+getPartner cache id = Dict.get (Data.Partner.toString id) cache.partners
+
+addPostWithPartnership: Cache -> PostId -> PartnerId -> Cache
+addPostWithPartnership cache postId partnerId =
+    {cache | partnerships = cache.partnerships |> Dict.insert (Data.Post.toString postId) partnerId }
+
+partnerForPost: Cache -> PostId -> Maybe PartnerId
+partnerForPost cache postId =
+    Dict.get (Data.Post.toString postId) cache.partnerships
+
+hasPartnership: Cache -> PostId -> Bool
+hasPartnership cache postId =
+    partnerForPost cache postId |> MaybeUtils.nonEmpty
+
+isPartner: Cache -> UserId -> Bool
+isPartner cache userId = cache.partners
+    |> Dict.values
+    |> ListUtils.find (\p -> p.userId == userId)
+    |> MaybeUtils.nonEmpty
+
+
+allPostPartners: Cache -> List PartnerId
+allPostPartners cache = Dict.values cache.partnerships |> ListUtils.unique
+
+allMissingPostPartners: Cache -> List PartnerId
+allMissingPostPartners cache = Dict.values cache.partnerships
+    |> ListUtils.unique
+    |> List.filter (\x -> Dict.member (Data.Partner.toString x) cache.partners |> not)
 
 {-- Hahstags --}
 updateHashtagTrend: Cache -> List (Int, Hashtag) -> Cache

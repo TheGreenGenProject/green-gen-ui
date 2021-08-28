@@ -23,10 +23,11 @@ import View.Chart.ChartUtils as ChartUtils
 import View.Chart.Donut as Donut
 import View.Icons as Icons
 import View.InfiniteScroll exposing (infiniteScroll)
+import View.PartnershipStyle as PartnershipStyle
 import View.PostRenderer exposing (renderLoadingPostPage, renderPostId)
 import View.ScreenUtils
 import View.Style exposing (loadingFixedTextLine, loadingTextBlock, multiLineQuotedText, verticalSeparator)
-import View.Theme exposing (background, foreground, lightPurple)
+import View.Theme exposing (background, darkOrange, foreground, lightPurple)
 
 
 wallScreen: AppState -> Element Msg
@@ -57,18 +58,27 @@ renderUserHeader cache state =
         score            = Rank.score scoreBreakdown
         rank             = maybeUser  |> Maybe.map (\_ -> score |> Rank.fromScore |> Rank.toString |> text |> el [Font.size 10, Font.italic, centerY])
                                       |> Maybe.withDefault (loadingFixedTextLine 12 50)
+        isPartner        = maybeUser  |> Maybe.map (.id) |> Maybe.map(Cache.isPartner cache) |> Maybe.withDefault False
     in row [width fill, spacing 10] [
         el [Font.color foreground, Background.color background, Border.rounded 10] (Icons.user Icons.extraLarge)
         , column [spacing 10, height fill, Border.color background] [
             row [spacing 5, centerY] [pseudo, renderFollowingButton cache state.user]
             , rank
             , since
+            , if isPartner
+              then text "Partnership" |> el [Font.semiBold, Font.italic, Font.color darkOrange, Font.size 11]
+              else Element.none
           ]
         , verticalSeparator 1 background
         , (renderChart scoreBreakdown)
         , verticalSeparator 1 background
         , introduction
  ]
+
+renderPartnership: AppState -> Element Msg -> Element Msg
+renderPartnership state elmnt = state.wall.user
+    |> Maybe.map (\user -> PartnershipStyle.userWallDecoration state.cache user elmnt)
+    |> Maybe.withDefault elmnt
 
 renderFollowingButton: Cache -> Maybe UserId -> Element Msg
 renderFollowingButton cache maybeUserId = maybeUserId
