@@ -134,6 +134,7 @@ renderPostTypeTab pt selected =
         AllPostTypes   -> renderTabButton "All"
         TipPosts       -> renderTabButton "Tips"
         ChallengePosts -> renderTabButton "Challenges"
+        EventPosts     -> renderTabButton "Events"
         PollPosts      -> renderTabButton "Polls"
         FreeTextPosts  -> renderTabButton "Free posts"
 

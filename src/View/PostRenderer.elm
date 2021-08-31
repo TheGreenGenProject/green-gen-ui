@@ -4,10 +4,12 @@ module View.PostRenderer exposing (..)
 import Basics as Int
 import Data.Challenge as Challenge exposing (ChallengeOutcomeStatus(..), ChallengeStatistics, SuccessMeasure)
 import Data.Conversation as Conversation exposing (Message)
+import Data.Event as Event
+import Data.Location exposing (Latitude(..), Location(..), Longitude(..), formatAddress, toMapUrl)
 import Data.Page exposing (Page(..))
 import Data.Poll as Poll exposing (Poll, PollOption(..), PollStats(..), emptyPollStats, normalizePollStats, optionAsString, respondents)
 import Data.Post as Post exposing (Post, PostContent(..), PostId(..), Source(..))
-import Data.Schedule exposing (UTCTimestamp(..))
+import Data.Schedule as Schedule exposing (Schedule, UTCTimestamp(..))
 import Data.Tip as Tip exposing (Tip)
 import Data.Url exposing (Url(..))
 import Data.User as User exposing (UserId(..))
@@ -20,7 +22,7 @@ import Query.QueryUtils exposing (baseUrl)
 import State.AppState exposing (Display(..))
 import State.Cache as Cache exposing (Cache)
 import Update.Msg exposing (Msg(..))
-import Utils.DateUtils as DateUtils
+import Utils.DateUtils as DateUtils exposing (formatDate)
 import Utils.TextUtils as TextUtils exposing (QuotedString(..))
 import Uuid
 import View.Chart.ChartUtils exposing (legend)
@@ -30,7 +32,7 @@ import View.Icons as Icons
 import View.PartnershipStyle as PartnershipStyle
 import View.ScreenUtils exposing (neverElement)
 import View.Style exposing (..)
-import View.Theme exposing (background, charcoal, darkGrey, darkRed, foreground, grey, lightPurple, orange)
+import View.Theme exposing (background, blue, charcoal, darkGrey, darkRed, foreground, grey, lightPurple, orange)
 
 
 renderPostId: UTCTimestamp -> Cache -> PostId -> Element Msg
@@ -63,9 +65,23 @@ renderPostContentById tmstp cache postId = case Cache.getPost cache postId of
     Just post -> renderPostContent tmstp cache post
     Nothing   -> neverElement
 
--- Render each type of post
 renderEventPost: Cache -> Post -> Element Msg
-renderEventPost cache post = (text "Event")
+renderEventPost cache post = case post.content of
+    EventPost id -> case Cache.getEvent cache id of
+        Just event -> let openSlots =  Cache.getEventParticipantCount cache id |> Maybe.map (\ n -> event.maxParticipants - n) in
+            row [spacing 10, width fill, height fill] [
+                renderNextDate event.schedule,
+                verticalSeparator 1 background,
+                column [alignLeft, width fill, height fill, spacing 3] [
+                    event.description |> multiLineQuotedText |> postBodyStyle |> el [width fill, alignTop]
+                    , row [alignLeft, spacing 5] ["When:" |> bold |> size 10, formatDate (Schedule.start event.schedule) |> text |> size 10]
+                    , row [alignLeft, spacing 5] ["Where:" |> bold |> size 10, renderLocation event.location]
+                    , row [alignLeft, spacing 5] ["Max participants:" |> bold |> size 10, event.maxParticipants |> String.fromInt |> text |> size 10]
+                    , row [alignLeft, spacing 5] ["Remaining slots:" |> bold |> size 10,
+                       openSlots |> Maybe.map (String.fromInt) |> Maybe.withDefault "-" |> text |> size 10]
+                ]]
+        Nothing    -> id |> Event.toString |> text |> postBodyStyle
+    _            -> neverElement
 
 renderTipPost: Cache -> Post -> Element Msg
 renderTipPost cache post = case post.content of
@@ -142,6 +158,20 @@ specialPostActions cache post =
                                                 _                -> "View challenge"
             in row [alignRight, spacing 3] ([
                 buttonBarStyle [Font.size 9, Font.semiBold] [(challengeText, DisplayPage (ChallengeDetailsPage id))]
+                , partnerAction
+               ] |> withVerticalSeparator 1 background)
+        EventPost id ->
+            let actions = case (Cache.getEventCancelledStatus cache id,
+                                Cache.getEventParticipationRequestStatus cache id,
+                                Cache.getEventParticipationStatus cache id) of
+                          (Just True, _, _)          -> [("Event has been cancelled", NoOp)]
+                          (_, _, Just True)          -> [("Cancel participation", CancelEventParticipation id)]
+                          (_, Just True, Just False) -> [("Cancel participation request", CancelEventParticipation id)]
+                          (_, Just False, _)         -> [("Request participation", RequestEventParticipation id)]
+                          (_, Nothing,    _)         -> [("Request participation", RequestEventParticipation id)]
+                          _                          -> []
+            in row [alignRight, spacing 3] ([
+                buttonBarStyle [Font.size 9, Font.semiBold] actions
                 , partnerAction
                ] |> withVerticalSeparator 1 background)
         _                -> partnerAction
@@ -364,3 +394,27 @@ renderLoadingPostPage: Int -> Element Msg
 renderLoadingPostPage count = List.range 1 count
     |> List.map (\_ -> renderLoadingSinglePost)
     |> column [width fill , height fill, centerX, spacing 5, padding 10]
+
+renderNextDate: Schedule -> Element Msg
+renderNextDate schedule =
+    let timestamp = Schedule.start schedule
+        weekday = Schedule.weekDay timestamp |> text
+        day = Schedule.day timestamp |> TextUtils.format2Digits |> text
+        month = Schedule.month timestamp |> text
+        year = Schedule.year timestamp |> TextUtils.format4Digits |> text |> el [centerX]
+    in column [alignLeft, spacing 5, Border.width 1, Border.color background, Border.rounded 3] [
+        year |> el [centerY, Font.size 12, Font.semiBold, Font.color foreground, Background.color background, padding 2, width fill]
+        , weekday |> el [centerX, Font.size 10, paddingEach {left=3, right=3, top=0, bottom=3}]
+        , day |> el [centerX, Font.color background, Font.size 14, Font.bold, paddingEach {left=3, right=3, top=0, bottom=3}]
+        , month |> el [centerX, Font.size 10, paddingEach {left=3, right=3, top=0, bottom=3}]
+    ]
+
+renderLocation: Location -> Element Msg
+renderLocation loc = case loc of
+    Online (Url url) ->
+        Element.newTabLink [Font.size 10] { url = url, label = "online" |> text |> el [Font.color blue] }
+    MapUrl (Url url) ->
+        Element.newTabLink [Font.size 10] { url = url, label = "See on maps" |> text |> el [Font.color blue] }
+    (GeoLocation _ _) as geo -> let (Url url) = toMapUrl 17 geo in
+        Element.newTabLink [Font.size 10] { url = url, label = "See on maps" |> text |> el [Font.color blue] }
+    (Address _ _ _) as address -> formatAddress address |> text |> el [Font.color blue, Font.size 10]

@@ -1,5 +1,6 @@
 module Data.Schedule exposing (..)
 
+import Time exposing(Weekday(..), Month(..))
 import Utils.ListUtils as ListUtils
 type UTCTimestamp = UTC Int
 type Duration = Duration Int
@@ -58,4 +59,34 @@ milliseconds: UTCTimestamp -> Int
 milliseconds (UTC ms) = ms
 
 
+{-- Helper to display a date --}
+weekDay: UTCTimestamp -> String
+weekDay (UTC ms) = case (Time.toWeekday Time.utc (Time.millisToPosix ms)) of
+    Mon -> "Monday"
+    Tue -> "Tuesday"
+    Wed -> "Wednesday"
+    Thu -> "Thursday"
+    Fri -> "Friday"
+    Sat -> "Saturday"
+    Sun -> "Sunday"
 
+day: UTCTimestamp -> Int
+day (UTC ms) = Time.toDay Time.utc (Time.millisToPosix ms)
+
+month: UTCTimestamp -> String
+month (UTC ms) = case (Time.toMonth Time.utc (Time.millisToPosix ms)) of
+    Jan -> "January"
+    Feb -> "February"
+    Mar -> "March"
+    Apr -> "April"
+    May -> "May"
+    Jun -> "June"
+    Jul -> "July"
+    Aug -> "August"
+    Sep -> "September"
+    Oct -> "October"
+    Nov -> "November"
+    Dec -> "December"
+
+year: UTCTimestamp -> Int
+year (UTC ms) = Time.toYear Time.utc (Time.millisToPosix ms)

@@ -16,6 +16,7 @@ type alias UserSearchResult = SearchResult UserId
 type PostType = AllPostTypes
     | PollPosts
     | ChallengePosts
+    | EventPosts
     | TipPosts
     | FreeTextPosts
 
@@ -61,7 +62,13 @@ postTypeFilter filter = case filter of
     _              -> Nothing
 
 allPostTypes: List PostType
-allPostTypes = [AllPostTypes, TipPosts, ChallengePosts, PollPosts, FreeTextPosts]
+allPostTypes = [
+    AllPostTypes
+    , TipPosts
+    , ChallengePosts
+    , EventPosts
+    , PollPosts
+    , FreeTextPosts]
 
 changePostTypeFilter: SearchState -> PostType -> SearchState
 changePostTypeFilter state postType =

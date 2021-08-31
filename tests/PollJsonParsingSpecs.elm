@@ -26,8 +26,8 @@ suite =
                             {"value":"Yes, great idea !"}
                          ],
                          "timestamp":{"value":1622411388798}
-                        }"""
-                        |> Decoder.decodeString decodePoll |> Debug.log "Error=" |> toMaybe
+                    }"""
+                        |> Decoder.decodeString decodePoll |> toMaybe
                         |> Expect.equal expectedPoll
             ]
         ]

@@ -38,7 +38,7 @@ createNewPoll user newPoll = Http.task {
         , body     = Http.emptyBody
         , resolver = jsonResolver <| decodePollId
         , timeout  = Nothing
-    }
+  }
 
 createNewPollPost: UserInfo -> NewPollWizardState -> PollId -> Task Http.Error ()
 createNewPollPost user state challengeId = Http.task {

@@ -36,7 +36,7 @@ type alias Cache = {
     partnerships: Dict PostKey PartnerId,
     scores: Dict UserKey ScoreBreakdown,
     hashtagTrend: Maybe (List (Int, Hashtag)),
-    events: Dict EventKey Event,
+    events: Dict EventKey EventCacheEntry,
     tips: Dict TipKey Tip,
     polls: Dict PollKey PollCacheEntry,
     challenges: Dict ChallengeKey ChallengeCacheEntry,
@@ -84,6 +84,22 @@ emptyPollEntry = {
     poll     = Nothing,
     answered = Nothing,
     stats    = Nothing
+ }
+
+type alias EventCacheEntry = {
+    event: Maybe Event,
+    requested: Maybe Bool,
+    participating: Maybe Bool,
+    cancelled: Maybe Bool,
+    participants: Maybe Int
+ }
+
+emptyEventEntry = {
+    event         = Nothing,
+    requested     = Nothing,
+    participating = Nothing,
+    cancelled     = Nothing,
+    participants  = Nothing
  }
 
 type alias ChallengeCacheEntry = {
@@ -142,7 +158,7 @@ merge a b = {
     partnerships             = Dict.union a.partnerships b.partnerships,
     scores                   = Dict.union a.scores b.scores,
     hashtagTrend             = a.hashtagTrend |> MaybeUtils.orElse b.hashtagTrend,
-    events                   = Dict.union a.events b.events,
+    events                   = DictUtils.merge mergeEventCacheEntries a.events b.events,
     tips                     = Dict.union a.tips b.tips,
     polls                    = DictUtils.merge mergePollCacheEntries a.polls b.polls,
     challenges               = DictUtils.merge mergeChallengeCacheEntries a.challenges b.challenges,
@@ -256,10 +272,54 @@ updateHashtagTrend cache trend = {cache| hashtagTrend = Just trend}
 
 {-- Events --}
 addEvent: Cache -> EventId -> Event -> Cache
-addEvent cache id content = {cache | events =  cache.events |> Dict.insert (Data.Event.toString id) content }
+addEvent cache id content = let cacheId = (Data.Event.toString id)
+                                entry = Dict.get cacheId cache.events |> Maybe.withDefault emptyEventEntry
+                                updated = {entry| event = Just content }
+    in {cache| events = Dict.insert cacheId updated cache.events }
 
 getEvent: Cache -> EventId -> Maybe Event
 getEvent cache id = Dict.get (Data.Event.toString id) cache.events
+    |> Maybe.andThen (.event)
+
+addEventParticipationStatus: Cache -> EventId -> Bool -> Cache
+addEventParticipationStatus cache id content = let cacheId = (Data.Event.toString id)
+                                                   entry = Dict.get cacheId cache.events |> Maybe.withDefault emptyEventEntry
+                                                   updated = {entry| participating = Just content }
+    in {cache| events = Dict.insert cacheId updated cache.events }
+
+getEventParticipationStatus: Cache -> EventId -> Maybe Bool
+getEventParticipationStatus cache id = Dict.get (Data.Event.toString id) cache.events
+    |> Maybe.andThen (.participating)
+
+addEventParticipationRequestStatus: Cache -> EventId -> Bool -> Cache
+addEventParticipationRequestStatus cache id content = let cacheId = (Data.Event.toString id)
+                                                          entry = Dict.get cacheId cache.events |> Maybe.withDefault emptyEventEntry
+                                                          updated = {entry| requested = Just content }
+    in {cache| events = Dict.insert cacheId updated cache.events }
+
+getEventParticipationRequestStatus: Cache -> EventId -> Maybe Bool
+getEventParticipationRequestStatus cache id = Dict.get (Data.Event.toString id) cache.events
+    |> Maybe.andThen (.requested)
+
+addEventCancelledStatus: Cache -> EventId -> Bool -> Cache
+addEventCancelledStatus cache id content = let cacheId = (Data.Event.toString id)
+                                               entry = Dict.get cacheId cache.events |> Maybe.withDefault emptyEventEntry
+                                               updated = {entry| cancelled = Just content }
+    in {cache| events = Dict.insert cacheId updated cache.events }
+
+getEventCancelledStatus: Cache -> EventId -> Maybe Bool
+getEventCancelledStatus cache id = Dict.get (Data.Event.toString id) cache.events
+    |> Maybe.andThen (.cancelled)
+
+addEventParticipantCount: Cache -> EventId -> Int -> Cache
+addEventParticipantCount cache id content = let cacheId = (Data.Event.toString id)
+                                                entry = Dict.get cacheId cache.events |> Maybe.withDefault emptyEventEntry
+                                                updated = {entry| participants = Just content }
+    in {cache| events = Dict.insert cacheId updated cache.events }
+
+getEventParticipantCount: Cache -> EventId -> Maybe Int
+getEventParticipantCount cache id = Dict.get (Data.Event.toString id) cache.events
+    |> Maybe.andThen (.participants)
 
 {-- Tips --}
 addTip: Cache -> TipId -> Tip -> Cache
@@ -617,6 +677,16 @@ mergePollCacheEntries a b = {
     poll     = mergeMaybe a.poll b.poll,
     answered = mergeMaybe a.answered b.answered,
     stats    = mergeMaybe a.stats b.stats
+ }
+
+-- Merges 2 Event cache entries
+mergeEventCacheEntries: EventCacheEntry -> EventCacheEntry -> EventCacheEntry
+mergeEventCacheEntries a b = {
+    event         = mergeMaybe a.event b.event,
+    requested     = mergeMaybe a.requested b.requested,
+    participating = mergeMaybe a.participating b.participating,
+    cancelled     = mergeMaybe a.cancelled b.cancelled,
+    participants  = mergeMaybe a.participants b.participants
  }
 
 -- Merge 2 Conversation cache entries

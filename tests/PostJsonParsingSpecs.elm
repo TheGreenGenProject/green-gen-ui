@@ -1,6 +1,7 @@
 module PostJsonParsingSpecs exposing (suite)
 
 import Data.Challenge as Challenge
+import Data.Event as Event
 import Data.Hashtag exposing (Hashtag(..))
 import Data.Post as Post exposing (Post, PostContent(..), PostId, Source(..))
 import Data.Schedule exposing (UTCTimestamp(..))
@@ -94,6 +95,24 @@ suite =
                     |> Decoder.decodeString decodePost |> toMaybe
                     |> Expect.equal expectedChallengePost,
 
+              test "Event post" <|
+                \_ -> """{
+                          "EventPost": {
+                            "id": { "value": {"uuid": "a61ae3aa-0e12-4c53-ba71-c8f20caf2bbd" } },
+                            "author" : { "value": {"uuid": "c69f2aa8-b802-42da-9618-1c315a2582c2" } },
+                            "event" : { "value": {"uuid": "9522a445-07bc-4547-b3f0-594cfd7be2ef" } },
+                            "created" : { "value": 1608992036166},
+                            "hashtags":[
+                                {"value": "event"},
+                                {"value": "meetup"},
+                                {"value": "noplastic"}
+                               ]
+                             }
+                          }
+                """
+                    |> Decoder.decodeString decodePost |> toMaybe
+                    |> Expect.equal expectedEventPost,
+
                 test "Repost post" <|
                     \_ -> """{
                              "RePost": {
@@ -104,8 +123,7 @@ suite =
                                 "hashtags": [
                                     { "value": "ecologia" }
                                 ]}
-                             }
-                    """
+                          }"""
                         |> Decoder.decodeString decodePost |> toMaybe
                         |> Expect.equal expectedRePost
             ]
@@ -142,6 +160,18 @@ expectedChallengePost =
             (challenge)
             (UTC 1608992036166)
             ([Hashtag "verde", Hashtag "something-else", Hashtag "challenge"]))
+
+expectedEventPost: Maybe Post
+expectedEventPost =
+    (Event.fromString "9522a445-07bc-4547-b3f0-594cfd7be2ef")
+    |> Maybe.map EventPost
+    |> Maybe.andThen (\evt ->
+        makePost
+            (Post.fromString "a61ae3aa-0e12-4c53-ba71-c8f20caf2bbd")
+            (User.fromString "c69f2aa8-b802-42da-9618-1c315a2582c2")
+            (evt)
+            (UTC 1608992036166)
+            ([Hashtag "event", Hashtag "meetup", Hashtag "noplastic"]))
 
 expectedRePost: Maybe Post
 expectedRePost =

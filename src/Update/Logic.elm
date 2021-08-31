@@ -8,6 +8,7 @@ import Query.Authentication exposing (logon)
 import Query.Challenge exposing (acceptChallenge, fetchChallengeDetails, fetchUserChallengePosts, postChallenge, rejectChallenge, reportStepStatus)
 import Query.Clock as Clock
 import Query.Conversation exposing (fetchConversation, flagComment, postComment, unflagComment)
+import Query.Event exposing (acceptParticipation, cancelEvent, cancelParticipation, rejectParticipation, requestParticipation)
 import Query.Feed exposing (fetchFeed, hasNewPosts, scheduleFeedCheck)
 import Query.Following exposing (followHashtag, followUser, unfollowHashtag, unfollowUser)
 import Query.FreeText exposing (postFreeText)
@@ -175,6 +176,18 @@ update msg state = case msg of
         |> ifLogged (\user -> fetchUserChallengePosts state.cache user {tab = tab, page = Page.first})
     AnswerPoll pollId option -> {state| cache = simulatePollAnswer state.cache pollId option }
         |> ifLogged (\user -> answerPollOption state.cache user pollId option)
+    RequestEventParticipation id -> {state| cache = Cache.addEventParticipationRequestStatus state.cache id True }
+        |> ifLogged (\user -> requestParticipation state.cache user id)
+    CancelEventParticipation id ->
+        let cancelledParticipation = Cache.addEventParticipationStatus state.cache id False in
+        {state| cache = Cache.addEventParticipationRequestStatus cancelledParticipation  id False }
+        |> ifLogged (\user -> cancelParticipation state.cache user id)
+    AcceptUserEventParticipation id userId -> state
+        |> ifLogged (\user -> acceptParticipation state.cache user id userId)
+    RejectUserEventParticipation id userId -> state
+        |> ifLogged (\user -> rejectParticipation state.cache user id userId)
+    CancelEvent id -> state
+        |> ifLogged (\user -> cancelEvent state.cache user id)
     -----------------------
     --- Form processing ---
     -----------------------
@@ -373,6 +386,10 @@ update msg state = case msg of
     HttpNewPollPosted (Err err) -> Debug.log ("Error while posting new Poll: " ++ (errorToString err))
         {state| forms = FormState.newPollPosted state.forms }
         |> nocmd
+    HttpEventParticipationRequested _ -> state |> nocmd
+    HttpEventParticipationRequestCancelled _ -> state |> nocmd
+    HttpEventParticipationAccepted _ -> state |> nocmd
+    HttpEventParticipationRejected _ -> state |> nocmd
     HttpConversationPageFetched (Ok (cache, conversationPage)) ->
         let added = Cache.getConversationMessages state.cache conversationPage.postId ++ conversationPage.messages
             updated = Cache.addConversationMessages cache conversationPage.postId added

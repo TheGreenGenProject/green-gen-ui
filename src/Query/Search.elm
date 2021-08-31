@@ -115,5 +115,6 @@ postTypeToString pt = case pt of
     AllPostTypes   -> "all"
     TipPosts       -> "tips"
     ChallengePosts -> "challenges"
+    EventPosts     -> "events"
     PollPosts      -> "polls"
     FreeTextPosts  -> "free-texts"

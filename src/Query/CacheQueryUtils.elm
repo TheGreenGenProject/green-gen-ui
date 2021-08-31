@@ -21,7 +21,7 @@ module Query.CacheQueryUtils exposing (
     , fetchAndCacheAllPostPartnership)
 
 import Data.Challenge as Challenge exposing (ChallengeId)
-import Data.Event exposing (EventId)
+import Data.Event as Event exposing (EventId)
 import Data.Notification exposing (Notification)
 import Data.Partner as Partner exposing (PartnerId)
 import Data.Poll as Poll exposing (PollId)
@@ -32,6 +32,7 @@ import Http
 import Json.Decode as Decoder exposing (bool, int, list, maybe)
 import Query.Json.ChallengeDecoder exposing (decodeChallenge, decodeChallengeStatistics)
 import Query.Json.DecoderUtils exposing (decodeIntWithDefault, jsonResolver)
+import Query.Json.EventDecoder exposing (decodeEvent)
 import Query.Json.PartnerDecoder exposing (decodePartner, decodePartnerId)
 import Query.Json.PollDecoder exposing (decodePoll, decodePollStats)
 import Query.Json.PostDecoder exposing (decodeHashtag, decodePost)
@@ -39,7 +40,6 @@ import Query.Json.RankDecoder exposing (decodeBreakdown)
 import Query.Json.TipDecoder exposing (decodeTip)
 import Query.Json.UserDecoder exposing (decodeUserList, decodeUserProfile)
 import Query.QueryUtils exposing (authHeader, baseUrl, fetchAllPosts)
-import Query.TaskUtils exposing (thread)
 import State.Cache as Cache exposing (Cache)
 import State.UserState exposing (UserInfo)
 import Task exposing (Task)
@@ -76,7 +76,7 @@ fetchAndCacheFollowingUsers cache user = Http.task {
     , body = Http.emptyBody
     , resolver = jsonResolver <| decodeUserList
     , timeout = Nothing
-  } |> Task.map (List.foldl (\id acc -> Cache.addFollowingUser acc id) cache)
+ } |> Task.map (List.foldl (\id acc -> Cache.addFollowingUser acc id) cache)
 
 -- Cache followers from user
 fetchAndCacheFollowers: Cache -> UserInfo -> Task Http.Error Cache
@@ -87,7 +87,7 @@ fetchAndCacheFollowers cache user = Http.task {
     , body = Http.emptyBody
     , resolver = jsonResolver <| decodeUserList
     , timeout = Nothing
-  } |> Task.map (List.foldl (\id acc -> Cache.addFollower acc id) cache)
+ } |> Task.map (List.foldl (\id acc -> Cache.addFollower acc id) cache)
 
 -- Cache hashtags we are following
 fetchAndCacheFollowingHashtags: Cache -> UserInfo -> Task Http.Error Cache
@@ -98,7 +98,7 @@ fetchAndCacheFollowingHashtags cache user = Http.task {
     , body = Http.emptyBody
     , resolver = jsonResolver <| list decodeHashtag
     , timeout = Nothing
-  } |> Task.map (List.foldl (\id acc -> Cache.addFollowingHashtag acc id) cache)
+ } |> Task.map (List.foldl (\id acc -> Cache.addFollowingHashtag acc id) cache)
 
 fetchAndCacheScoreBreakdown: Cache -> UserInfo -> UserId -> Task Http.Error Cache
 fetchAndCacheScoreBreakdown cache user targetId = Http.task {
@@ -108,7 +108,7 @@ fetchAndCacheScoreBreakdown cache user targetId = Http.task {
     , body     = Http.emptyBody
     , resolver = jsonResolver <| decodeBreakdown
     , timeout  = Nothing
-  } |> Task.map (Cache.addScoreBreakdown cache targetId)
+ } |> Task.map (Cache.addScoreBreakdown cache targetId)
 
 -- Cache all user information related to the posts + follower list
 fetchAndCacheAllUsersFromPosts: Cache -> UserInfo -> List Post -> Task Http.Error Cache
@@ -139,7 +139,7 @@ fetchAndCacheUserInfo cache user id = Http.task {
     , body = Http.emptyBody
     , resolver = jsonResolver <| (decodeUserProfile user.token)
     , timeout = Nothing
-    } |> Task.map (\res -> Cache.addUser cache res.id res)
+ } |> Task.map (\res -> Cache.addUser cache res.id res)
 
 -- Cache all necessary post information
 -- This means content post related content + like count
@@ -154,6 +154,10 @@ fetchAndCachePostInfo: Cache -> UserInfo -> Post -> Task Http.Error Cache
 fetchAndCachePostInfo cache user post = case post.content of
     RePost id        -> fetchAndCachePost cache user id
     EventPost id     -> fetchAndCacheEvent cache user id
+                        |> Task.andThen (\cache1 -> fetchAndCacheEventParticipationStatus cache1 user id)
+                        |> Task.andThen (\cache2 -> fetchAndCacheEventCancelledStatus cache2 user id)
+                        |> Task.andThen (\cache3 -> fetchAndCacheEventParticipationRequestStatus cache3 user id)
+                        |> Task.andThen (\cache4 -> fetchAndCacheEventParticipantCount cache4 user id)
     ChallengePost id -> fetchAndCacheChallenge cache user id
                         |> Task.andThen (\cache1 -> fetchAndCacheChallengeStatistics cache1 user id)
     TipPost id       -> fetchAndCacheTip cache user id
@@ -180,7 +184,7 @@ fetchAndCacheLikeCountForPost cache user post = Http.task {
     , body = Http.emptyBody
     , resolver = jsonResolver <| (decodeIntWithDefault 0)
     , timeout = Nothing
-  } |> Task.map (Cache.setLikeCount cache post)
+ } |> Task.map (Cache.setLikeCount cache post)
 
 -- Fetch and cache if user has liked a given post
 fetchAndCacheLikeForPost: Cache -> UserInfo -> PostId -> Task Http.Error Cache
@@ -191,7 +195,7 @@ fetchAndCacheLikeForPost cache user post = Http.task {
     , body = Http.emptyBody
     , resolver = jsonResolver <| Decoder.bool
     , timeout = Nothing
-  } |> Task.map (\isLiked -> (if isLiked then Cache.setLiked else Cache.unsetLiked) cache post)
+ } |> Task.map (\isLiked -> (if isLiked then Cache.setLiked else Cache.unsetLiked) cache post)
 
 
 fetchAndCachePins: Cache -> UserInfo -> List Post -> Task Http.Error Cache
@@ -210,7 +214,7 @@ fetchAndCachePinnedForPost cache user post = Http.task {
     , body = Http.emptyBody
     , resolver = jsonResolver <| Decoder.bool
     , timeout = Nothing
-  } |> Task.map (\isPinned -> (if isPinned then Cache.addPinned else Cache.removePinned) cache post)
+ } |> Task.map (\isPinned -> (if isPinned then Cache.addPinned else Cache.removePinned) cache post)
 
 -- Helpers
 
@@ -222,7 +226,7 @@ fetchAndCacheTip cache user id = Http.task {
     , body = Http.emptyBody
     , resolver = jsonResolver <| decodeTip
     , timeout = Nothing
-    } |> Task.map (Cache.addTip cache id)
+ } |> Task.map (Cache.addTip cache id)
 
 fetchAndCacheChallenge: Cache -> UserInfo -> ChallengeId -> Task Http.Error Cache
 fetchAndCacheChallenge cache user id = Http.task {
@@ -232,7 +236,7 @@ fetchAndCacheChallenge cache user id = Http.task {
     , body = Http.emptyBody
     , resolver = jsonResolver <| decodeChallenge
     , timeout = Nothing
-    } |> Task.map (Cache.addChallenge cache id)
+ } |> Task.map (Cache.addChallenge cache id)
 
 fetchAndCacheChallengeStatistics: Cache -> UserInfo -> ChallengeId -> Task Http.Error Cache
 fetchAndCacheChallengeStatistics cache user id = Http.task {
@@ -245,15 +249,54 @@ fetchAndCacheChallengeStatistics cache user id = Http.task {
  } |> Task.map (Cache.addChallengeStatistics cache id)
 
 fetchAndCacheEvent: Cache -> UserInfo -> EventId -> Task Http.Error Cache
-fetchAndCacheEvent cache user id = Task.succeed cache
---Http.task {
---    method = "GET"
---    , headers = [authHeader user]
---    , url = baseUrl ++ absolute ["event", "by-id", id |> Event.toString] []
---    , body = Http.emptyBody
---    , resolver = jsonResolver <| (decodeEvent)
---    , timeout = Nothing
---    } |> Task.map (\res -> Cache.addEvent cache id res)
+fetchAndCacheEvent cache user id = Http.task {
+    method = "GET"
+    , headers = [authHeader user]
+    , url = baseUrl ++ absolute ["event", "by-id", id |> Event.toString] []
+    , body = Http.emptyBody
+    , resolver = jsonResolver <| (decodeEvent)
+    , timeout = Nothing
+ } |> Task.map (\res -> Cache.addEvent cache id res)
+
+fetchAndCacheEventParticipationStatus: Cache -> UserInfo -> EventId -> Task Http.Error Cache
+fetchAndCacheEventParticipationStatus cache user id = Http.task {
+    method = "GET"
+    , headers = [authHeader user]
+    , url = baseUrl ++ absolute ["event", "is-participating", id |> Event.toString] []
+    , body = Http.emptyBody
+    , resolver = jsonResolver <| bool
+    , timeout = Nothing
+ } |> Task.map (\res -> Cache.addEventParticipationStatus cache id res)
+
+fetchAndCacheEventParticipationRequestStatus: Cache -> UserInfo -> EventId -> Task Http.Error Cache
+fetchAndCacheEventParticipationRequestStatus cache user id = Http.task {
+    method = "GET"
+    , headers = [authHeader user]
+    , url = baseUrl ++ absolute ["event", "participation", "is-requested", id |> Event.toString] []
+    , body = Http.emptyBody
+    , resolver = jsonResolver <| bool
+    , timeout = Nothing
+ } |> Task.map (\res -> Cache.addEventParticipationRequestStatus cache id res)
+
+fetchAndCacheEventCancelledStatus: Cache -> UserInfo -> EventId -> Task Http.Error Cache
+fetchAndCacheEventCancelledStatus cache user id = Http.task {
+    method = "GET"
+    , headers = [authHeader user]
+    , url = baseUrl ++ absolute ["event", "is-cancelled", id |> Event.toString] []
+    , body = Http.emptyBody
+    , resolver = jsonResolver <| bool
+    , timeout = Nothing
+ } |> Task.map (\res -> Cache.addEventCancelledStatus cache id res)
+
+fetchAndCacheEventParticipantCount: Cache -> UserInfo -> EventId -> Task Http.Error Cache
+fetchAndCacheEventParticipantCount cache user id = Http.task {
+    method = "GET"
+    , headers = [authHeader user]
+    , url = baseUrl ++ absolute ["event", "participation", "count", id |> Event.toString] []
+    , body = Http.emptyBody
+    , resolver = jsonResolver <| int
+    , timeout = Nothing
+ } |> Task.map (\res -> Cache.addEventParticipantCount cache id res)
 
 fetchAndCachePost: Cache -> UserInfo -> PostId -> Task Http.Error Cache
 fetchAndCachePost cache user id = Http.task {
@@ -263,7 +306,7 @@ fetchAndCachePost cache user id = Http.task {
     , body = Http.emptyBody
     , resolver = jsonResolver <| decodePost
     , timeout = Nothing
-    } |> Task.map (Cache.addPost cache id)
+ } |> Task.map (Cache.addPost cache id)
 
 fetchAndCachePoll: Cache -> UserInfo -> PollId -> Task Http.Error Cache
 fetchAndCachePoll cache user id = Http.task {

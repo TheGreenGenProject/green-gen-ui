@@ -22,7 +22,7 @@ suite =
                         "user":{"value":{"uuid":"fb7a7b07-8a35-436a-a79d-9043450eef55"}},
                         "content":"Boom",
                         "timestamp":{"value":1623789618841}}
-                    """ |> Decoder.decodeString decodeMessage |> Debug.log "Error=" |> toMaybe
+                    """ |> Decoder.decodeString decodeMessage |> toMaybe
                         |> Expect.equal expectedMessage
             ]
         ]

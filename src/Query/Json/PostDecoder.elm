@@ -6,6 +6,7 @@ import Json.Decode as Decoder exposing (Decoder, string, succeed)
 import Json.Decode.Pipeline exposing (required)
 import Query.Json.ChallengeDecoder exposing (decodeChallengeId)
 import Query.Json.DecoderUtils exposing(..)
+import Query.Json.EventDecoder exposing (decodeEventId)
 import Query.Json.PollDecoder exposing (decodePollId)
 import Query.Json.SourceDecoder exposing (decodeSources)
 import Query.Json.TipDecoder exposing (decodeTipId)
@@ -20,6 +21,7 @@ decodePost = Decoder.oneOf [
     decodeTipPost,
     decodePollPost,
     decodeChallengePost,
+    decodeEventPost,
     decodeRePost
   ]
 
@@ -34,6 +36,9 @@ decodePollPost = decodePostFields |> Decoder.field "PollPost"
 
 decodeChallengePost: Decoder Post
 decodeChallengePost = decodePostFields |> Decoder.field "ChallengePost"
+
+decodeEventPost: Decoder Post
+decodeEventPost = decodePostFields |> Decoder.field "EventPost"
 
 decodeRePost: Decoder Post
 decodeRePost = decodePostFields |> Decoder.field "RePost"
@@ -76,6 +81,7 @@ decodePostContent = Decoder.oneOf [
         decodeTipPostContent,
         decodePollPostContent,
         decodeChallengePostContent,
+        decodeEventPostContent,
         decodeRePostContent
   ]
 
@@ -95,6 +101,10 @@ decodePollPostContent = succeed PollPost
 decodeChallengePostContent: Decoder PostContent
 decodeChallengePostContent = succeed ChallengePost
     |> required "challenge" decodeChallengeId
+
+decodeEventPostContent: Decoder PostContent
+decodeEventPostContent = succeed EventPost
+    |> required "event" decodeEventId
 
 decodeRePostContent: Decoder PostContent
 decodeRePostContent = succeed RePost

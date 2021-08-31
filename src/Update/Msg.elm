@@ -2,6 +2,7 @@ module Update.Msg exposing (..)
 
 import Data.Challenge exposing (Challenge, ChallengeId, ChallengeOutcomeStatus, ChallengeStepStatus)
 import Data.Conversation exposing (Conversation, ConversationPage, Message, MessageId)
+import Data.Event exposing (EventId)
 import Data.Feed exposing (Feed)
 import Data.Hash exposing (Hash)
 import Data.Hashtag exposing (Hashtag)
@@ -73,6 +74,11 @@ type Msg =
     | RejectChallenge ChallengeId
     | ReportChallengeStepStatus ChallengeId Int ChallengeStepStatus
     | AnswerPoll PollId PollOption
+    | RequestEventParticipation EventId
+    | CancelEventParticipation EventId
+    | AcceptUserEventParticipation EventId UserId
+    | RejectUserEventParticipation EventId UserId
+    | CancelEvent EventId
     | CheckNotifications
     | CheckFeed
     -- Form
@@ -124,6 +130,10 @@ type Msg =
     | HttpHashtagTrendRefreshed (Result Http.Error (List (Int, Hashtag)))
     | HttpPollAnswered (Result Http.Error ())
     | HttpNewPollPosted (Result Http.Error ())
+    | HttpEventParticipationRequested (Result Http.Error EventId)
+    | HttpEventParticipationRequestCancelled (Result Http.Error EventId)
+    | HttpEventParticipationAccepted (Result Http.Error ())
+    | HttpEventParticipationRejected (Result Http.Error ())
     | HttpConversationPageFetched (Result Http.Error (Cache, ConversationPage))
     | HttpNewCommentPosted (Result Http.Error PostId)
     | HttpCommentFlagged (Result Http.Error ())
