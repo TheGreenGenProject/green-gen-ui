@@ -156,24 +156,21 @@ specialPostActions cache post =
                                                 Just NotYetTaken -> "Take challenge"
                                                 Just Failed      -> "Failed"
                                                 _                -> "View challenge"
-            in row [alignRight, spacing 3] ([
-                buttonBarStyle [Font.size 9, Font.semiBold] [(challengeText, DisplayPage (ChallengeDetailsPage id))]
-                , partnerAction
-               ] |> withVerticalSeparator 1 background)
+                                actionButtons = [(challengeText, DisplayPage (ChallengeDetailsPage id))] |> List.map (postButtonBarStyle)
+            in row [alignRight, spacing 3] (actionButtons ++ [partnerAction] |> withVerticalSeparator 1 background)
         EventPost id ->
-            let actions = case (Cache.getEventCancelledStatus cache id,
+            let viewAction = ("View event", (DisplayPage (EventDetailsPage id)))
+                actions = case (Cache.getEventCancelledStatus cache id,
                                 Cache.getEventParticipationRequestStatus cache id,
                                 Cache.getEventParticipationStatus cache id) of
                           (Just True, _, _)          -> [("Event has been cancelled", NoOp)]
-                          (_, _, Just True)          -> [("Cancel participation", CancelEventParticipation id)]
-                          (_, Just True, Just False) -> [("Cancel participation request", CancelEventParticipation id)]
-                          (_, Just False, _)         -> [("Request participation", RequestEventParticipation id)]
-                          (_, Nothing,    _)         -> [("Request participation", RequestEventParticipation id)]
-                          _                          -> []
-            in row [alignRight, spacing 3] ([
-                buttonBarStyle [Font.size 9, Font.semiBold] actions
-                , partnerAction
-               ] |> withVerticalSeparator 1 background)
+                          (_, _, Just True)          -> [("Cancel participation", CancelEventParticipation id), viewAction]
+                          (_, Just True, Just False) -> [("Cancel participation request", CancelEventParticipation id), viewAction]
+                          (_, Just False, _)         -> [("Request participation", RequestEventParticipation id), viewAction]
+                          (_, Nothing,    _)         -> [("Request participation", RequestEventParticipation id), viewAction]
+                          _                          -> [viewAction]
+                actionButtons = actions |> List.map (postButtonBarStyle)
+            in row [alignRight, spacing 3] (actionButtons ++ [partnerAction] |> withVerticalSeparator 1 background)
         _                -> partnerAction
 
 withVerticalSeparator: Int -> Color -> List (Element Msg) -> List (Element Msg)

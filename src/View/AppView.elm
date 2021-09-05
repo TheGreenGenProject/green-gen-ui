@@ -2,6 +2,7 @@ module View.AppView exposing (viewApp)
 
 
 import Data.Challenge exposing (ChallengeId)
+import Data.Event exposing (EventId)
 import Data.User exposing (UserId)
 import Element.Background as Background
 import Element.Border as Border
@@ -13,6 +14,8 @@ import State.FeedState
 import Update.Msg exposing (Msg(..))
 import View.ChallengeDetailsView exposing (challengeDetailsScreen)
 import View.ChallengeScreen exposing (challengeScreen)
+import View.EventDetailsView exposing (eventDetailsScreen)
+import View.EventScreen exposing (eventScreen)
 import View.WizardRepostPage exposing (newWizardRepostScreen)
 import View.FeedScreen exposing (feedScreen)
 import View.Icons as Icons
@@ -45,6 +48,7 @@ menuBar state =
         , el [alignRight] (wallTab state)
         , el [alignRight] (feedTab state)
         , el [alignRight] (challengeTab state)
+        , el [alignRight] (eventTab state)
         , el [alignRight] (pinnedTab state)
         , el [alignRight] (searchTab state)
         , el [alignRight] (notificationTab state)
@@ -75,6 +79,7 @@ displayCurrentPage state = case state.display of
     State.AppState.WizardNewFreePostPage   -> displayWizardNewFreeTextPost state
     State.AppState.ChallengePage           -> displayChallenge state
     State.AppState.ChallengeDetailsPage id -> displayChallengeDetails state id
+    State.AppState.EventDetailsPage id     -> displayEventDetails state id
 
 
 displayLoginPage: AppState -> Element Msg
@@ -102,7 +107,7 @@ displayFeed: AppState -> Element Msg
 displayFeed = feedScreen
 
 displayEvent: AppState -> Element Msg
-displayEvent state = (text "Display Event")
+displayEvent = eventScreen
 
 displayPinnedPost: AppState -> Element Msg
 displayPinnedPost = pinnedScreen
@@ -142,6 +147,9 @@ displayChallenge = challengeScreen
 
 displayChallengeDetails: AppState -> ChallengeId -> Element Msg
 displayChallengeDetails = challengeDetailsScreen
+
+displayEventDetails: AppState -> EventId -> Element Msg
+displayEventDetails = eventDetailsScreen
 
 
 -- We really should have a picture with a proper logo here ...

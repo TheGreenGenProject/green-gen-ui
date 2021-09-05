@@ -187,6 +187,11 @@ buttonBarStyle attrs buttons = buttons
     |> List.intersperse (el attrs ("|" |> text))
     |> row attrs
 
+postButtonBarStyle: (String, Msg) -> Element Msg
+postButtonBarStyle (txt, action) =
+    Input.button [Font.size 9, Font.semiBold] { onPress = Just action, label = txt |> text }
+
+
 tabButton: String -> Msg -> Bool -> Element Msg
 tabButton label msg selected = Input.button [
     Font.size 14

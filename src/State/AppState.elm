@@ -1,11 +1,13 @@
 module State.AppState exposing (..)
 
 import Data.Challenge exposing (ChallengeId)
+import Data.Event exposing (EventId)
 import Data.Schedule exposing (UTCTimestamp(..))
 import Data.User exposing (UserId)
 import Http
 import State.Cache as Cache exposing (Cache)
 import State.ChallengeState exposing (ChallengeState)
+import State.EventState exposing (EventState)
 import State.FeedState exposing (FeedState)
 import State.FormState exposing (FormState)
 import State.NotificationState exposing (NotificationState)
@@ -32,6 +34,7 @@ type Display = LoginPage
     | NewPostPage
     | ChallengePage
     | ChallengeDetailsPage ChallengeId
+    | EventDetailsPage EventId
     | WizardNewEventPage
     | WizardNewTipPage
     | WizardRepostPage
@@ -53,6 +56,7 @@ type alias AppState = {
     wall: WallState,
     feed: FeedState,
     challenge: ChallengeState,
+    event: EventState,
     pinned: PinnedState,
     notifications: NotificationState,
     search: SearchState,
@@ -70,6 +74,7 @@ empty = {
     wall          = State.WallState.empty,
     feed          = State.FeedState.empty,
     challenge     = State.ChallengeState.empty,
+    event         = State.EventState.empty,
     pinned        = State.PinnedState.empty,
     notifications = State.NotificationState.empty,
     search        = State.SearchState.empty,

@@ -18,6 +18,7 @@ import Http
 import State.AppState exposing (AppState, AuthError, Display(..))
 import State.Cache exposing (Cache)
 import State.ChallengeState exposing (ChallengePagedTab, ChallengeTab)
+import State.EventState exposing (EventPagedTab, EventTab)
 import State.FormState exposing (NewChallengeWizardState, NewFreeTextWizardState, NewPollWizardState, NewRepostWizardState, NewTipWizardState, RegistrationFormState)
 import State.NotificationState exposing (NotificationPage, NotificationTab)
 import State.SearchState exposing (PostSearchResult, PostType, SearchFilter, UserSearchResult)
@@ -47,6 +48,8 @@ type Msg =
     | ChangeSearchPostTypeFilter PostType
     | ChangeChallengeTab ChallengeTab
     | ChangeChallengePage Page
+    | ChangeEventTab EventTab
+    | ChangeEventPage Page
     | FollowUser UserId
     | UnfollowUser UserId
     | FollowHashtag Hashtag
@@ -134,6 +137,8 @@ type Msg =
     | HttpEventParticipationRequestCancelled (Result Http.Error EventId)
     | HttpEventParticipationAccepted (Result Http.Error ())
     | HttpEventParticipationRejected (Result Http.Error ())
+    | HttpEventPostsFetched (Result Http.Error (Cache, EventPagedTab, List PostId))
+    | HttpEventDetailsFetched (Result Http.Error (Cache, EventId))
     | HttpConversationPageFetched (Result Http.Error (Cache, ConversationPage))
     | HttpNewCommentPosted (Result Http.Error PostId)
     | HttpCommentFlagged (Result Http.Error ())

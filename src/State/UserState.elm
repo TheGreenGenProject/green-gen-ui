@@ -36,3 +36,9 @@ pseudo state = case state of
     LoggedIn user -> user.pseudo
     _             -> "Not logged in !"
 
+currentUser: UserState -> Maybe UserInfo
+currentUser state = case state of
+    LoggedIn user -> Just user
+    _             -> Nothing
+
+

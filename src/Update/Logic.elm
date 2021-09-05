@@ -8,7 +8,7 @@ import Query.Authentication exposing (logon)
 import Query.Challenge exposing (acceptChallenge, fetchChallengeDetails, fetchUserChallengePosts, postChallenge, rejectChallenge, reportStepStatus)
 import Query.Clock as Clock
 import Query.Conversation exposing (fetchConversation, flagComment, postComment, unflagComment)
-import Query.Event exposing (acceptParticipation, cancelEvent, cancelParticipation, rejectParticipation, requestParticipation)
+import Query.Event exposing (acceptParticipation, cancelEvent, cancelParticipation, fetchEventDetails, fetchUserEventPosts, rejectParticipation, requestParticipation)
 import Query.Feed exposing (fetchFeed, hasNewPosts, scheduleFeedCheck)
 import Query.Following exposing (followHashtag, followUser, unfollowHashtag, unfollowUser)
 import Query.FreeText exposing (postFreeText)
@@ -26,6 +26,7 @@ import Query.Wall exposing (fetchUserWall, fetchWall, fetchWallByPseudo)
 import State.AppState as AppState exposing (AppState, Display(..), isUserLoggedIn)
 import State.Cache as Cache exposing (simulatePollAnswer)
 import State.ChallengeState as ChallengeState
+import State.EventState as EventState
 import State.FeedState as FeedState
 import State.FormState as FormState exposing (clearNewChallengeWizardState, clearNewFreeTextWizardState, clearNewPollWizardState, clearNewRepostWizardState, clearNewTipWizardState)
 import State.NotificationState as NotificationState
@@ -188,6 +189,13 @@ update msg state = case msg of
         |> ifLogged (\user -> rejectParticipation state.cache user id userId)
     CancelEvent id -> state
         |> ifLogged (\user -> cancelEvent state.cache user id)
+    ChangeEventPage page ->
+        if EventState.isLoadingMore state.event then state |> nocmd
+        else if Page.isAfter page state.event.currentPage && EventState.noMoreDataToLoad state.event then state |> nocmd
+        else state |> ifLogged (\user -> fetchUserEventPosts state.cache user {tab = state.event.currentTab, page=page})
+    ChangeEventTab tab -> {state|
+        event = state.event |> EventState.changeTab tab }
+        |> ifLogged (\user -> fetchUserEventPosts state.cache user {tab = tab, page = Page.first})
     -----------------------
     --- Form processing ---
     -----------------------
@@ -390,6 +398,17 @@ update msg state = case msg of
     HttpEventParticipationRequestCancelled _ -> state |> nocmd
     HttpEventParticipationAccepted _ -> state |> nocmd
     HttpEventParticipationRejected _ -> state |> nocmd
+    HttpEventPostsFetched (Ok (cache, {tab, page}, events)) -> {state |
+        event = EventState.from events {tab=tab, page=page} state.event
+        , cache = Cache.merge cache state.cache }
+        |> nocmd
+    HttpEventPostsFetched (Err err) -> Debug.log ("Error while fetching event details: " ++ (errorToString err))
+        state |> nocmd
+    HttpEventDetailsFetched (Ok (cache, _)) -> {state |
+        cache = Cache.merge cache state.cache }
+        |> nocmd
+    HttpEventDetailsFetched (Err err) -> Debug.log ("Error while fetching challenge details: " ++ (errorToString err))
+        state |> nocmd
     HttpConversationPageFetched (Ok (cache, conversationPage)) ->
         let added = Cache.getConversationMessages state.cache conversationPage.postId ++ conversationPage.messages
             updated = Cache.addConversationMessages cache conversationPage.postId added
@@ -450,5 +469,7 @@ loadPageContent state page = case (state.user, page) of
     (LoggedIn user, PseudoPage pseudo)                -> (fetchWallByPseudo state.cache user pseudo)
     (LoggedIn user, ChallengePage)                    -> (fetchUserChallengePosts state.cache user {tab=state.challenge.currentTab, page=Page.first})
     (LoggedIn user, ChallengeDetailsPage challengeId) -> (fetchChallengeDetails state.cache user challengeId)
+    (LoggedIn user, EventPage)                        -> (fetchUserEventPosts state.cache user {tab=state.event.currentTab, page=Page.first})
+    (LoggedIn user, EventDetailsPage eventId)         -> (fetchEventDetails state.cache user eventId)
     _                                                 -> none
 
