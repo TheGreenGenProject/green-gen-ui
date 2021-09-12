@@ -81,7 +81,7 @@ form state =
         Icons.followers Icons.normal
             |> el [Font.color Theme.background]
         , "Audience" |> text |> el [Font.size 12, width <| px 50]
-        , options [("Followers", Followers), ("Custom", Specific [])]
+        , options [("Followers", Followers), ("Me only", Specific [])]
             (if wizardState.audience == Followers then Followers else Specific [])
             (\opt -> FillingNewChallengeWizard {wizardState| audience = opt})
         ]

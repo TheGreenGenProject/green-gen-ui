@@ -19,7 +19,7 @@ import State.AppState exposing (AppState, AuthError, Display(..))
 import State.Cache exposing (Cache)
 import State.ChallengeState exposing (ChallengePagedTab, ChallengeTab)
 import State.EventState exposing (EventPagedTab, EventTab)
-import State.FormState exposing (NewChallengeWizardState, NewFreeTextWizardState, NewPollWizardState, NewRepostWizardState, NewTipWizardState, RegistrationFormState)
+import State.FormState exposing (NewChallengeWizardState, NewEventWizardState, NewFreeTextWizardState, NewPollWizardState, NewRepostWizardState, NewTipWizardState, RegistrationFormState)
 import State.NotificationState exposing (NotificationPage, NotificationTab)
 import State.SearchState exposing (PostSearchResult, PostType, SearchFilter, UserSearchResult)
 import State.UserState exposing (UserInfo, UserState(..))
@@ -96,6 +96,8 @@ type Msg =
     | PostNewFreeText
     | FillingNewChallengeWizard NewChallengeWizardState
     | PostNewChallenge NewChallengeWizardState
+    | FillingNewEventWizard NewEventWizardState
+    | PostNewEvent NewEventWizardState
     | FillingNewPollWizard NewPollWizardState
     | PostNewPoll NewPollWizardState
     -- Http feedback
@@ -139,6 +141,7 @@ type Msg =
     | HttpEventParticipationRejected (Result Http.Error ())
     | HttpEventPostsFetched (Result Http.Error (Cache, EventPagedTab, List PostId))
     | HttpEventDetailsFetched (Result Http.Error (Cache, EventId))
+    | HttpNewEventPosted (Result Http.Error ())
     | HttpConversationPageFetched (Result Http.Error (Cache, ConversationPage))
     | HttpNewCommentPosted (Result Http.Error PostId)
     | HttpCommentFlagged (Result Http.Error ())

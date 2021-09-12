@@ -20,7 +20,7 @@ newPostScreen _ = column [
         , padding 20 ]
     [ newTipButton
      , newChallengeButton
-     --, newEventButton
+     , newEventButton
      , newPollButton
      , newFreeTextButton]
 

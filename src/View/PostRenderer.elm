@@ -334,8 +334,8 @@ renderConversationMessage tmstp cache _ message =
     in  column [width fill] [
         row [alignLeft, spacing 1] [
             userStyle pseudo (Just message.author) |> postBodyStyle
-            , renderCommentDate tmstp message.timestamp |> postFooterStyle |> space 5
-            , renderFlagAction cache message |> space 20
+            , renderCommentDate tmstp message.timestamp |> postFooterStyle |> rightGap 5
+            , renderFlagAction cache message |> rightGap 20
             , renderFlagWarning flagged
         ]
         , el [paddingEach {left = 15, right = 0, top = 0, bottom = 0}]

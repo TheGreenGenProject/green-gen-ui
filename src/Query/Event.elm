@@ -1,5 +1,6 @@
 module Query.Event exposing (
-    requestParticipation
+    postEvent
+    , requestParticipation
     , cancelParticipation
     , acceptParticipation
     , rejectParticipation
@@ -9,9 +10,13 @@ module Query.Event exposing (
  )
 
 
-import Data.Event as Event exposing (EventId)
+import Data.Event as Event exposing (Event, EventId)
+import Data.Hashtag exposing (Hashtag(..))
+import Data.Location exposing (Country(..), Latitude(..), Location(..), Longitude(..), ZipCode(..))
 import Data.Page as Page exposing (Page)
 import Data.Post exposing (PostId)
+import Data.Schedule as Schedule exposing (Duration(..), Schedule(..), UTCTimestamp(..))
+import Data.Url exposing (Url(..))
 import Data.User as User exposing (UserId)
 import Http
 import Json.Decode exposing (list)
@@ -23,10 +28,45 @@ import Query.QueryUtils exposing (authHeader, baseUrl)
 import Query.TaskUtils exposing (thread)
 import State.Cache as Cache exposing (Cache)
 import State.EventState exposing (EventPagedTab, EventTab(..))
+import State.FormState exposing (NewEventWizardState)
 import State.UserState exposing (UserInfo)
 import Task exposing (Task)
 import Update.Msg exposing (Msg(..))
-import Url.Builder exposing (absolute, string)
+import Url.Builder exposing (absolute, int, string)
+import Utils.TextUtils as TextUtils
+
+
+postEvent: UserInfo -> NewEventWizardState -> Cmd Msg
+postEvent user newEvent =
+    createNewEvent user newEvent
+    |> Task.andThen (\event -> createNewEventPost user newEvent event.id)
+    |> Task.attempt HttpNewEventPosted
+
+createNewEvent: UserInfo -> NewEventWizardState -> Task Http.Error Event
+createNewEvent user newEvent = Http.task {
+        method     = "POST"
+        , headers  = [authHeader user]
+        , url      = baseUrl ++ absolute ["event", "new"] [
+            int "max-participant" newEvent.maxParticipants
+            , string "description" (newEvent.description |> Maybe.withDefault "")
+            , string "location" (newEvent.location |> toLocationParam)
+            , string "schedule"  (newEvent |> toSchedule |> toScheduleParam)]
+        , body     = Http.emptyBody
+        , resolver = jsonResolver <| decodeEvent
+        , timeout  = Nothing
+    }
+
+createNewEventPost: UserInfo -> NewEventWizardState -> EventId -> Task Http.Error ()
+createNewEventPost user state eventId = Http.task {
+    method     = "POST"
+    , headers  = [authHeader user]
+    , url      = baseUrl ++ absolute ["post", "new", "event"] [
+        string "event-id" (eventId |> Event.toString)
+        , string "hashtags" (state |> hashtagsAsParameter)]
+    , body     = Http.emptyBody
+    , resolver = jsonResolver <| unitDecoder
+    , timeout  = Nothing
+  }
 
 
 requestParticipation: Cache -> UserInfo -> EventId -> Cmd Msg
@@ -215,3 +255,37 @@ fetchChallengePost user id = Http.task {
     , resolver = jsonResolver <| decodePostId
     , timeout = Nothing
  }
+
+
+toSchedule: NewEventWizardState -> Schedule
+toSchedule state =
+    let start = state.start |> Maybe.withDefault (UTC 0)
+        end   = state.end |> Maybe.withDefault (UTC 0)
+    in OneOff start end
+
+toScheduleParam: Schedule -> String
+toScheduleParam schedule = "oneoff(" ++
+    (schedule |> Schedule.start |> toMillis |> String.fromInt) ++ "," ++
+    (schedule |> Schedule.end |> toMillis |> String.fromInt) ++ ")"
+
+toMillis: UTCTimestamp -> Int
+toMillis (UTC millis) = millis
+
+toLocationParam: Maybe Location -> String
+toLocationParam loc = case loc of
+    Just (Online (Url url))                           -> "url(" ++ url ++ ")"
+    Just (GeoLocation (Latitude lat) (Longitude lon)) -> "geoloc(" ++ (String.fromFloat lat) ++ "," ++ (String.fromFloat lon) ++ ")"
+    Just (MapUrl (Url url))                           -> "map(" ++ url ++ ")"
+    Just (Address street zip (Country country))       -> "address(" ++
+        (street |> Maybe.withDefault "") ++ "," ++
+        (zip |> Maybe.map (\(ZipCode zp) -> zp) |> Maybe.withDefault "") ++ "," ++
+        country ++ ")"
+    Nothing                                           -> "invalid!"
+
+hashtagsAsParameter: NewEventWizardState -> String
+hashtagsAsParameter state =
+    let content = state.description |> Maybe.withDefault ""
+        hashtags = TextUtils.hashtagsFrom content
+    in hashtags
+        |> List.map (\(Hashtag x) -> x)
+        |> String.join "+"

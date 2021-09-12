@@ -16,6 +16,7 @@ import View.ChallengeDetailsView exposing (challengeDetailsScreen)
 import View.ChallengeScreen exposing (challengeScreen)
 import View.EventDetailsView exposing (eventDetailsScreen)
 import View.EventScreen exposing (eventScreen)
+import View.WizardNewEventPage exposing (newWizardNewEventScreen)
 import View.WizardRepostPage exposing (newWizardRepostScreen)
 import View.FeedScreen exposing (feedScreen)
 import View.Icons as Icons
@@ -137,7 +138,7 @@ displayWizardNewPollPost: AppState -> Element Msg
 displayWizardNewPollPost = newWizardNewPollScreen
 
 displayWizardNewEvent: AppState -> Element Msg
-displayWizardNewEvent state = (text "Wizard new event")
+displayWizardNewEvent = newWizardNewEventScreen
 
 displayBlocked: AppState -> Element Msg
 displayBlocked state = (text "Your user has been blocked !")

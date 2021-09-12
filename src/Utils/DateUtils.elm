@@ -34,6 +34,12 @@ min (UTC t1) (UTC t2) = if t1 <= t2 then UTC t1 else UTC t2
 plusDays: Int -> UTCTimestamp -> UTCTimestamp
 plusDays days (UTC millis) = UTC (millis + days * 24 * 60 * 60 * 1000)
 
+plusHours: Int -> UTCTimestamp -> UTCTimestamp
+plusHours hours (UTC millis) = UTC (millis + hours * 60 * 60 * 1000)
+
+plusMinutes: Int -> UTCTimestamp -> UTCTimestamp
+plusMinutes mins (UTC millis) = UTC (millis + mins * 60 * 1000)
+
 -- UTC timestamp / Local Date conversion
 type alias LocalDate = {
     day: Int,
@@ -86,6 +92,28 @@ toUTCTimestamp {day, month, year} = intToMonth month
     |> Maybe.andThen (\m -> DateTime.fromRawParts
         {day = day, month = m, year = year}
         {hours = 0, minutes = 0, seconds = 0, milliseconds = 0})
+    |> Maybe.map DateTime.toPosix
+    |> Maybe.map Time.posixToMillis
+    |> Maybe.map UTC
+
+-- UTC timestamp / Local Time conversion
+type alias LocalTime = {
+    hour: Int,
+    minute: Int
+ }
+
+toLocalTime: UTCTimestamp -> LocalTime
+toLocalTime (UTC millis) =
+    let posix = Time.millisToPosix millis
+        hours = Time.toHour Time.utc posix
+        minutes = Time.toMinute Time.utc posix
+    in { hour = hours, minute = minutes }
+
+toUTCTimestampFromTime: LocalDate -> LocalTime -> Maybe UTCTimestamp
+toUTCTimestampFromTime {day, month, year} {hour, minute} = intToMonth month
+    |> Maybe.andThen (\m -> DateTime.fromRawParts
+        { day = day, month = m, year = year}
+        { hours = hour, minutes = minute, seconds = 0, milliseconds = 0})
     |> Maybe.map DateTime.toPosix
     |> Maybe.map Time.posixToMillis
     |> Maybe.map UTC

@@ -3,6 +3,7 @@ module State.FormState exposing (..)
 
 import Data.Challenge exposing (SuccessMeasure)
 import Data.Hashtag exposing (Hashtag)
+import Data.Location exposing (Location)
 import Data.Poll exposing (PollOption)
 import Data.Post exposing (PostId, Source)
 import Data.Schedule exposing (UTCTimestamp)
@@ -16,6 +17,7 @@ type alias FormState = {
     newRepostWizard: NewRepostWizardState,
     newFreeTextWizard: NewFreeTextWizardState,
     newChallengeWizard: NewChallengeWizardState,
+    newEventWizard: NewEventWizardState,
     newPollWizard: NewPollWizardState
  }
 
@@ -26,6 +28,7 @@ empty = {
     newRepostWizard    = emptyRepostWizard,
     newFreeTextWizard  = emptyFreeTextWizard,
     newChallengeWizard = emptyChallengeWizard,
+    newEventWizard     = emptyEventWizard,
     newPollWizard      = emptyPollWizard
  }
 
@@ -242,6 +245,45 @@ postingNewChallenge formState = let wizard = formState.newChallengeWizard in
 newChallengePosted: FormState -> FormState
 newChallengePosted formState = let wizard = formState.newChallengeWizard in
     {formState | newChallengeWizard = {wizard| posting = False} }
+
+
+-- Events
+type LocationType = LocatedOnline | MapLink | Physical
+type alias NewEventWizardState = {
+    posting: Bool,
+    description: Maybe String,
+    start: Maybe UTCTimestamp,
+    end: Maybe UTCTimestamp,
+    location: Maybe Location,
+    selectedLocationType: LocationType,
+    maxParticipants: Int
+ }
+
+emptyEventWizard = {
+    posting = False,
+    start = Nothing,
+    end = Nothing,
+    description = Nothing,
+    location = Nothing,
+    selectedLocationType = LocatedOnline,
+    maxParticipants = 10
+ }
+
+updateNewEventWizardState: FormState -> NewEventWizardState -> FormState
+updateNewEventWizardState formState newEventState = {formState |
+    newEventWizard = newEventState }
+
+clearNewEventWizardState: FormState -> FormState
+clearNewEventWizardState formState = {formState |
+    newEventWizard = emptyEventWizard }
+
+postingNewEvent: FormState -> FormState
+postingNewEvent formState = let wizard = formState.newEventWizard in
+    {formState | newEventWizard = {wizard| posting = True} }
+
+newEventPosted: FormState -> FormState
+newEventPosted formState = let wizard = formState.newEventWizard in
+    {formState | newEventWizard = {wizard| posting = False} }
 
 
 -- Polls

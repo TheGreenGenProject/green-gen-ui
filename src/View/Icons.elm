@@ -104,3 +104,5 @@ valid = Icons.checkCircleOutlined
 
 invalid = Icons.closeCircleOutlined
 
+location = Icons.environmentOutlined
+

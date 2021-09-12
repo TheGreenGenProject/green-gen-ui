@@ -16,7 +16,7 @@ import Html.Events
 import Json.Decode as Decode
 import State.AppState exposing (AppState, Display(..))
 import Update.Msg exposing (Msg(..))
-import Utils.DateUtils exposing (LocalDate, toLocalDate)
+import Utils.DateUtils exposing (LocalDate, LocalTime, toLocalDate, toLocalTime)
 import Utils.TextUtils as TextUtils exposing (QuotedString(..), format2Digits)
 import View.Icons as Icons
 import View.Theme as Theme exposing (background, blue, darkRed, errorForeground, foreground, grey, lightGrey)
@@ -39,8 +39,11 @@ bold txt = txt |> text |> el [Font.bold]
 semiBold: String -> Element Msg
 semiBold txt = txt |> text |> el [Font.semiBold]
 
-space: Int -> Element Msg -> Element Msg
-space sp x = el [paddingEach { top = 0, bottom = 0, left = 0, right = sp}] x
+rightGap: Int -> Element Msg -> Element Msg
+rightGap sp x = el [width fill, paddingEach { top = 0, bottom = 0, left = 0, right = sp}] x
+
+leftGap: Int -> Element Msg -> Element Msg
+leftGap sp x = el [width fill, paddingEach { top = 0, bottom = 0, left = sp, right = 0}] x
 
 size: Int -> Element Msg -> Element Msg
 size sz x = el [Font.size sz] x
@@ -410,9 +413,7 @@ pageBar page f showNext = row [
 
 -- Trying to implement a simplistic and decent date spinner ...
 
-dateSpinner: UTCTimestamp ->
-             (LocalDate -> Maybe Msg) ->
-             Element Msg
+dateSpinner: UTCTimestamp -> (LocalDate -> Maybe Msg) -> Element Msg
 dateSpinner timestamp onChange =
     let leapYear yyyy = ((modBy 4 yyyy == 0) || (modBy 100 yyyy == 0)) &&  not (modBy 400 yyyy == 0)
         maxDayOfMonth date = if date.month == 2 && leapYear date.year then 29
@@ -460,6 +461,36 @@ dateSpinner timestamp onChange =
             , width <| px 50]
          { onPress = onChange (spinYear { day = day, month = month, year = year })
           , label = year |> String.fromInt |> Element.text |> el [centerX] }
+    ]
+
+timeSpinner: UTCTimestamp -> (LocalTime -> Maybe Msg) -> Element Msg
+timeSpinner timestamp onChange =
+    let {hour, minute} = toLocalTime timestamp
+        spinHour time   = { hour = (modBy 24 time.hour), minute = time.minute }
+        spinMinute time = { hour = time.hour, minute = (modBy 60 time.minute) }
+    in row [Border.width 3, Border.rounded 3, Border.color Theme.background, spacing 5] [
+        Input.button [Background.color foreground
+            , padding 4
+            , Font.size 14
+            , Font.color foreground
+            , Background.color background
+            , width <| px 30
+            , height fill
+            , Border.color background
+            , Border.widthEach { right = 1, top = 0, bottom = 0, left = 0 } ]
+        { onPress = onChange (spinHour { hour = hour + 1 , minute = minute })
+          , label = hour |> format2Digits |> Element.text |> el [centerX] }
+       , Input.button [Background.color foreground
+                     , padding 4
+                     , Font.size 14
+                     , Font.color foreground
+                     , Background.color background
+                     , width <| px 30
+                     , height fill
+                     , Border.color background
+                     , Border.widthEach { right = 1, top = 0, bottom = 0, left = 0 } ]
+        { onPress = onChange (spinMinute { hour = hour , minute = minute + 1 })
+          , label = minute |> format2Digits |> Element.text |> el [centerX] }
     ]
 
 intSpinner: Int -> Int -> Int -> Int -> (Int -> Maybe Msg) -> Element Msg

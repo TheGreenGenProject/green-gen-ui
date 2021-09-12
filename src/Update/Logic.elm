@@ -8,7 +8,7 @@ import Query.Authentication exposing (logon)
 import Query.Challenge exposing (acceptChallenge, fetchChallengeDetails, fetchUserChallengePosts, postChallenge, rejectChallenge, reportStepStatus)
 import Query.Clock as Clock
 import Query.Conversation exposing (fetchConversation, flagComment, postComment, unflagComment)
-import Query.Event exposing (acceptParticipation, cancelEvent, cancelParticipation, fetchEventDetails, fetchUserEventPosts, rejectParticipation, requestParticipation)
+import Query.Event exposing (acceptParticipation, cancelEvent, cancelParticipation, fetchEventDetails, fetchUserEventPosts, postEvent, rejectParticipation, requestParticipation)
 import Query.Feed exposing (fetchFeed, hasNewPosts, scheduleFeedCheck)
 import Query.Following exposing (followHashtag, followUser, unfollowHashtag, unfollowUser)
 import Query.FreeText exposing (postFreeText)
@@ -28,7 +28,7 @@ import State.Cache as Cache exposing (simulatePollAnswer)
 import State.ChallengeState as ChallengeState
 import State.EventState as EventState
 import State.FeedState as FeedState
-import State.FormState as FormState exposing (clearNewChallengeWizardState, clearNewFreeTextWizardState, clearNewPollWizardState, clearNewRepostWizardState, clearNewTipWizardState)
+import State.FormState as FormState exposing (clearNewChallengeWizardState, clearNewEventWizardState, clearNewFreeTextWizardState, clearNewPollWizardState, clearNewRepostWizardState, clearNewTipWizardState)
 import State.NotificationState as NotificationState
 import State.PinnedState as PinnedState
 import State.SearchState as SearchState
@@ -240,6 +240,12 @@ update msg state = case msg of
     PostNewChallenge newChallengeWizard -> let forms = state.forms in { state |
         forms = FormState.postingNewChallenge {forms| newChallengeWizard = newChallengeWizard} }
         |> ifLogged (\user -> postChallenge user newChallengeWizard)
+    FillingNewEventWizard eventState -> { state |
+        forms = FormState.updateNewEventWizardState state.forms eventState }
+        |> nocmd
+    PostNewEvent newEventWizard -> let forms = state.forms in { state |
+        forms = FormState.postingNewEvent {forms| newEventWizard = newEventWizard} }
+        |> ifLogged (\user -> postEvent user newEventWizard)
     FillingNewPollWizard pollState -> { state |
         forms = FormState.updateNewPollWizardState state.forms pollState }
         |> nocmd
@@ -369,7 +375,7 @@ update msg state = case msg of
         display = NewPostPage,
         forms = clearNewChallengeWizardState state.forms}
         |> nocmd
-    HttpNewChallengePosted (Err err) -> Debug.log ("Error while posting new challenge text: " ++ (errorToString err))
+    HttpNewChallengePosted (Err err) -> Debug.log ("Error while posting new challenge: " ++ (errorToString err))
         {state| forms = FormState.newChallengePosted state.forms }
         |> nocmd
     HttpChallengePostsFetched (Ok (cache, {tab, page}, challenges)) -> {state |
@@ -393,6 +399,13 @@ update msg state = case msg of
         |> nocmd
     HttpNewPollPosted (Err err) -> Debug.log ("Error while posting new Poll: " ++ (errorToString err))
         {state| forms = FormState.newPollPosted state.forms }
+        |> nocmd
+    HttpNewEventPosted (Ok _) -> {state |
+        display = NewPostPage,
+        forms = clearNewEventWizardState state.forms}
+        |> nocmd
+    HttpNewEventPosted (Err err) -> Debug.log ("Error while posting new event: " ++ (errorToString err))
+        {state| forms = FormState.newEventPosted state.forms }
         |> nocmd
     HttpEventParticipationRequested _ -> state |> nocmd
     HttpEventParticipationRequestCancelled _ -> state |> nocmd
