@@ -14,7 +14,7 @@ import Data.Schedule as Schedule exposing (Duration(..), Schedule(..), UTCTimest
 import Data.User as User exposing (UserId)
 import Http
 import Json.Decode exposing (list)
-import Query.CacheQueryUtils exposing (fetchAndCacheChallengeStatistics, fetchFromIdAndCacheAll)
+import Query.CacheQueryUtils exposing (fetchAndCacheChallenge, fetchAndCacheChallengeStatistics, fetchAndCacheChallengeStatus, fetchAndCacheChallengeStatusForUser, fetchFromIdAndCacheAll)
 import Query.Json.ChallengeDecoder exposing (..)
 import Query.Json.DecoderUtils exposing (decodeTimestamp, jsonResolver, unitDecoder)
 import Query.Json.PostDecoder exposing (decodePostId)
@@ -173,16 +173,6 @@ fetchAndCacheChallengeDetails cache user challengeId = cache
     |> Task.andThen (\cache5 -> fetchAndCacheChallengeStepReports cache5 user challengeId)
     |> Task.andThen (\cache6 -> fetchAndCacheChallengeStatistics cache6 user challengeId)
 
-fetchAndCacheChallenge: Cache -> UserInfo -> ChallengeId -> Task Http.Error Cache
-fetchAndCacheChallenge cache user id = Http.task {
-    method = "GET"
-    , headers = [authHeader user]
-    , url = baseUrl ++ absolute ["challenge", "by-id", id |> Challenge.toString] []
-    , body = Http.emptyBody
-    , resolver = jsonResolver <| decodeChallenge
-    , timeout = Nothing
- } |> Task.map (\res -> Cache.addChallenge cache id res)
-
 fetchAllAuthoredChallenges: UserInfo -> Page -> Task Http.Error (List ChallengeId)
 fetchAllAuthoredChallenges user page = Http.task {
     method = "GET"
@@ -267,26 +257,6 @@ fetchChallengesPost user id = Http.task {
     , resolver = jsonResolver <| decodePostId
     , timeout = Nothing
  }
-
-fetchAndCacheChallengeStatus: Cache -> UserInfo -> ChallengeId -> Task Http.Error Cache
-fetchAndCacheChallengeStatus cache user id = Http.task {
-    method = "GET"
-    , headers = [authHeader user]
-    , url = baseUrl ++ absolute ["challenge", "status", id |> Challenge.toString] []
-    , body = Http.emptyBody
-    , resolver = jsonResolver <| decodeChallengeStatus
-    , timeout = Nothing
- } |> Task.map (\res -> Cache.addChallengeStatus cache id res)
-
-fetchAndCacheChallengeStatusForUser: Cache -> UserInfo -> ChallengeId -> Task Http.Error Cache
-fetchAndCacheChallengeStatusForUser cache user id = Http.task {
-    method = "GET"
-    , headers = [authHeader user]
-    , url = baseUrl ++ absolute ["challenge", "status", id |> Challenge.toString, "for-user", user.id |> User.toString] []
-    , body = Http.emptyBody
-    , resolver = jsonResolver <| decodeChallengeOutcomeStatus
-    , timeout = Nothing
- } |> Task.map (\res -> Cache.addChallengeOutcomeStatus cache id res)
 
 fetchAndCacheChallengeReportDates: Cache -> UserInfo -> ChallengeId -> Task Http.Error Cache
 fetchAndCacheChallengeReportDates cache user id = Http.task {

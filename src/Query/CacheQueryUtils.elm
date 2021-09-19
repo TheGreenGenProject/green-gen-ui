@@ -15,10 +15,19 @@ module Query.CacheQueryUtils exposing (
     , fetchAndCachePinnedForPost
     , fetchAndCacheAllMessageCounts
     , fetchAndCacheAll
+    , fetchAndCacheChallenge
+    , fetchAndCacheChallengeStatus
+    , fetchAndCacheChallengeStatusForUser
     , fetchAndCacheChallengeStatistics
     , fetchAndCachePoll
     , fetchAndCachePollStatistics
-    , fetchAndCacheAllPostPartnership)
+    , fetchAndCacheAllPostPartnership
+    , fetchAndCacheEvent
+    , fetchAndCacheEventParticipationStatus
+    , fetchAndCacheEventCancelledStatus
+    , fetchAndCacheEventParticipationRequestStatus
+    , fetchAndCacheEventParticipantCount
+    )
 
 import Data.Challenge as Challenge exposing (ChallengeId)
 import Data.Event as Event exposing (EventId)
@@ -30,7 +39,7 @@ import Data.Tip as Tip exposing (TipId)
 import Data.User as User exposing (UserId)
 import Http
 import Json.Decode as Decoder exposing (bool, int, list, maybe)
-import Query.Json.ChallengeDecoder exposing (decodeChallenge, decodeChallengeStatistics)
+import Query.Json.ChallengeDecoder exposing (decodeChallenge, decodeChallengeOutcomeStatus, decodeChallengeStatistics, decodeChallengeStatus)
 import Query.Json.DecoderUtils exposing (decodeIntWithDefault, jsonResolver)
 import Query.Json.EventDecoder exposing (decodeEvent)
 import Query.Json.PartnerDecoder exposing (decodePartner, decodePartnerId)
@@ -160,6 +169,8 @@ fetchAndCachePostInfo cache user post = case post.content of
                         |> Task.andThen (\cache4 -> fetchAndCacheEventParticipantCount cache4 user id)
     ChallengePost id -> fetchAndCacheChallenge cache user id
                         |> Task.andThen (\cache1 -> fetchAndCacheChallengeStatistics cache1 user id)
+                        |> Task.andThen (\cache2 -> fetchAndCacheChallengeStatus cache2 user id)
+                        |> Task.andThen (\cache3 -> fetchAndCacheChallengeStatusForUser cache3 user id)
     TipPost id       -> fetchAndCacheTip cache user id
     PollPost id      -> fetchAndCachePoll cache user id
                         |> Task.andThen (\cache1 -> fetchAndCachePollStatistics cache1 user id)
@@ -237,6 +248,26 @@ fetchAndCacheChallenge cache user id = Http.task {
     , resolver = jsonResolver <| decodeChallenge
     , timeout = Nothing
  } |> Task.map (Cache.addChallenge cache id)
+
+fetchAndCacheChallengeStatus: Cache -> UserInfo -> ChallengeId -> Task Http.Error Cache
+fetchAndCacheChallengeStatus cache user id = Http.task {
+    method = "GET"
+    , headers = [authHeader user]
+    , url = baseUrl ++ absolute ["challenge", "status", id |> Challenge.toString] []
+    , body = Http.emptyBody
+    , resolver = jsonResolver <| decodeChallengeStatus
+    , timeout = Nothing
+ } |> Task.map (\res -> Cache.addChallengeStatus cache id res)
+
+fetchAndCacheChallengeStatusForUser: Cache -> UserInfo -> ChallengeId -> Task Http.Error Cache
+fetchAndCacheChallengeStatusForUser cache user id = Http.task {
+    method = "GET"
+    , headers = [authHeader user]
+    , url = baseUrl ++ absolute ["challenge", "status", id |> Challenge.toString, "for-user", user.id |> User.toString] []
+    , body = Http.emptyBody
+    , resolver = jsonResolver <| decodeChallengeOutcomeStatus
+    , timeout = Nothing
+ } |> Task.map (\res -> Cache.addChallengeOutcomeStatus cache id res)
 
 fetchAndCacheChallengeStatistics: Cache -> UserInfo -> ChallengeId -> Task Http.Error Cache
 fetchAndCacheChallengeStatistics cache user id = Http.task {

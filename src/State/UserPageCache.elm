@@ -19,10 +19,10 @@ getAllUpTo page cache =
     let sortedKeys = cache.cache
             |> Dict.keys |> List.sort
             |> ListUtils.takeWhile (\key -> key <= (Page.number page))
-        allPosts = sortedKeys
+        all = sortedKeys
             |> List.concatMap (\p -> (PageCache.get (Page p) cache)
             |> Maybe.map (.items)
             |> Maybe.withDefault [])
     in if List.isEmpty sortedKeys
         then Nothing
-        else { number = page, items = allPosts } |> Just
+        else { number = page, items = all } |> Just

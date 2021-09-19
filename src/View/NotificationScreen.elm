@@ -1,6 +1,7 @@
 module View.NotificationScreen exposing (notificationScreen)
 
 import Data.Challenge exposing (ChallengeId)
+import Data.Event exposing (EventId)
 import Data.Notification as Notification exposing (Notification, NotificationContent(..), Status(..))
 import Data.Page as Page
 import Data.Schedule exposing (UTCTimestamp)
@@ -17,7 +18,7 @@ import Utils.DateUtils as DateUtils
 import View.Icons as Icons
 import View.InfiniteScroll exposing (infiniteScroll)
 import View.ScreenUtils as ScreenUtils
-import View.Style exposing (notifHeaderStyle, userStyle, viewChallengeButtonStyle)
+import View.Style exposing (notifHeaderStyle, userStyle, viewChallengeButtonStyle, viewEventButtonStyle)
 import View.Theme exposing (background)
 
 
@@ -75,15 +76,17 @@ renderContent cache notif = let read = notif.status == Read
                                 elmt = el [width fill, alignLeft, (if read then Font.italic else Font.semiBold), Font.size 12]
     in
         case notif.content of
-            PlatformMessageNotification msg                  -> text msg                                                       |> elmt
-            EventModifiedNotification eventId                -> text "New event"                                               |> elmt
-            EventCancelledNotification eventId               -> text "New event"                                               |> elmt
-            NewFollowerNotification  userId                  -> renderUserString cache userId " started to follow you"         |> elmt
-            PostLikedNotification postId userId              -> renderUserString cache userId " liked your post"               |> elmt
-            YouHaveBeenChallengedNotification challengeId    -> renderYouHaveBeenChallengedNotification cache challengeId      |> elmt
-            ChallengeAcceptedNotification challengeId userId -> renderUserString cache userId " has accepted your challenge !" |> elmt
-            ChallengeRejectedNotification challengeId userId -> renderUserString cache userId " has rejected your challenge !" |> elmt
-            PollAnsweredNotification pollId userId           -> renderUserString cache userId " has answered your poll"        |> elmt
+            PlatformMessageNotification msg                       -> text msg                                                       |> elmt
+            EventModifiedNotification eventId                     -> text "Event has been updated"                                  |> elmt
+            EventParticipationRequestAcceptedNotification eventId -> renderEventParticipationAcceptedNotification cache eventId     |> elmt
+            EventParticipationRequestRejectedNotification eventId -> renderEventParticipationRejectedNotification cache eventId     |> elmt
+            EventCancelledNotification eventId                    -> renderEventCancelledNotification cache eventId                 |> elmt
+            NewFollowerNotification  userId                       -> renderUserString cache userId " started to follow you"         |> elmt
+            PostLikedNotification postId userId                   -> renderUserString cache userId " liked your post"               |> elmt
+            YouHaveBeenChallengedNotification challengeId         -> renderYouHaveBeenChallengedNotification cache challengeId      |> elmt
+            ChallengeAcceptedNotification challengeId userId      -> renderUserString cache userId " has accepted your challenge !" |> elmt
+            ChallengeRejectedNotification challengeId userId      -> renderUserString cache userId " has rejected your challenge !" |> elmt
+            PollAnsweredNotification pollId userId                -> renderUserString cache userId " has answered your poll"        |> elmt
 
 renderTimestamp: UTCTimestamp -> Notification -> Element Msg
 renderTimestamp now notif = el [Font.italic, Font.size 8] (notif.created |> DateUtils.formatRelativeTo now |> text)
@@ -100,6 +103,18 @@ renderMaybeUserString pseudo userId txt = row [] [
     userStyle pseudo userId
     , txt |> text]
 
+renderEventParticipationAcceptedNotification: Cache -> EventId -> Element Msg
+renderEventParticipationAcceptedNotification cache eventId =
+    row [spacing 5] ["You participation to an event has been accepted" |> text, viewEventButtonStyle eventId]
+
+renderEventParticipationRejectedNotification: Cache -> EventId -> Element Msg
+renderEventParticipationRejectedNotification cache eventId =
+    row [spacing 5] ["You participation to an event has been rejected" |> text, viewEventButtonStyle eventId]
+
+renderEventCancelledNotification: Cache -> EventId -> Element Msg
+renderEventCancelledNotification cache eventId =
+    row [spacing 5] ["You were registered to an event, but it has been ** CANCELLED **" |> text, viewEventButtonStyle eventId]
+
 renderUserString: Cache -> UserId -> String -> Element Msg
 renderUserString cache userId txt = let pseudo = Cache.getUserPseudo cache userId |> Maybe.withDefault "<Unknown>" in
     row [] [
@@ -107,15 +122,18 @@ renderUserString cache userId txt = let pseudo = Cache.getUserPseudo cache userI
         , txt |> text]
 
 notifLogo: Notification -> Element Msg
-notifLogo notif = let logo = case notif.content of PlatformMessageNotification _       -> Icons.small |> Icons.platformNotification
-                                                   EventModifiedNotification _         -> Icons.small |> Icons.eventNotification
-                                                   EventCancelledNotification _        -> Icons.small |> Icons.eventNotification
-                                                   NewFollowerNotification _           -> Icons.small |> Icons.newFollowerNotification
-                                                   PostLikedNotification _ _           -> Icons.small |> Icons.postNotification
-                                                   YouHaveBeenChallengedNotification _ -> Icons.small |> Icons.challengeNotification
-                                                   ChallengeAcceptedNotification _ _   -> Icons.small |> Icons.challengeNotification
-                                                   ChallengeRejectedNotification _ _   -> Icons.small |> Icons.challengeNotification
-                                                   PollAnsweredNotification _ _        -> Icons.small |> Icons.pollNotification
+notifLogo notif =
+    let logo = case notif.content of PlatformMessageNotification _                   -> Icons.small |> Icons.platformNotification
+                                     EventModifiedNotification _                     -> Icons.small |> Icons.eventNotification
+                                     EventParticipationRequestAcceptedNotification _ -> Icons.small |> Icons.eventNotification
+                                     EventParticipationRequestRejectedNotification _ -> Icons.small |> Icons.eventNotification
+                                     EventCancelledNotification _                    -> Icons.small |> Icons.eventNotification
+                                     NewFollowerNotification _                       -> Icons.small |> Icons.newFollowerNotification
+                                     PostLikedNotification _ _                       -> Icons.small |> Icons.postNotification
+                                     YouHaveBeenChallengedNotification _             -> Icons.small |> Icons.challengeNotification
+                                     ChallengeAcceptedNotification _ _               -> Icons.small |> Icons.challengeNotification
+                                     ChallengeRejectedNotification _ _               -> Icons.small |> Icons.challengeNotification
+                                     PollAnsweredNotification _ _                    -> Icons.small |> Icons.pollNotification
     in Input.button [] {
         onPress = if(Notification.isRead notif) then Nothing else MarkNotificationRead notif.id |> Just,
         label = logo

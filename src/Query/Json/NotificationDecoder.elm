@@ -10,6 +10,7 @@ import Json.Decode as Decoder exposing (Decoder, string, succeed)
 import Json.Decode.Pipeline as Decoder exposing (required)
 import Query.Json.ChallengeDecoder exposing (decodeChallengeId)
 import Query.Json.DecoderUtils exposing (decodeTimestamp, decodeUserId, decodeUuid, unitDecoder)
+import Query.Json.EventDecoder exposing (decodeEventId)
 import Query.Json.PostDecoder exposing (decodePostId)
 import Tuple exposing (pair)
 
@@ -61,7 +62,10 @@ decodeNotificationContent = Decoder.oneOf [
     decodeNewFollowerNotificationContent,
     decodeYouHaveBeenChallengedNotificationContent,
     decodeChallengeAcceptedNotificationContent,
-    decodeChallengeRejectedNotificationContent
+    decodeChallengeRejectedNotificationContent,
+    decodeEventParticipationRequestAcceptedNotificationContent,
+    decodeEventParticipationRequestRejectedNotificationContent,
+    decodeEventCancelledNotificationContent
   ]
 
 decodePlatformNotificationContent: Decoder NotificationContent
@@ -95,3 +99,18 @@ decodeChallengeRejectedNotificationContent = Decoder.field "ChallengeRejectedNot
     (succeed ChallengeRejectedNotification
         |> required "challengeId" decodeChallengeId
         |> required "userId" decodeUserId)
+
+decodeEventParticipationRequestAcceptedNotificationContent: Decoder NotificationContent
+decodeEventParticipationRequestAcceptedNotificationContent = Decoder.field "EventParticipationRequestAcceptedNotification"
+    (succeed EventParticipationRequestAcceptedNotification
+        |> required "eventId" decodeEventId)
+
+decodeEventParticipationRequestRejectedNotificationContent: Decoder NotificationContent
+decodeEventParticipationRequestRejectedNotificationContent = Decoder.field "EventParticipationRequestRejectedNotification"
+    (succeed EventParticipationRequestRejectedNotification
+        |> required "eventId" decodeEventId)
+
+decodeEventCancelledNotificationContent: Decoder NotificationContent
+decodeEventCancelledNotificationContent = Decoder.field "EventCancelledNotification"
+    (succeed EventCancelledNotification
+        |> required "eventId" decodeEventId)

@@ -18,6 +18,7 @@ import Http
 import State.AppState exposing (AppState, AuthError, Display(..))
 import State.Cache exposing (Cache)
 import State.ChallengeState exposing (ChallengePagedTab, ChallengeTab)
+import State.EventDetailsState exposing (EventDetailsPagedTab, EventDetailsTab)
 import State.EventState exposing (EventPagedTab, EventTab)
 import State.FormState exposing (NewChallengeWizardState, NewEventWizardState, NewFreeTextWizardState, NewPollWizardState, NewRepostWizardState, NewTipWizardState, RegistrationFormState)
 import State.NotificationState exposing (NotificationPage, NotificationTab)
@@ -50,6 +51,9 @@ type Msg =
     | ChangeChallengePage Page
     | ChangeEventTab EventTab
     | ChangeEventPage Page
+    | ChangeEventDetailsTab EventId EventDetailsTab
+    | ChangeEventDetailsPage EventId Page
+    | RefreshEventDetails EventId
     | FollowUser UserId
     | UnfollowUser UserId
     | FollowHashtag Hashtag
@@ -137,10 +141,13 @@ type Msg =
     | HttpNewPollPosted (Result Http.Error ())
     | HttpEventParticipationRequested (Result Http.Error EventId)
     | HttpEventParticipationRequestCancelled (Result Http.Error EventId)
-    | HttpEventParticipationAccepted (Result Http.Error ())
-    | HttpEventParticipationRejected (Result Http.Error ())
+    | HttpEventParticipationAccepted (Result Http.Error EventId)
+    | HttpEventParticipationRejected (Result Http.Error EventId)
+    | HttpEventCancelled (Result Http.Error EventId)
     | HttpEventPostsFetched (Result Http.Error (Cache, EventPagedTab, List PostId))
     | HttpEventDetailsFetched (Result Http.Error (Cache, EventId))
+    | HttpEventPendingRequestsFetched (Result Http.Error (Cache, EventDetailsPagedTab, List UserId))
+    | HttpEventParticipantsFetched (Result Http.Error (Cache, EventDetailsPagedTab, List UserId))
     | HttpNewEventPosted (Result Http.Error ())
     | HttpConversationPageFetched (Result Http.Error (Cache, ConversationPage))
     | HttpNewCommentPosted (Result Http.Error PostId)

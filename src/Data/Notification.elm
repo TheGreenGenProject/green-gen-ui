@@ -13,6 +13,8 @@ import Data.Schedule exposing (UTCTimestamp)
 type NotificationId = NotificationId Uuid
 type NotificationContent = PlatformMessageNotification String
     | EventModifiedNotification EventId
+    | EventParticipationRequestAcceptedNotification EventId
+    | EventParticipationRequestRejectedNotification EventId
     | EventCancelledNotification EventId
     | NewFollowerNotification UserId
     | PostLikedNotification PostId UserId
@@ -44,9 +46,11 @@ usersFromNotifications = List.concatMap (\n -> n |> userFromNotification |> List
 
 eventFromNotification: Notification -> Maybe EventId
 eventFromNotification notif = case notif.content of
-    EventModifiedNotification eventId  -> eventId |> Just
-    EventCancelledNotification eventId -> eventId |> Just
-    _                                  -> Nothing
+    EventModifiedNotification eventId                     -> eventId |> Just
+    EventParticipationRequestAcceptedNotification eventId -> eventId |> Just
+    EventParticipationRequestRejectedNotification eventId -> eventId |> Just
+    EventCancelledNotification eventId                    -> eventId |> Just
+    _                                                     -> Nothing
 
 eventsFromNotifications: List Notification -> List EventId
 eventsFromNotifications = List.concatMap (\n -> n |> eventFromNotification |> ListUtils.fromMaybe)

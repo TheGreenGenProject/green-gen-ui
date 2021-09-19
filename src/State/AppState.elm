@@ -7,6 +7,7 @@ import Data.User exposing (UserId)
 import Http
 import State.Cache as Cache exposing (Cache)
 import State.ChallengeState exposing (ChallengeState)
+import State.EventDetailsState exposing (EventDetailsState)
 import State.EventState exposing (EventState)
 import State.FeedState exposing (FeedState)
 import State.FormState exposing (FormState)
@@ -57,6 +58,7 @@ type alias AppState = {
     feed: FeedState,
     challenge: ChallengeState,
     event: EventState,
+    eventDetails: EventDetailsState,
     pinned: PinnedState,
     notifications: NotificationState,
     search: SearchState,
@@ -75,6 +77,7 @@ empty = {
     feed          = State.FeedState.empty,
     challenge     = State.ChallengeState.empty,
     event         = State.EventState.empty,
+    eventDetails  = State.EventDetailsState.empty,
     pinned        = State.PinnedState.empty,
     notifications = State.NotificationState.empty,
     search        = State.SearchState.empty,

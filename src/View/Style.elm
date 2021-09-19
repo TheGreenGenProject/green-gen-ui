@@ -1,6 +1,7 @@
 module View.Style exposing (..)
 
 import Data.Challenge exposing (ChallengeId)
+import Data.Event exposing (EventId)
 import Data.Hashtag exposing (Hashtag(..))
 import Data.Page as Page exposing (Page)
 import Data.Post exposing (PostId)
@@ -183,6 +184,14 @@ viewChallengeButtonStyle id =
                   , Border.width 1
                   , Border.rounded 5]
         { onPress = Just (DisplayPage (ChallengeDetailsPage id)), label = Element.text "View challenge" }
+
+viewEventButtonStyle: EventId -> Element Msg
+viewEventButtonStyle id =
+    Input.button [Font.size 11
+                  , paddingXY 2 2
+                  , Border.width 1
+                  , Border.rounded 5]
+        { onPress = Just (DisplayPage (EventDetailsPage id)), label = Element.text "View event" }
 
 buttonBarStyle: List (Attribute Msg) -> List (String, Msg) -> Element Msg
 buttonBarStyle attrs buttons = buttons

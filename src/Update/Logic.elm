@@ -8,7 +8,7 @@ import Query.Authentication exposing (logon)
 import Query.Challenge exposing (acceptChallenge, fetchChallengeDetails, fetchUserChallengePosts, postChallenge, rejectChallenge, reportStepStatus)
 import Query.Clock as Clock
 import Query.Conversation exposing (fetchConversation, flagComment, postComment, unflagComment)
-import Query.Event exposing (acceptParticipation, cancelEvent, cancelParticipation, fetchEventDetails, fetchUserEventPosts, postEvent, rejectParticipation, requestParticipation)
+import Query.Event exposing (acceptParticipation, cancelEvent, cancelParticipation, fetchEventDetails, fetchUserEventPosts, fetchEventDetailsContentForTab, postEvent, rejectParticipation, requestParticipation)
 import Query.Feed exposing (fetchFeed, hasNewPosts, scheduleFeedCheck)
 import Query.Following exposing (followHashtag, followUser, unfollowHashtag, unfollowUser)
 import Query.FreeText exposing (postFreeText)
@@ -26,6 +26,7 @@ import Query.Wall exposing (fetchUserWall, fetchWall, fetchWallByPseudo)
 import State.AppState as AppState exposing (AppState, Display(..), isUserLoggedIn)
 import State.Cache as Cache exposing (simulatePollAnswer)
 import State.ChallengeState as ChallengeState
+import State.EventDetailsState as EventDetailsState
 import State.EventState as EventState
 import State.FeedState as FeedState
 import State.FormState as FormState exposing (clearNewChallengeWizardState, clearNewEventWizardState, clearNewFreeTextWizardState, clearNewPollWizardState, clearNewRepostWizardState, clearNewTipWizardState)
@@ -107,10 +108,11 @@ update msg state = case msg of
         update (DisplayPage SearchPage) {state | search = SearchState.changePostTypeFilter state.search postType}
     DisplayPage RegistrationPage -> {state | display = RegistrationPage }
         |> nocmd
-    DisplayPage page  -> {state |
-        display = if (isUserLoggedIn state) then page else LoginPage,
-        previous = (if (isUserLoggedIn state) then [page] else []) ++ state.previous }
-        |> cmd (loadPageContent state page)
+    DisplayPage page  ->
+        let newState = {state |
+                display = if (isUserLoggedIn state) then page else LoginPage,
+                previous = (if (isUserLoggedIn state) then [page] else []) ++ state.previous }
+        in newState |> cmd (loadPageContent newState page)
     FollowUser followee ->  {state| cache = Cache.addFollowingUser state.cache followee }
         |> ifLogged (\user -> followUser user followee)
     UnfollowUser followee -> {state| cache = Cache.removeFollowingUser state.cache followee }
@@ -187,7 +189,7 @@ update msg state = case msg of
         |> ifLogged (\user -> acceptParticipation state.cache user id userId)
     RejectUserEventParticipation id userId -> state
         |> ifLogged (\user -> rejectParticipation state.cache user id userId)
-    CancelEvent id -> state
+    CancelEvent id -> { state| cache = Cache.addEventCancelledStatus state.cache id True }
         |> ifLogged (\user -> cancelEvent state.cache user id)
     ChangeEventPage page ->
         if EventState.isLoadingMore state.event then state |> nocmd
@@ -196,6 +198,15 @@ update msg state = case msg of
     ChangeEventTab tab -> {state|
         event = state.event |> EventState.changeTab tab }
         |> ifLogged (\user -> fetchUserEventPosts state.cache user {tab = tab, page = Page.first})
+    ChangeEventDetailsPage eventId page ->
+        if EventDetailsState.isLoadingMore state.eventDetails then state |> nocmd
+        else if Page.isAfter page state.eventDetails.currentPage && EventDetailsState.noMoreDataToLoad state.eventDetails then state |> nocmd
+        else state |> ifLogged (\user -> fetchEventDetailsContentForTab state.cache user eventId {tab = state.eventDetails.currentTab, page=page})
+    ChangeEventDetailsTab eventId tab -> {state|
+        eventDetails = state.eventDetails |> EventDetailsState.changeTab tab }
+        |> ifLogged (\user -> fetchEventDetailsContentForTab state.cache user eventId {tab = tab, page = Page.first})
+    RefreshEventDetails eventId ->
+        update (DisplayPage (EventDetailsPage eventId)) state
     -----------------------
     --- Form processing ---
     -----------------------
@@ -408,9 +419,22 @@ update msg state = case msg of
         {state| forms = FormState.newEventPosted state.forms }
         |> nocmd
     HttpEventParticipationRequested _ -> state |> nocmd
-    HttpEventParticipationRequestCancelled _ -> state |> nocmd
-    HttpEventParticipationAccepted _ -> state |> nocmd
-    HttpEventParticipationRejected _ -> state |> nocmd
+    HttpEventParticipationRequestCancelled (Ok eventId) ->
+        update (RefreshEventDetails eventId) state
+    HttpEventParticipationRequestCancelled (Err err) -> Debug.log ("Error accepting participation to event: " ++ (errorToString err))
+        state |> nocmd
+    HttpEventParticipationAccepted (Ok eventId) ->
+        update (RefreshEventDetails eventId) state
+    HttpEventParticipationAccepted (Err err)    -> Debug.log ("Error accepting participation to event: " ++ (errorToString err))
+        state |> nocmd
+    HttpEventParticipationRejected (Ok eventId) ->
+        update (RefreshEventDetails eventId) state
+    HttpEventParticipationRejected (Err err) -> Debug.log ("Error while rejecting participation to event: " ++ (errorToString err))
+        state |> nocmd
+    HttpEventCancelled (Ok eventId) ->
+        update (RefreshEventDetails eventId) state
+    HttpEventCancelled (Err err) -> Debug.log ("Error while cancelling event: " ++ (errorToString err))
+        state |> nocmd
     HttpEventPostsFetched (Ok (cache, {tab, page}, events)) -> {state |
         event = EventState.from events {tab=tab, page=page} state.event
         , cache = Cache.merge cache state.cache }
@@ -421,6 +445,18 @@ update msg state = case msg of
         cache = Cache.merge cache state.cache }
         |> nocmd
     HttpEventDetailsFetched (Err err) -> Debug.log ("Error while fetching challenge details: " ++ (errorToString err))
+        state |> nocmd
+    HttpEventPendingRequestsFetched (Ok (cache, {tab, page}, users)) -> {state |
+        eventDetails = EventDetailsState.from users {tab=tab, page=page} state.eventDetails
+        , cache = Cache.merge cache state.cache }
+        |> nocmd
+    HttpEventPendingRequestsFetched (Err err) -> Debug.log ("Error while fetching event pending requests: " ++ (errorToString err))
+        state |> nocmd
+    HttpEventParticipantsFetched (Ok (cache, {tab, page}, users)) -> {state |
+        eventDetails = EventDetailsState.from users {tab=tab, page=page} state.eventDetails
+        , cache = Cache.merge cache state.cache }
+        |> nocmd
+    HttpEventParticipantsFetched (Err err) -> Debug.log ("Error while fetching event participants: " ++ (errorToString err))
         state |> nocmd
     HttpConversationPageFetched (Ok (cache, conversationPage)) ->
         let added = Cache.getConversationMessages state.cache conversationPage.postId ++ conversationPage.messages
@@ -483,6 +519,6 @@ loadPageContent state page = case (state.user, page) of
     (LoggedIn user, ChallengePage)                    -> (fetchUserChallengePosts state.cache user {tab=state.challenge.currentTab, page=Page.first})
     (LoggedIn user, ChallengeDetailsPage challengeId) -> (fetchChallengeDetails state.cache user challengeId)
     (LoggedIn user, EventPage)                        -> (fetchUserEventPosts state.cache user {tab=state.event.currentTab, page=Page.first})
-    (LoggedIn user, EventDetailsPage eventId)         -> (fetchEventDetails state.cache user eventId)
+    (LoggedIn user, EventDetailsPage eventId)         -> (fetchEventDetailsContentForTab state.cache user eventId {tab=state.eventDetails.currentTab, page=Page.first})
     _                                                 -> none
 

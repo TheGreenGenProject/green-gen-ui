@@ -7,6 +7,7 @@ module Query.Event exposing (
     , cancelEvent
     , fetchUserEventPosts
     , fetchEventDetails
+    , fetchEventDetailsContentForTab
  )
 
 
@@ -19,14 +20,15 @@ import Data.Schedule as Schedule exposing (Duration(..), Schedule(..), UTCTimest
 import Data.Url exposing (Url(..))
 import Data.User as User exposing (UserId)
 import Http
-import Json.Decode exposing (list)
-import Query.CacheQueryUtils exposing (fetchFromIdAndCacheAll)
-import Query.Json.DecoderUtils exposing (jsonResolver, unitDecoder)
+import Json.Decode exposing (bool, list)
+import Query.CacheQueryUtils exposing (fetchAndCacheAllUsers, fetchAndCacheEvent, fetchAndCacheEventCancelledStatus, fetchAndCacheEventParticipantCount, fetchAndCacheEventParticipationRequestStatus, fetchAndCacheEventParticipationStatus, fetchFromIdAndCacheAll)
+import Query.Json.DecoderUtils exposing (decodeUserId, jsonResolver, unitDecoder)
 import Query.Json.EventDecoder exposing (decodeEvent, decodeEventId)
 import Query.Json.PostDecoder exposing (decodePostId)
 import Query.QueryUtils exposing (authHeader, baseUrl)
 import Query.TaskUtils exposing (thread)
 import State.Cache as Cache exposing (Cache)
+import State.EventDetailsState exposing (EventDetailsPagedTab, EventDetailsTab(..))
 import State.EventState exposing (EventPagedTab, EventTab(..))
 import State.FormState exposing (NewEventWizardState)
 import State.UserState exposing (UserInfo)
@@ -101,7 +103,8 @@ acceptParticipation cache user eventId participantId = Http.task {
     , body = Http.emptyBody
     , resolver = jsonResolver <| unitDecoder
     , timeout = Nothing
- } |> Task.attempt HttpEventParticipationAccepted
+ } |> Task.map (\_ -> eventId)
+   |> Task.attempt HttpEventParticipationAccepted
 
 rejectParticipation: Cache -> UserInfo -> EventId -> UserId -> Cmd Msg
 rejectParticipation cache user eventId participantId = Http.task {
@@ -113,7 +116,8 @@ rejectParticipation cache user eventId participantId = Http.task {
     , body = Http.emptyBody
     , resolver = jsonResolver <| unitDecoder
     , timeout = Nothing
- } |> Task.attempt HttpEventParticipationRejected
+ } |> Task.map (\_ -> eventId)
+   |> Task.attempt HttpEventParticipationRejected
 
 cancelEvent: Cache -> UserInfo -> EventId -> Cmd Msg
 cancelEvent cache user eventId = Http.task {
@@ -123,7 +127,8 @@ cancelEvent cache user eventId = Http.task {
     , body = Http.emptyBody
     , resolver = jsonResolver <| unitDecoder
     , timeout = Nothing
- } |> Task.attempt HttpEventParticipationRejected
+ } |> Task.map (\_ -> eventId)
+   |> Task.attempt HttpEventCancelled
 
 fetchEventDetails: Cache -> UserInfo -> EventId -> Cmd Msg
 fetchEventDetails cache user eventId =
@@ -132,19 +137,12 @@ fetchEventDetails cache user eventId =
     |> Task.attempt HttpEventDetailsFetched
 
 fetchAndCacheEventDetails: Cache -> UserInfo -> EventId -> Task Http.Error Cache
-fetchAndCacheEventDetails cache user eventId = cache
-    |> Task.succeed
-    |> Task.andThen (\cache1 -> fetchAndCacheEvent cache1 user eventId)
-
-fetchAndCacheEvent: Cache -> UserInfo -> EventId -> Task Http.Error Cache
-fetchAndCacheEvent cache user id = Http.task {
-    method = "GET"
-    , headers = [authHeader user]
-    , url = baseUrl ++ absolute ["event", "by-id", id |> Event.toString] []
-    , body = Http.emptyBody
-    , resolver = jsonResolver <| decodeEvent
-    , timeout = Nothing
- } |> Task.map (\res -> Cache.addEvent cache id res)
+fetchAndCacheEventDetails cache user eventId =
+    fetchAndCacheEvent cache user eventId
+    |> Task.andThen (\cache1 -> fetchAndCacheEventParticipationStatus cache1 user eventId)
+    |> Task.andThen (\cache2 -> fetchAndCacheEventCancelledStatus cache2 user eventId)
+    |> Task.andThen (\cache3 -> fetchAndCacheEventParticipationRequestStatus cache3 user eventId)
+    |> Task.andThen (\cache4 -> fetchAndCacheEventParticipantCount cache4 user eventId)
 
 fetchUserEventPosts: Cache -> UserInfo -> EventPagedTab -> Cmd Msg
 fetchUserEventPosts cache user pagedTab = case pagedTab.tab of
@@ -229,6 +227,47 @@ fetchAllPendingEvents: UserInfo -> Page -> Task Http.Error (List EventId)
 fetchAllPendingEvents user page = fetchAllEvents user "pending-request" page
 
 
+fetchEventDetailsContentForTab: Cache -> UserInfo -> EventId -> EventDetailsPagedTab -> Cmd Msg
+fetchEventDetailsContentForTab cache user eventId pagedTab = case pagedTab.tab of
+    EventDetailsTab    -> fetchEventDetails cache user eventId
+    PendingRequestsTab -> fetchAllPendingRequests cache user eventId pagedTab.page
+    ParticipantsTab    -> fetchAllParticipants cache user eventId pagedTab.page
+    _                  -> Cmd.none
+
+fetchAllPendingRequests: Cache -> UserInfo -> EventId -> Page -> Cmd Msg
+fetchAllPendingRequests cache user eventId page =
+    fetchPendingRequests user eventId page
+    |> Task.andThen (\ids -> fetchAndCacheAllUsers cache user ids |> thread ids)
+    |> Task.map (\(cache1, ids) -> (cache1, { tab = PendingRequestsTab, page = page}, ids))
+    |> Task.attempt HttpEventPendingRequestsFetched
+
+fetchPendingRequests: UserInfo -> EventId -> Page -> Task Http.Error (List UserId)
+fetchPendingRequests user eventId page =  Http.task {
+    method = "GET"
+    , headers = [authHeader user]
+    , url = baseUrl ++ absolute ["event", "participation", "requests", eventId |> Event.toString, page |> Page.number |> String.fromInt] []
+    , body = Http.emptyBody
+    , resolver = jsonResolver <| list decodeUserId
+    , timeout = Nothing
+ }
+
+fetchAllParticipants: Cache -> UserInfo -> EventId -> Page -> Cmd Msg
+fetchAllParticipants cache user eventId page =
+    fetchParticipants user eventId page
+    |> Task.andThen (\ids -> fetchAndCacheAllUsers cache user ids |> thread ids)
+    |> Task.map (\(cache1, ids) -> (cache1, { tab = ParticipantsTab, page = page}, ids))
+    |> Task.attempt HttpEventParticipantsFetched
+
+fetchParticipants: UserInfo -> EventId -> Page -> Task Http.Error (List UserId)
+fetchParticipants user eventId page =  Http.task {
+    method = "GET"
+    , headers = [authHeader user]
+    , url = baseUrl ++ absolute ["event", "participation", "participants", eventId |> Event.toString, page |> Page.number |> String.fromInt] []
+    , body = Http.emptyBody
+    , resolver = jsonResolver <| list decodeUserId
+    , timeout = Nothing
+ }
+
 {-- Helpers --}
 
 fetchAllEvents: UserInfo -> String -> Page -> Task Http.Error (List EventId)
@@ -243,11 +282,11 @@ fetchAllEvents user searchFilter page = Http.task {
 
 fetchEventPosts: UserInfo -> List EventId -> Task Http.Error (List PostId)
 fetchEventPosts user ids = ids
-    |> List.map (fetchChallengePost user)
+    |> List.map (fetchEventPost user)
     |> Task.sequence
 
-fetchChallengePost: UserInfo -> EventId -> Task Http.Error PostId
-fetchChallengePost user id = Http.task {
+fetchEventPost: UserInfo -> EventId -> Task Http.Error PostId
+fetchEventPost user id = Http.task {
     method = "GET"
     , headers = [authHeader user]
     , url = baseUrl ++ absolute ["post", "by-content", "event", id |> Event.toString] []
