@@ -1,10 +1,11 @@
 module Query.Conversation exposing (
     fetchConversation,
+    fetchAndCacheConversation,
     flagComment,
     unflagComment,
     postComment)
 
-import Data.Conversation as Conversation exposing (Message, MessageId)
+import Data.Conversation as Conversation exposing (ConversationPage, Message, MessageId)
 import Data.Page as Page exposing (Page)
 import Data.Post as PostId exposing (PostId)
 import Http
@@ -22,12 +23,16 @@ import Url.Builder exposing (absolute, string)
 
 
 fetchConversation: Cache -> UserInfo -> PostId -> Page -> Cmd Msg
-fetchConversation cache user postId page = fetchConversationPage user postId page
+fetchConversation cache user postId page =
+    fetchAndCacheConversation cache user postId page
+    |> Task.attempt HttpConversationPageFetched
+
+fetchAndCacheConversation: Cache -> UserInfo -> PostId -> Page -> Task Http.Error (Cache, ConversationPage)
+fetchAndCacheConversation cache user postId page = fetchConversationPage user postId page
     |> Task.andThen (\messages -> fetchAndCacheAllUsersFromMessages cache user messages |> thread messages )
     |> Task.andThen (\(cache1, messages) -> fetchAndCacheAllMessagesFlagged cache1 user messages |> thread messages )
     |> Task.andThen (\(cache2, messages) -> fetchAndCacheAllMessagesFlaggedByUser cache2 user messages |> thread messages )
     |> Task.map (\(cache3, messages) -> (cache3, {postId = postId, page = page, messages = messages}) )
-    |> Task.attempt HttpConversationPageFetched
 
 fetchConversationPage: UserInfo -> PostId -> Page -> Task Http.Error (List Message)
 fetchConversationPage user postId page = Http.task {

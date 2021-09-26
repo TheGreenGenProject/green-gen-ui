@@ -163,10 +163,11 @@ fetchAndCachePostInfo: Cache -> UserInfo -> Post -> Task Http.Error Cache
 fetchAndCachePostInfo cache user post = case post.content of
     RePost id        -> fetchAndCachePost cache user id
     EventPost id     -> fetchAndCacheEvent cache user id
-                        |> Task.andThen (\cache1 -> fetchAndCacheEventParticipationStatus cache1 user id)
-                        |> Task.andThen (\cache2 -> fetchAndCacheEventCancelledStatus cache2 user id)
-                        |> Task.andThen (\cache3 -> fetchAndCacheEventParticipationRequestStatus cache3 user id)
-                        |> Task.andThen (\cache4 -> fetchAndCacheEventParticipantCount cache4 user id)
+                        |> Task.map (\cache1 -> Cache.addPostIdForEvent cache1 id post.id)
+                        |> Task.andThen (\cache2 -> fetchAndCacheEventParticipationStatus cache2 user id)
+                        |> Task.andThen (\cache3 -> fetchAndCacheEventCancelledStatus cache3 user id)
+                        |> Task.andThen (\cache4 -> fetchAndCacheEventParticipationRequestStatus cache4 user id)
+                        |> Task.andThen (\cache5 -> fetchAndCacheEventParticipantCount cache5 user id)
     ChallengePost id -> fetchAndCacheChallenge cache user id
                         |> Task.andThen (\cache1 -> fetchAndCacheChallengeStatistics cache1 user id)
                         |> Task.andThen (\cache2 -> fetchAndCacheChallengeStatus cache2 user id)

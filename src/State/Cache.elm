@@ -87,6 +87,7 @@ emptyPollEntry = {
  }
 
 type alias EventCacheEntry = {
+    postId: Maybe PostId,
     event: Maybe Event,
     requested: Maybe Bool,
     participating: Maybe Bool,
@@ -95,6 +96,7 @@ type alias EventCacheEntry = {
  }
 
 emptyEventEntry = {
+    postId        = Nothing,
     event         = Nothing,
     requested     = Nothing,
     participating = Nothing,
@@ -280,6 +282,16 @@ addEvent cache id content = let cacheId = (Data.Event.toString id)
 getEvent: Cache -> EventId -> Maybe Event
 getEvent cache id = Dict.get (Data.Event.toString id) cache.events
     |> Maybe.andThen (.event)
+
+addPostIdForEvent: Cache -> EventId -> PostId -> Cache
+addPostIdForEvent cache id content = let cacheId = (Data.Event.toString id)
+                                         entry = Dict.get cacheId cache.events |> Maybe.withDefault emptyEventEntry
+                                         updated = {entry| postId = Just content }
+    in {cache| events = Dict.insert cacheId updated cache.events }
+
+getPostIdForEvent: Cache -> EventId -> Maybe PostId
+getPostIdForEvent cache id = Dict.get (Data.Event.toString id) cache.events
+    |> Maybe.andThen (.postId)
 
 addEventParticipationStatus: Cache -> EventId -> Bool -> Cache
 addEventParticipationStatus cache id content = let cacheId = (Data.Event.toString id)
@@ -682,6 +694,7 @@ mergePollCacheEntries a b = {
 -- Merges 2 Event cache entries
 mergeEventCacheEntries: EventCacheEntry -> EventCacheEntry -> EventCacheEntry
 mergeEventCacheEntries a b = {
+    postId        = mergeMaybe a.postId b.postId,
     event         = mergeMaybe a.event b.event,
     requested     = mergeMaybe a.requested b.requested,
     participating = mergeMaybe a.participating b.participating,

@@ -8,6 +8,7 @@ module Query.Event exposing (
     , fetchUserEventPosts
     , fetchEventDetails
     , fetchEventDetailsContentForTab
+    , fetchEventConversation
  )
 
 
@@ -20,14 +21,15 @@ import Data.Schedule as Schedule exposing (Duration(..), Schedule(..), UTCTimest
 import Data.Url exposing (Url(..))
 import Data.User as User exposing (UserId)
 import Http
-import Json.Decode exposing (bool, list)
+import Json.Decode exposing (list)
 import Query.CacheQueryUtils exposing (fetchAndCacheAllUsers, fetchAndCacheEvent, fetchAndCacheEventCancelledStatus, fetchAndCacheEventParticipantCount, fetchAndCacheEventParticipationRequestStatus, fetchAndCacheEventParticipationStatus, fetchFromIdAndCacheAll)
+import Query.Conversation as Conversation
 import Query.Json.DecoderUtils exposing (decodeUserId, jsonResolver, unitDecoder)
 import Query.Json.EventDecoder exposing (decodeEvent, decodeEventId)
 import Query.Json.PostDecoder exposing (decodePostId)
 import Query.QueryUtils exposing (authHeader, baseUrl)
 import Query.TaskUtils exposing (thread)
-import State.Cache as Cache exposing (Cache)
+import State.Cache exposing (Cache)
 import State.EventDetailsState exposing (EventDetailsPagedTab, EventDetailsTab(..))
 import State.EventState exposing (EventPagedTab, EventTab(..))
 import State.FormState exposing (NewEventWizardState)
@@ -198,7 +200,7 @@ fetchParticipationAcceptedEventPosts cache user page =
     fetchAllParticipationAcceptedEvents user page
     |> Task.andThen (fetchEventPosts user)
     |> Task.andThen (\ids -> fetchFromIdAndCacheAll cache user ids |> thread ids)
-    |> Task.map (\(cache1, ids) -> (cache1, { tab = IncomingEventTab, page = page}, ids))
+    |> Task.map (\(cache1, ids) -> (cache1, { tab = ParticipationAcceptedEventTab, page = page}, ids))
     |> Task.attempt HttpEventPostsFetched
 
 fetchAllParticipationAcceptedEvents: UserInfo -> Page -> Task Http.Error (List EventId)
@@ -232,7 +234,7 @@ fetchEventDetailsContentForTab cache user eventId pagedTab = case pagedTab.tab o
     EventDetailsTab    -> fetchEventDetails cache user eventId
     PendingRequestsTab -> fetchAllPendingRequests cache user eventId pagedTab.page
     ParticipantsTab    -> fetchAllParticipants cache user eventId pagedTab.page
-    _                  -> Cmd.none
+    EventDiscussionTab -> fetchEventConversation cache user eventId pagedTab.page
 
 fetchAllPendingRequests: Cache -> UserInfo -> EventId -> Page -> Cmd Msg
 fetchAllPendingRequests cache user eventId page =
@@ -267,6 +269,13 @@ fetchParticipants user eventId page =  Http.task {
     , resolver = jsonResolver <| list decodeUserId
     , timeout = Nothing
  }
+
+
+fetchEventConversation: Cache -> UserInfo -> EventId -> Page -> Cmd Msg
+fetchEventConversation cache user eventId page =
+    fetchEventPost user eventId
+    |> Task.andThen (\postId -> Conversation.fetchAndCacheConversation cache user postId page)
+    |> Task.attempt HttpConversationPageFetched
 
 {-- Helpers --}
 

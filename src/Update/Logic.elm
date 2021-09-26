@@ -463,7 +463,7 @@ update msg state = case msg of
             updated = Cache.addConversationMessages cache conversationPage.postId added
         in {state | cache = Cache.merge updated state.cache }
         |> nocmd
-    HttpConversationPageFetched (Err err) -> Debug.log ("Error while getting challenge posts: " ++ (errorToString err))
+    HttpConversationPageFetched (Err err) -> Debug.log ("Error while getting conversation page: " ++ (errorToString err))
         state |> nocmd
     HttpNewCommentPosted (Ok postId)         -> state
         |> ifLogged (\user -> fetchConversation state.cache user postId Page.first)

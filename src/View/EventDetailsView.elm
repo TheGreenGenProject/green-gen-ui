@@ -22,6 +22,7 @@ import Utils.DateUtils as DateUtils
 import Utils.MaybeUtils as MaybeUtils
 import View.Icons as Icons
 import View.InfiniteScroll exposing (infiniteScroll)
+import View.PostRenderer as PostRenderer
 import View.ScreenUtils
 import View.Style exposing (size, titledElementStyle, titledTextStyle)
 import View.Theme as Theme exposing (background, blue)
@@ -29,8 +30,8 @@ import View.UserListRenderer exposing (renderLoadingUserPage, renderUserId)
 
 
 eventDetailsScreen: AppState -> EventId -> Element Msg
-eventDetailsScreen state challengeId =
-    let maybeEvent       = Cache.getEvent state.cache challengeId
+eventDetailsScreen state eventId =
+    let maybeEvent       = Cache.getEvent state.cache eventId
         maybeOwner       = maybeEvent |> Maybe.map (.owner)
         maybeCurrentUser = UserState.currentUser state.user
         isEventOwner     = (maybeCurrentUser |> MaybeUtils.nonEmpty) && (maybeCurrentUser |> Maybe.map (.id)) == maybeOwner
@@ -240,7 +241,6 @@ renderRejectedPendingRequestButton eventId userId =
 renderSingleParticipant: Cache -> EventId -> Bool -> UserId -> Element Msg
 renderSingleParticipant cache eventId isOwner userId = renderUserId cache userId
 
-
 renderNoUserPage: Element Msg
 renderNoUserPage = View.ScreenUtils.emptyScreen "No users"
 
@@ -248,4 +248,7 @@ renderLoadingUsers: Element Msg
 renderLoadingUsers = renderLoadingUserPage 2
 
 renderDiscussion: AppState -> Event -> Element Msg
-renderDiscussion cache event = Element.none
+renderDiscussion state event =
+    case (Cache.getPostIdForEvent state.cache event.id) of
+        Just postId -> PostRenderer.renderOpenedConversation state.timestamp state.cache postId
+        Nothing     -> View.ScreenUtils.emptyScreen "Couldn't find conversation"
