@@ -1,4 +1,4 @@
-module Query.Feed exposing (fetchFeed, hasNewPosts, scheduleFeedCheck)
+module Query.Feed exposing (fetchFeed, hasNewPosts, scheduleFeedCheck, generateInitialFeed)
 
 import Data.Page as Page exposing (Page(..))
 import Data.Post as Post exposing (PostId)
@@ -16,7 +16,7 @@ import State.UserState exposing (UserInfo)
 import Task exposing (Task)
 import Update.Msg exposing (Msg(..))
 import Url.Builder exposing (absolute)
-import Query.Json.DecoderUtils exposing (jsonResolver)
+import Query.Json.DecoderUtils exposing (jsonResolver, unitDecoder)
 
 
 fetchFeed: Cache -> UserInfo -> Page -> Cmd Msg
@@ -36,6 +36,16 @@ fetchFeedPage user page = Http.task {
     , resolver = jsonResolver <| decodeFeed page
     , timeout = Nothing
   }
+
+generateInitialFeed: UserInfo -> Cmd Msg
+generateInitialFeed user = Http.task {
+    method = "POST"
+    , headers = [authHeader user]
+    , url = baseUrl ++ absolute ["post","new","feed"] []
+    , body = Http.emptyBody
+    , resolver = jsonResolver <| unitDecoder
+    , timeout = Nothing
+ } |> Task.attempt (\_ -> RefreshFeed)
 
 hasNewPosts: UserInfo -> FeedState -> Cmd Msg
 hasNewPosts user state = let url = case (FeedState.lastPost state) of

@@ -26,6 +26,9 @@ take n str = str
     |> List.map (String.fromChar)
     |> String.join ""
 
+oneline: String -> String
+oneline = String.replace "\n" " "
+
 
 {-- Hashtags --}
 

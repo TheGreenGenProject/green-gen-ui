@@ -38,6 +38,7 @@ type Msg =
     | ChangeWallPage Page
     | RefreshWall
     | ChangeFeedPage Page
+    | GenerateWelcomeFeed
     | RefreshFeed
     | ChangePinnedPage Page
     | RefreshPinnedPosts

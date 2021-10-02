@@ -13,6 +13,7 @@ import Update.Msg exposing (Msg(..))
 import View.InfiniteScroll exposing (infiniteScroll)
 import View.PostRenderer exposing (renderLoadingPostPage, renderPostId)
 import View.ScreenUtils
+import View.WelcomeScreen as WelcomeScreen
 
 
 feedScreen: AppState -> Element Msg
@@ -43,7 +44,7 @@ renderSinglePost: UTCTimestamp -> Cache -> PostId -> Element Msg
 renderSinglePost = renderPostId
 
 renderNoPostPage: Element Msg
-renderNoPostPage = View.ScreenUtils.emptyScreen "No posts"
+renderNoPostPage = WelcomeScreen.welcomeScreen
 
 renderLoadingPosts: Element Msg
 renderLoadingPosts = renderLoadingPostPage 2

@@ -343,6 +343,12 @@ titledTextStyle title content fontSize = column [width fill,height fill, spacing
     , el [Font.size fontSize] (multiLineQuotedText content)
  ]
 
+titledParagraphStyle: String -> List String -> Int -> Element Msg
+titledParagraphStyle title content fontSize = column [width fill,height fill, spacing 10] [
+    el [Font.semiBold, Font.size (fontSize + 2)] (quotedText title)
+    , column [width fill,height fill, spacing 5, Font.size fontSize] (content |> List.map (multiLineQuotedText))
+ ]
+
 titledElementStyle: String -> Element Msg -> Int -> Element Msg
 titledElementStyle title content fontSize = column [width fill, height fill, spacing 5] [
     el [Font.semiBold, Font.size (fontSize + 2)] (text title)

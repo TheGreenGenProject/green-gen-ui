@@ -9,7 +9,7 @@ import Query.Challenge exposing (acceptChallenge, fetchChallengeDetails, fetchUs
 import Query.Clock as Clock
 import Query.Conversation exposing (fetchConversation, flagComment, postComment, unflagComment)
 import Query.Event exposing (acceptParticipation, cancelEvent, cancelParticipation, fetchEventDetails, fetchUserEventPosts, fetchEventDetailsContentForTab, postEvent, rejectParticipation, requestParticipation)
-import Query.Feed exposing (fetchFeed, hasNewPosts, scheduleFeedCheck)
+import Query.Feed exposing (fetchFeed, generateInitialFeed, hasNewPosts, scheduleFeedCheck)
 import Query.Following exposing (followHashtag, followUser, unfollowHashtag, unfollowUser)
 import Query.FreeText exposing (postFreeText)
 import Query.Hashtag exposing (refreshHashtagTrend)
@@ -79,6 +79,8 @@ update msg state = case msg of
         if FeedState.isLoadingMore state.feed then state |> nocmd
         else if Page.isAfter page state.feed.currentPage && FeedState.noMoreDataToLoad state.feed then state |> nocmd
         else update (DisplayPage FeedPage) {state| feed = FeedState.moveToPage state.feed page }
+    GenerateWelcomeFeed -> state
+        |> ifLogged (\user -> generateInitialFeed user)
     RefreshFeed ->
         update (DisplayPage FeedPage) {state| feed = FeedState.refresh }
     ChangePinnedPage page ->
