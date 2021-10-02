@@ -46,6 +46,12 @@ rightGap sp x = el [width fill, paddingEach { top = 0, bottom = 0, left = 0, rig
 leftGap: Int -> Element Msg -> Element Msg
 leftGap sp x = el [width fill, paddingEach { top = 0, bottom = 0, left = sp, right = 0}] x
 
+topGap: Int -> Element Msg -> Element Msg
+topGap sp x = el [width fill, paddingEach { top = sp, bottom = 0, left = 0, right = 0}] x
+
+bottomGap: Int -> Element Msg -> Element Msg
+bottomGap sp x = el [width fill, paddingEach { top = 0, bottom = sp, left = 0, right = 0}] x
+
 size: Int -> Element Msg -> Element Msg
 size sz x = el [Font.size sz] x
 
@@ -84,7 +90,7 @@ invert = el [Background.color foreground, Font.color background]
 
 multiLineQuotedText: String -> Element Msg
 multiLineQuotedText txt = let lines = String.split ("\n") txt in
-    column [spacing 2] (lines |> List.map (quotedText))
+    column [spacing 1] (lines |> List.map (quotedText))
 
 quotedText: String -> Element Msg
 quotedText str =
@@ -346,7 +352,7 @@ titledTextStyle title content fontSize = column [width fill,height fill, spacing
 titledParagraphStyle: String -> List String -> Int -> Element Msg
 titledParagraphStyle title content fontSize = column [width fill,height fill, spacing 10] [
     el [Font.semiBold, Font.size (fontSize + 2)] (quotedText title)
-    , column [width fill,height fill, spacing 5, Font.size fontSize] (content |> List.map (multiLineQuotedText))
+    , column [width fill,height fill, spacing 10, Font.size fontSize] (content |> List.map (multiLineQuotedText))
  ]
 
 titledElementStyle: String -> Element Msg -> Int -> Element Msg

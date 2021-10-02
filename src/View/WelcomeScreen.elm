@@ -34,7 +34,7 @@ renderWelcomePage = column [width fill, spacing 15] [
 
 welcome: Element Msg
 welcome = column [width fill, padding 10, spacing 10] [
-    el [Font.size 32, Font.semiBold, centerX] ("Welcome to the GreenGen family !" |> text)
+    el [Font.size 32, Font.semiBold, centerX, Font.color background] ("Welcome to the GreenGen family !" |> text)
     , horizontalSeparator 1 background
  ]
 

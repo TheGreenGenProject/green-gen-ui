@@ -11,7 +11,7 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
-import State.AppState exposing (AppState)
+import State.AppState exposing (AppState, Display(..))
 import State.Cache as Cache exposing (Cache)
 import State.GenericPage as GenericPage
 import State.PostPageCache exposing (PostPage)
@@ -25,9 +25,9 @@ import View.Icons as Icons
 import View.InfiniteScroll exposing (infiniteScroll)
 import View.PartnershipStyle as PartnershipStyle
 import View.PostRenderer exposing (renderLoadingPostPage, renderPostId)
-import View.ScreenUtils
 import View.Style exposing (loadingFixedTextLine, loadingTextBlock, multiLineQuotedText, verticalSeparator)
 import View.Theme exposing (background, darkOrange, foreground, lightPurple)
+import View.WelcomeWallScreen exposing (welcomeWallScreen)
 
 
 wallScreen: AppState -> Element Msg
@@ -38,7 +38,7 @@ wallScreen state = column [
         , spacing 5
         , padding 5 ]
     [ renderUserHeader state.cache state.wall
-      , renderWallState state.timestamp state.cache state.wall ]
+      , renderWallState state ]
     |> infiniteScroll "wall" (ChangeWallPage (Page.next state.wall.currentPage))
 
 renderUserHeader: Cache -> WallState -> Element Msg
@@ -85,9 +85,9 @@ renderFollowingButton cache maybeUserId = maybeUserId
     |> Maybe.map (\userId -> if Cache.containsFollowingUser cache userId then unfollowButtonStyle userId else followButtonStyle userId)
     |> Maybe.withDefault Element.none
 
-renderWallState: UTCTimestamp -> Cache -> WallState -> Element Msg
-renderWallState tmstp cache state = case WallState.allUpToCurrentPage state of
-    Just page -> if GenericPage.isEmpty page then renderNoPostPage else renderPostPage tmstp cache page
+renderWallState: AppState -> Element Msg
+renderWallState state = case WallState.allUpToCurrentPage state.wall of
+    Just page -> if GenericPage.isEmpty page then renderNoPostPage state else renderPostPage state.timestamp state.cache page
     Nothing   -> renderLoadingPosts
 
 renderPostPage: UTCTimestamp -> Cache -> PostPage -> Element Msg
@@ -102,8 +102,8 @@ renderPostPage tmstp cache page = column [
 renderSinglePost: UTCTimestamp -> Cache -> PostId -> Element Msg
 renderSinglePost = renderPostId
 
-renderNoPostPage: Element Msg
-renderNoPostPage = View.ScreenUtils.emptyScreen "No posts"
+renderNoPostPage: AppState -> Element Msg
+renderNoPostPage = welcomeWallScreen
 
 renderLoadingPosts: Element Msg
 renderLoadingPosts = renderLoadingPostPage 2
