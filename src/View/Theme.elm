@@ -1,12 +1,32 @@
 module View.Theme exposing (..)
 
-{-- Color scheme --}
+
 import Element exposing (rgb255)
 
-background      = rgb255 50 170 110
-foreground      = rgb255 255 255 255
+{-- App color scheme --}
+appForeground          = white
+appBackground          = darkCharcoal
+appTitleForeground     = darkOrange
+background             = lightCharcoal
+foreground             = darkCharcoal
+tabForeground          = darkOrange
+disabledTabForeground  = lightCharcoal
+linkForeground         = lightBlue
+userLinkForeground     = lightBlue
+hashtagForeground      = lightPurple
+textFieldForeground    = lightBlue
+textFieldBackground    = darkCharcoal
+enabledButton          = darkOrange
+disabledButton         = grey
+alertColor             = darkOrange
+partnerForeground      = darkCharcoal
+partnerBackground      = lightOrange
+progressColor          = darkOrange
+remainingProgressColor = lightCharcoal
 errorForeground = rgb255 164 25 0
 disabled        = rgb255 85 87 83
+--background      = rgb255 50 170 110
+--foreground      = rgb255 255 255 255
 
 {-- Standard colors --}
 lightRed        = rgb255 239 41 41

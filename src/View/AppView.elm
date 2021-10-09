@@ -28,7 +28,7 @@ import View.PinnedScreen exposing (pinnedScreen)
 import View.RegistrationScreen exposing (registrationScreen)
 import View.SearchScreen exposing (searchScreen)
 import View.Style exposing(..)
-import View.Theme exposing (background, foreground)
+import View.Theme exposing (appBackground, appForeground, appTitleForeground, background, foreground)
 import View.WallScreen exposing (wallScreen)
 import View.WizardNewChallengePage exposing (newWizardNewChallengeScreen)
 import View.WizardNewFreeTextPage exposing (newWizardNewFreeTextScreen)
@@ -38,7 +38,7 @@ import View.WizardNewTipPage exposing (newWizardNewTipScreen)
 
 viewApp: AppState -> Html Msg
 viewApp state = Element.layout [width fill]
-    (column [ width fill, height fill, padding 5, spacing 10 ]
+    (column [ width fill, height fill, padding 5, spacing 10, Font.color appForeground, Background.color appBackground]
             [ menuBar state, (displayCurrentPage state)])
 
 menuBar : AppState -> Element Msg
@@ -171,9 +171,10 @@ appTitle = row [width fill, Background.color background] [
         |> el [alignLeft]
         |> el [Border.width 1
             , Border.rounded 5
+            , Border.color appBackground
             , padding 5
-            , Background.color background
-            , Font.color foreground
+            , Background.color appBackground
+            , Font.color appTitleForeground
             , Font.italic
             , Font.family [ Font.typeface "Open Sans", Font.sansSerif]]
     , horizontalSeparator 1 foreground

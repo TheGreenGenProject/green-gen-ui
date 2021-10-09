@@ -24,8 +24,8 @@ import View.Icons as Icons
 import View.InfiniteScroll exposing (infiniteScroll)
 import View.PostRenderer as PostRenderer
 import View.ScreenUtils
-import View.Style exposing (size, titledElementStyle, titledTextStyle)
-import View.Theme as Theme exposing (background, blue)
+import View.Style exposing (size, tabButton, titledElementStyle, titledTextStyle)
+import View.Theme as Theme exposing (blue)
 import View.UserListRenderer exposing (renderLoadingUserPage, renderUserId)
 
 
@@ -75,7 +75,7 @@ renderEventDetailsTabs state event isOwner =  row [spacing 5] [
 renderEvent: Cache -> UTCTimestamp -> Event -> Element Msg
 renderEvent cache now event =
     row [padding 5, spacing 10, width fill] [
-        el [Font.color Theme.background, alignTop, alignLeft] (Icons.event Icons.large)
+        el [Font.color Theme.enabledButton, alignTop, alignLeft] (Icons.event Icons.large)
         , column [alignLeft, spacing 20, width fill] [
             titledTextStyle "Event description" event.description 10
             , titledElementStyle "Organized by" (event.owner |> renderUserId cache) 10
@@ -181,14 +181,7 @@ renderSelectedTabContent state event isOwner =
 
 
 eventDetailsTabButton: String -> Msg -> Bool -> Element Msg
-eventDetailsTabButton label msg selected = Input.button [
-    Font.size 14
-    , Font.color background
-    , if selected then Font.italic else Font.regular
-    , Border.color background
-    , Border.widthEach { bottom = (if selected then 3 else 0), top = 0, left = 0, right = 0 }
-    , padding 5
- ] { onPress = Just msg, label = label |> text }
+eventDetailsTabButton label msg selected = tabButton label msg selected
 
 
 renderPendingRequestUserListTabContent: AppState -> Event -> Bool -> Element Msg

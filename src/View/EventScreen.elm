@@ -3,10 +3,7 @@ module View.EventScreen exposing (eventScreen)
 import Data.Page as Page
 import Data.Post exposing (PostId)
 import Data.Schedule exposing (UTCTimestamp)
-import Element exposing (Element, centerX, column, fill, height, padding, row, spacing, text, width)
-import Element.Border as Border
-import Element.Font as Font
-import Element.Input as Input
+import Element exposing (Element, centerX, column, fill, height, padding, row, spacing, width)
 import State.AppState exposing (AppState)
 import State.Cache exposing (Cache)
 import State.EventState as EventState exposing (EventState, EventTab(..))
@@ -16,7 +13,7 @@ import Update.Msg exposing (Msg(..))
 import View.InfiniteScroll exposing (infiniteScroll)
 import View.PostRenderer exposing (renderLoadingPostPage, renderPostId)
 import View.ScreenUtils
-import View.Theme exposing (background)
+import View.Style exposing (tabButton)
 
 
 eventScreen: AppState -> Element Msg
@@ -40,14 +37,7 @@ eventTabs state = row [spacing 5] [
  ]
 
 eventTabButton: String -> Msg -> Bool -> Element Msg
-eventTabButton label msg selected = Input.button [
-    Font.size 14
-    , Font.color background
-    , if selected then Font.italic else Font.regular
-    , Border.color background
-    , Border.widthEach { bottom = (if selected then 3 else 0), top = 0, left = 0, right = 0 }
-    , padding 5
- ] { onPress = Just msg, label = label |> text }
+eventTabButton label msg selected = tabButton label msg selected
 
 renderEventTabContent: AppState -> Element Msg
 renderEventTabContent state = case EventState.allUpToCurrentPage state.event of

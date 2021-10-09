@@ -3,6 +3,7 @@ module View.WizardNewChallengePage exposing (newWizardNewChallengeScreen)
 import Data.Hashtag exposing (Hashtag(..))
 import Data.Schedule as Schedule exposing (Duration(..), Schedule(..))
 import Element exposing (Element, alignLeft, alignRight, centerX, column, el, fill, height, maximum, padding, paragraph, px, row, spacing, text, width)
+import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input exposing (labelHidden)
@@ -14,7 +15,7 @@ import Utils.DateUtils as DateUtils
 import Utils.TextUtils as TextUtils
 import View.Icons as Icons
 import View.Style exposing (dateSpinner, hashtagStyle, intSpinner, options, placeholderStyle, titledTextStyle, userStyle)
-import View.Theme as Theme exposing (black)
+import View.Theme as Theme exposing (foreground)
 
 
 newWizardNewChallengeScreen: AppState -> Element Msg
@@ -38,12 +39,12 @@ form state =
         wizardState = {wizardStateMaybeDates| start = Just startDate, end = Just endDate }
         posting = wizardState.posting
         isCorrect = check wizardState |> hasError |> not
-        postButtonColor = if isCorrect then Theme.background else Theme.disabled
+        postButtonColor = if isCorrect then Theme.enabledButton else Theme.disabledButton
         reportCount = countReports wizardState
         successMeasure = wizardState.successMeasure
     in
     [ (row [padding 5, spacing 10, width fill] [
-        el [Font.color Theme.background] (Icons.challenge Icons.large)
+        el [Font.color Theme.enabledButton] (Icons.challenge Icons.large)
         , titledTextStyle "Create a new Challenge" wizardDescription 10])
     , row [spacing 10] [
         Icons.calendar Icons.normal
@@ -103,13 +104,13 @@ form state =
       Icons.challenge Icons.normal
             |> el [Font.color Theme.background]
       , "Title" |> text |> el [Font.size 12, width <| px 50]
-      , Input.text [width fill] {
+      , Input.text [width fill, Font.color Theme.textFieldForeground, Background.color Theme.textFieldBackground] {
             onChange = (updateTitle state.forms.newChallengeWizard)
             , text = (state.forms.newChallengeWizard.title |> Maybe.withDefault "")
             , placeholder = placeholderStyle "Challenge title"
             , label = labelHidden "Challenge title"
         }]
-    , (Input.multiline [width fill, height fill] {
+    , (Input.multiline [width fill, height fill, Font.color Theme.textFieldForeground, Background.color Theme.textFieldBackground] {
         onChange = (updateContent state.forms.newChallengeWizard)
         , text = (state.forms.newChallengeWizard.content |> Maybe.withDefault "")
         , placeholder = placeholderStyle "Enter your Challenge description !"
@@ -128,7 +129,7 @@ form state =
 makeHashtagBar: NewChallengeWizardState -> Element Msg
 makeHashtagBar state = paragraph [alignLeft
         , spacing 10
-        , Font.color black
+        , Font.color foreground
         , Font.italic
         , Font.size 12] [row [spacing 5]
     (state.content |> Maybe.withDefault ""
@@ -139,7 +140,7 @@ makeHashtagBar state = paragraph [alignLeft
 makeUserBar: Cache -> NewChallengeWizardState -> Element Msg
 makeUserBar cache state = paragraph [alignLeft
         , spacing 10
-        , Font.color black
+        , Font.color foreground
         , Font.italic
         , Font.size 12] [row [spacing 5]
     (state.content |> Maybe.withDefault ""

@@ -7,7 +7,6 @@ import Data.Page as Page
 import Data.Schedule exposing (UTCTimestamp)
 import Data.User exposing (UserId)
 import Element exposing (Element, alignLeft, centerX, column, el, fill, height, padding, row, spacing, text, width)
-import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import State.AppState exposing (AppState)
@@ -18,8 +17,7 @@ import Utils.DateUtils as DateUtils
 import View.Icons as Icons
 import View.InfiniteScroll exposing (infiniteScroll)
 import View.ScreenUtils as ScreenUtils
-import View.Style exposing (notifHeaderStyle, userStyle, viewChallengeButtonStyle, viewEventButtonStyle)
-import View.Theme exposing (background)
+import View.Style exposing (notifHeaderStyle, tabButton, userStyle, viewChallengeButtonStyle, viewEventButtonStyle)
 
 
 notificationScreen: AppState -> Element Msg
@@ -141,11 +139,4 @@ notifLogo notif =
 
 
 notifTabButton: String -> Msg -> Bool -> Element Msg
-notifTabButton label msg selected = Input.button [
-    Font.size 14
-    , Font.color background
-    , if selected then Font.italic else Font.regular
-    , Border.color background
-    , Border.widthEach { bottom = (if selected then 3 else 0), top = 0, left = 0, right = 0 }
-    , padding 5
- ] { onPress = Just msg, label = label |> text}
+notifTabButton label msg selected = tabButton label msg selected

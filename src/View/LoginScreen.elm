@@ -12,7 +12,7 @@ import State.UserState exposing (UserState(..))
 import Update.Msg exposing (Msg(..))
 import View.Icons as Icons exposing (normal)
 import View.Style exposing (errorTextStyle, internalPageLinkStyle, placeholderStyle)
-import View.Theme as Theme exposing (background)
+import View.Theme as Theme exposing (appBackground, background, enabledButton, textFieldBackground)
 
 loginScreen: AppState -> Element Msg
 loginScreen state = column [centerX, centerY, spacing 30]
@@ -41,20 +41,20 @@ loginFailedScreen err state = column [
 -- Widgets for the login screen
 loginComponents : AppState -> List (Element Msg)
 loginComponents state = [
-        (Input.username [Font.color Theme.background] {
+        (Input.username [Background.color textFieldBackground, Font.color Theme.textFieldForeground] {
             onChange = updateUsername state
             ,text = readUsername state
             ,placeholder = placeholderStyle "Username"
             ,label = (labelLeft [centerX, centerY] (Icons.user normal))
         })
-        ,(Input.currentPassword [Font.color Theme.background] {
+        ,(Input.currentPassword [Background.color textFieldBackground, Font.color Theme.textFieldForeground] {
             onChange = updatePassword state
             ,text = readPassword state
             ,placeholder = placeholderStyle "Password"
             ,label = (labelLeft [centerX, centerY] (Icons.password normal))
             ,show = False
         })
-        ,(Input.button [alignRight, Border.width 2, Border.rounded 5, padding 5] {
+        ,(Input.button [alignRight, Border.width 2, Border.rounded 5, padding 5, Background.color appBackground, Font.color enabledButton] {
             onPress = attemptLogin state
             ,label = (text "Login")
         })

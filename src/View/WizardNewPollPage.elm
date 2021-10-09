@@ -3,6 +3,7 @@ module View.WizardNewPollPage exposing (newWizardNewPollScreen)
 import Data.Hashtag exposing (Hashtag(..))
 import Data.Poll exposing (PollOption(..))
 import Element exposing (Element, alignLeft, alignRight, centerX, column, el, fill, height, maximum, padding, paragraph, row, spacing, text, width)
+import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input exposing (labelHidden)
@@ -13,8 +14,8 @@ import Update.Msg exposing (Msg(..))
 import Utils.ListUtils as ListUtils
 import Utils.TextUtils as TextUtils
 import View.Icons as Icons
-import View.Style exposing (hashtagStyle, options, placeholderStyle, titledTextStyle, userStyle)
-import View.Theme as Theme exposing (background, black)
+import View.Style exposing (hashtagStyle, placeholderStyle, titledTextStyle, userStyle)
+import View.Theme as Theme exposing (background, foreground)
 
 
 newWizardNewPollScreen: AppState -> Element Msg
@@ -32,12 +33,15 @@ form state =
     let pollState = state.forms.newPollWizard
         posting = pollState.posting
         isCorrect = check pollState |> hasError |> not
-        postButtonColor = if isCorrect then Theme.background else Theme.disabled
+        postButtonColor = if isCorrect then Theme.enabledButton else Theme.disabledButton
     in
     [ (row [padding 5, spacing 10, width fill] [
-        el [Font.color Theme.background] (Icons.poll Icons.large)
+        el [Font.color Theme.enabledButton] (Icons.poll Icons.large)
         , titledTextStyle "Create a new Poll" wizardDescription 10])
-    , (Input.multiline [width fill, height <| maximum 100 fill] {
+    , (Input.multiline [width fill
+        , height <| maximum 100 fill
+        , Font.color Theme.textFieldForeground
+        , Background.color Theme.textFieldBackground] {
         onChange = (updateQuestion state.forms.newPollWizard)
         , text = (state.forms.newPollWizard.question |> Maybe.withDefault "")
         , placeholder = placeholderStyle "Enter your Poll question !"
@@ -58,7 +62,7 @@ form state =
 makeHashtagBar: NewPollWizardState -> Element Msg
 makeHashtagBar state = paragraph [alignLeft
         , spacing 10
-        , Font.color black
+        , Font.color foreground
         , Font.italic
         , Font.size 12] [row [spacing 5]
     (state.question |> Maybe.withDefault ""
@@ -69,7 +73,7 @@ makeHashtagBar state = paragraph [alignLeft
 makeUserBar: Cache -> NewPollWizardState -> Element Msg
 makeUserBar cache state = paragraph [alignLeft
         , spacing 10
-        , Font.color black
+        , Font.color foreground
         , Font.italic
         , Font.size 12] [row [spacing 5]
     (state.question |> Maybe.withDefault ""
@@ -100,7 +104,7 @@ renderPollOptionRow state index (PollOption opt) =
         isLast = (index+1) == lastIndex
     in
     row [spacing 5, width fill] [
-        Input.text [width fill] {
+        Input.text [width fill, Font.color Theme.textFieldForeground, Background.color Theme.textFieldBackground] {
             onChange = (updatePollOption state index)
             , text = opt
             , placeholder = placeholderStyle  ((index+1 |> String.fromInt) ++"- Enter another option")

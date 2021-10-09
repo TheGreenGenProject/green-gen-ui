@@ -20,7 +20,7 @@ import Update.Msg exposing (Msg(..))
 import Utils.DateUtils exposing (LocalDate, LocalTime, toLocalDate, toLocalTime)
 import Utils.TextUtils as TextUtils exposing (QuotedString(..), format2Digits)
 import View.Icons as Icons
-import View.Theme as Theme exposing (background, blue, darkRed, errorForeground, foreground, grey, lightGrey)
+import View.Theme as Theme exposing (alertColor, background, disabledTabForeground, errorForeground, foreground, grey, hashtagForeground, linkForeground, tabForeground, textFieldBackground, textFieldForeground, userLinkForeground)
 
 empty: Element Msg
 empty = Element.none
@@ -213,9 +213,9 @@ postButtonBarStyle (txt, action) =
 tabButton: String -> Msg -> Bool -> Element Msg
 tabButton label msg selected = Input.button [
     Font.size 14
-    , Font.color background
+    , Font.color (if selected then tabForeground else disabledTabForeground)
     , if selected then Font.italic else Font.regular
-    , Border.color background
+    , Border.color tabForeground
     , Border.widthEach { bottom = (if selected then 3 else 0), top = 0, left = 0, right = 0 }
     , padding 5
  ] { onPress = Just msg, label = label |> text}
@@ -247,7 +247,7 @@ screenTabIcon state display icon msg =
 -- Ads a distinctive sign if there is something new (notifications, new posts, ...)
 screenTabIconWithRefresh: AppState -> Display -> Bool -> Element msg -> msg -> Element msg
 screenTabIconWithRefresh state display needsRefresh icon msg =
-    let refreshColor = if needsRefresh then darkRed else background
+    let refreshColor = if needsRefresh then alertColor else background
     in Input.button [ Background.color (if state.display==display then foreground else refreshColor)
                   , Font.color (if state.display==display then refreshColor else foreground)
                   , Border.rounded 5
@@ -270,7 +270,13 @@ searchField state =
             (Html.Events.on "keyup"
                 (Decode.field "key" Decode.string
                     |> Decode.andThen (\key -> if key == "Enter" then Decode.succeed msg else Decode.fail "Not the enter key")))
-    in Input.search [ Font.size 11, Border.color background, Border.rounded 5, onEnter PerformSearchFromField]
+    in Input.search [
+        Font.size 11
+        , Border.color background
+        , Background.color textFieldBackground
+        , Font.color textFieldForeground
+        , Border.rounded 5
+        , onEnter PerformSearchFromField]
      { onChange = (\txt -> EnteringSearch txt)
        , text = state.search.field
        , placeholder = placeholderStyle "Search..."
@@ -278,6 +284,11 @@ searchField state =
 
 hashtagStyle: Hashtag -> Element Msg
 hashtagStyle (Hashtag tag as ht) =
+    Input.button [Font.italic, Font.semiBold, Font.color hashtagForeground]
+        { onPress = Just <| PerformSearchFromHashtag ht, label = Element.text ("#" ++ tag) }
+
+hashtagCloudStyle: Hashtag -> Element Msg
+hashtagCloudStyle (Hashtag tag as ht) =
     Input.button [Font.italic, Font.semiBold]
         { onPress = Just <| PerformSearchFromHashtag ht, label = Element.text ("#" ++ tag) }
 
@@ -304,7 +315,7 @@ unfollowHashtagStyle ht = row [spacing 5] [
 userStyle: String -> Maybe UserId -> Element Msg
 userStyle pseudo userId =
     let page = userId |> Maybe.map (UserPage) |> Maybe.withDefault (PseudoPage pseudo) in
-    Input.button [Font.italic, Font.semiBold, Font.color blue]
+    Input.button [Font.italic, Font.semiBold, Font.color userLinkForeground]
         { onPress = DisplayPage page |> Just, label = Element.text ("@" ++ pseudo) }
 
 userPseudoStyle: String -> Maybe UserId -> Element Msg
@@ -316,7 +327,7 @@ userPseudoStyle pseudo userId =
 linkStyle: Url -> String -> Element msg
 linkStyle (Url url) txt =
     link [Background.color background
-          , Font.color foreground
+          , Font.color linkForeground
           , Font.italic]
         { url = url, label = Element.text txt }
 
@@ -541,7 +552,7 @@ options: List (String, a) -> a -> (a -> Msg) -> Element Msg
 options opts selected onChange =
     Input.radioRow
         [ Border.rounded 6
-          , Border.shadow { offset = ( 0, 0 ), size = 3, blur = 10, color = Theme.lightGrey }
+          --, Border.shadow { offset = ( 0, 0 ), size = 3, blur = 10, color = Theme.lightGrey }
         ]
         { onChange = onChange
           , selected = Just selected
@@ -567,9 +578,9 @@ button position label state =
             , Border.widthEach borders
             , Border.color Theme.background
             , Font.color <|
-                if state == Input.Selected then  Theme.white
+                if state == Input.Selected then  Theme.foreground
                 else Theme.background
             , Background.color <|
                 if state == Input.Selected then  Theme.background
-                else Theme.white
+                else Theme.foreground
             ] <| el [ centerX, centerY, Font.size 14 ] <| text label

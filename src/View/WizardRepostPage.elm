@@ -29,10 +29,10 @@ form state =
     let posting = state.forms.newRepostWizard.posting
         postId = state.forms.newRepostWizard.repost
         isCorrect = check state.forms.newRepostWizard |> hasError |> not
-        postButtonColor = if isCorrect then Theme.background else Theme.disabled
+        postButtonColor = if isCorrect then Theme.enabledButton else Theme.disabledButton
     in
     [ (row [padding 5, spacing 10, width fill] [
-        el [Font.color Theme.background] (Icons.repost Icons.large)
+        el [Font.color Theme.enabledButton] (Icons.repost Icons.large)
         , titledTextStyle "Repost" wizardDescription 10])
     , postId |> Maybe.map (renderPostId state.timestamp state.cache)
              |> Maybe.withDefault Element.none

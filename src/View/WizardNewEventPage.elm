@@ -5,6 +5,7 @@ import Data.Location exposing (Country(..), Latitude(..), Location(..), Longitud
 import Data.Schedule as Schedule
 import Data.Url exposing (Url(..))
 import Element exposing (Element, alignLeft, alignRight, centerX, column, el, fill, height, maximum, padding, paragraph, px, row, spacing, text, width)
+import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input exposing (labelHidden)
@@ -17,7 +18,7 @@ import Utils.MaybeUtils as MaybeUtils
 import Utils.TextUtils as TextUtils
 import View.Icons as Icons
 import View.Style exposing (dateSpinner, hashtagStyle, intSpinner, leftGap, options, placeholderStyle, size, timeSpinner, titledTextStyle, userStyle)
-import View.Theme as Theme exposing (black)
+import View.Theme as Theme exposing (foreground, textFieldBackground, textFieldForeground)
 
 
 newWizardNewEventScreen: AppState -> Element Msg
@@ -42,10 +43,10 @@ form state =
         maxParticipants = wizardState.maxParticipants
         posting = wizardState.posting
         isCorrect = check wizardState |> hasError |> not
-        postButtonColor = if isCorrect then Theme.background else Theme.disabled
+        postButtonColor = if isCorrect then Theme.enabledButton else Theme.disabledButton
     in
     [ (row [padding 5, spacing 10, width fill] [
-        el [Font.color Theme.background] (Icons.event Icons.large)
+        el [Font.color Theme.enabledButton] (Icons.event Icons.large)
         , titledTextStyle "Create a new Event" wizardDescription 10])
     , row [spacing 10] [
         Icons.calendar Icons.normal
@@ -94,7 +95,10 @@ form state =
                 (\opt -> FillingNewEventWizard {wizardState| selectedLocationType = opt})
       ]
     , renderLocationForm wizardState |> leftGap 55
-    , (Input.multiline [width fill, height <| maximum 400 fill] {
+    , (Input.multiline [width fill
+        , height <| maximum 400 fill
+        , Font.color Theme.textFieldForeground
+        , Background.color Theme.textFieldBackground] {
         onChange = (updateDescription state.forms.newEventWizard)
         , text = (state.forms.newEventWizard.description |> Maybe.withDefault "")
         , placeholder = placeholderStyle "Enter your Event description. Be precise and concise !"
@@ -123,7 +127,7 @@ renderOnLineLocationForm state =
     in
     column [width fill, spacing 3] [
         titledTextStyle "Event URL" "Enter the URL for your event" 10
-        , (Input.text [width <| px 450] {
+        , (Input.text [width <| px 450, Background.color textFieldBackground, Font.color textFieldForeground] {
             onChange = (\txt -> updateLocation state (Online (Url txt)))
             , text = loc
             , placeholder = placeholderStyle "Url for the event"
@@ -139,7 +143,7 @@ renderMapUrlLocationForm state =
     in
     column [width fill, spacing 3] [
         titledTextStyle "Map link" "Enter the google map or open street map URL " 10
-        , (Input.text [width <| px 450] {
+        , (Input.text [width <| px 450, Background.color textFieldBackground, Font.color textFieldForeground] {
             onChange = (\txt -> updateLocation state (Online (Url txt)))
             , text = loc
             , placeholder = placeholderStyle "Map Url for the event"
@@ -160,7 +164,7 @@ renderAddressLocationForm state =
         titledTextStyle "Event Address" "Enter the address of your event, with street, zip/post code and country" 10
         , row [width fill, spacing 5] [
             "Street" |> text |> el [width <| px 70]
-            ,(Input.text [width <| px 450] {
+            ,(Input.text [width <| px 450, Background.color textFieldBackground, Font.color textFieldForeground] {
             onChange = (\txt -> updateLocation state (Address (MaybeUtils.maybeString txt) zip (Country country)))
             , text = street |> Maybe.withDefault ""
             , placeholder = placeholderStyle "Full street name"
@@ -168,14 +172,14 @@ renderAddressLocationForm state =
         })] |> size 10
         , row [width fill, spacing 5] [
             "Zip/Post code" |> text |> el [width <| px 70]
-            ,(Input.text [width fill, height fill] {
+            ,(Input.text [width fill, height fill, Background.color textFieldBackground, Font.color textFieldForeground] {
             onChange = (\txt -> updateLocation state (Address street (MaybeUtils.maybeString txt |> Maybe.map ZipCode) (Country country)))
             , text = zipStr
             , placeholder = placeholderStyle "Zip code"
             , label = labelHidden "Event zip code"
              })
              , "Country" |> text
-             ,(Input.text [width fill, height fill] {
+             ,(Input.text [width fill, height fill, Background.color textFieldBackground, Font.color textFieldForeground] {
                          onChange =  (\txt -> updateLocation state (Address street zip (Country txt)))
                          , text = country
                          , placeholder = placeholderStyle "Country"
@@ -187,7 +191,7 @@ renderAddressLocationForm state =
 makeHashtagBar: NewEventWizardState -> Element Msg
 makeHashtagBar state = paragraph [alignLeft
         , spacing 10
-        , Font.color black
+        , Font.color foreground
         , Font.italic
         , Font.size 12] [row [spacing 5]
     (state.description |> Maybe.withDefault ""
@@ -198,7 +202,7 @@ makeHashtagBar state = paragraph [alignLeft
 makeUserBar: Cache -> NewEventWizardState -> Element Msg
 makeUserBar cache state = paragraph [alignLeft
         , spacing 10
-        , Font.color black
+        , Font.color foreground
         , Font.italic
         , Font.size 12] [row [spacing 5]
     (state.description |> Maybe.withDefault ""

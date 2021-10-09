@@ -2,6 +2,7 @@ module View.WizardNewTipPage exposing (newWizardNewTipScreen)
 
 import Data.Hashtag exposing (Hashtag(..))
 import Element exposing (Element, alignLeft, alignRight, centerX, column, el, fill, height, maximum, padding, paragraph, row, spacing, text, width)
+import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input exposing (labelHidden)
@@ -12,7 +13,7 @@ import Update.Msg exposing (Msg(..))
 import Utils.TextUtils as TextUtils
 import View.Icons as Icons
 import View.Style exposing (hashtagStyle, placeholderStyle, titledTextStyle, userStyle)
-import View.Theme as Theme exposing (black)
+import View.Theme as Theme exposing (foreground)
 
 
 newWizardNewTipScreen: AppState -> Element Msg
@@ -30,12 +31,12 @@ form : AppState -> List (Element Msg)
 form state =
     let posting = state.forms.newTipWizard.posting
         isCorrect = check state.forms.newTipWizard |> hasError |> not
-        postButtonColor = if isCorrect then Theme.background else Theme.disabled
+        postButtonColor = if isCorrect then Theme.enabledButton else Theme.disabledButton
     in
     [ (row [padding 5, spacing 10, width fill] [
-        el [Font.color Theme.background] (Icons.tip Icons.large)
+        el [Font.color Theme.enabledButton] (Icons.tip Icons.large)
         , titledTextStyle "Enter your tip" wizardDescription 10])
-    , (Input.multiline [width fill, height fill] {
+    , (Input.multiline [width fill, height fill, Font.color Theme.textFieldForeground, Background.color Theme.textFieldBackground] {
         onChange = (updateContent state.forms.newTipWizard)
         , text = (state.forms.newTipWizard.content |> Maybe.withDefault "")
         , placeholder = placeholderStyle "Enter your Tip !"
@@ -54,7 +55,7 @@ form state =
 makeHashtagBar: NewTipWizardState -> Element Msg
 makeHashtagBar state = paragraph [alignLeft
         , spacing 10
-        , Font.color black
+        , Font.color foreground
         , Font.italic
         , Font.size 12] [row [spacing 5]
     (state.content |> Maybe.withDefault ""
@@ -65,7 +66,7 @@ makeHashtagBar state = paragraph [alignLeft
 makeUserBar: Cache -> NewTipWizardState -> Element Msg
 makeUserBar cache state = paragraph [alignLeft
         , spacing 10
-        , Font.color black
+        , Font.color foreground
         , Font.italic
         , Font.size 12] [row [spacing 5]
     (state.content |> Maybe.withDefault ""

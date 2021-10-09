@@ -12,7 +12,6 @@ import State.PostPageCache exposing (PostPage)
 import Update.Msg exposing (Msg(..))
 import View.InfiniteScroll exposing (infiniteScroll)
 import View.PostRenderer exposing (renderLoadingPostPage, renderPostId)
-import View.ScreenUtils
 import View.WelcomeScreen as WelcomeScreen
 
 

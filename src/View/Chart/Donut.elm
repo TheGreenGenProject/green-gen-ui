@@ -21,6 +21,7 @@ import TypedSvg.Attributes exposing (fill, stroke, transform)
 import TypedSvg.Attributes.InPx exposing (height, width)
 import TypedSvg.Core exposing (Svg)
 import TypedSvg.Types exposing (AnchorAlignment(..), Paint(..), Transform(..))
+import View.Theme exposing (appBackground, background)
 
 
 
@@ -98,7 +99,7 @@ drawChart config model =
                     }
         zippedData = List.map2 Tuple.pair colorData pieData
         makeSlice (color, datum) =
-            Path.element (Shape.arc datum) [ fill <| Paint <| color, stroke <| Paint Color.white ]
+            Path.element (Shape.arc datum) [ fill <| Paint <| color, stroke <| Paint (convertColor background) ]
     in
     svg [ width (radius * 2), height (radius * 2) ]
         [ g [ transform [ Translate radius radius ] ]
@@ -139,7 +140,7 @@ drawDoubleChart outerConfig outerModel innerConfig innerModel =
                             }
         innerZippedData = List.map2 Tuple.pair innerColorData innerPieData
         makeSlice (color, datum) =
-            Path.element (Shape.arc datum) [ fill <| Paint <| color, stroke <| Paint Color.white ]
+            Path.element (Shape.arc datum) [ fill <| Paint <| color, stroke <| Paint (convertColor appBackground) ]
     in
     svg [ width (outerRadius * 2), height (outerRadius * 2) ]
         [ g [ transform [ Translate outerRadius outerRadius ] ]

@@ -26,7 +26,7 @@ import View.InfiniteScroll exposing (infiniteScroll)
 import View.PartnershipStyle as PartnershipStyle
 import View.PostRenderer exposing (renderLoadingPostPage, renderPostId)
 import View.Style exposing (loadingFixedTextLine, loadingTextBlock, multiLineQuotedText, verticalSeparator)
-import View.Theme exposing (background, darkOrange, foreground, lightPurple)
+import View.Theme exposing (background, darkOrange, foreground, progressColor, remainingProgressColor)
 import View.WelcomeWallScreen exposing (welcomeWallScreen)
 
 
@@ -117,14 +117,16 @@ renderChart breakdown = let score = Rank.score breakdown
                             fromPosts   = breakdown.fromPosts   |> Int.toFloat
                             fromEvents  = breakdown.fromEvents  |> Int.toFloat
                             remainder   = nextRankScore - (fromLikes + fromFollows + fromPosts + fromEvents) |> max 0.0
+                            progress    = progressColor
+                            remaining   = remainingProgressColor
     in row [spacing 10] [
-        Donut.donut [(fromLikes + fromFollows + fromPosts + fromEvents, background), (remainder, lightPurple)]
+        Donut.donut [(fromLikes + fromFollows + fromPosts + fromEvents, progress), (remainder, remaining)]
         , ChartUtils.legend [Font.size 10] [
-            ("Likes: " ++ String.fromFloat fromLikes, background)
-            , ("Follow: " ++ String.fromFloat fromFollows, background)
-            , ("Posts: " ++ String.fromFloat fromPosts, background)
-            , ("Event: " ++ String.fromFloat fromEvents, background)
-            , ("Remaining: " ++ String.fromFloat remainder, lightPurple)
+            ("Likes: " ++ String.fromFloat fromLikes, progress)
+            , ("Follow: " ++ String.fromFloat fromFollows, progress)
+            , ("Posts: " ++ String.fromFloat fromPosts, progress)
+            , ("Event: " ++ String.fromFloat fromEvents, progress)
+            , ("Remaining: " ++ String.fromFloat remainder, remaining)
          ]
       ]
 

@@ -6,7 +6,7 @@ module View.InfiniteScroll exposing (
     , loadMoreOrLessIfNeeded)
 
 import Browser.Dom exposing (Viewport)
-import Element exposing (Element, clip, el, fill, height, scrollbarY, width)
+import Element exposing (Element, el, fill, height, scrollbarY, width)
 import Html.Attributes
 import Html.Events
 import Json.Decode as Decode

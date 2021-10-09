@@ -18,7 +18,7 @@ import View.Chart.Donut as Donut
 import View.Icons as Icons
 import View.ScreenUtils
 import View.Style exposing (bold, empty, italic, titledElementStyle, titledTextStyle, userStyle)
-import View.Theme as Theme exposing (background, darkRed, lightGrey, orange)
+import View.Theme as Theme exposing (darkOrange, darkRed, lightGreen, lightGrey)
 
 
 challengeDetailsScreen: AppState -> ChallengeId -> Element Msg
@@ -108,8 +108,8 @@ renderChallengeStatistics measure maybeStats = case maybeStats of
                 |> rightLegendPanel [Font.size 10] [
                     ("Skipped: " ++ String.fromInt stats.skippedCount, lightGrey)
                     , ("Failed: " ++ String.fromInt stats.failureCount, darkRed)
-                    , ("Partial: " ++ String.fromInt stats.partialSuccessCount, orange)
-                    , ("Success: " ++ String.fromInt stats.successCount, background)
+                    , ("Partial: " ++ String.fromInt stats.partialSuccessCount, darkOrange)
+                    , ("Success: " ++ String.fromInt stats.successCount, lightGreen)
                   ]
               , column [Font.size 10, centerY, height fill] [
                 "- There is currently " ++ (stats.acceptedCount |> String.fromInt) ++ " contestant(s)." |> text
@@ -127,7 +127,7 @@ renderChallengeStatisticsDonut stats = let contestants = stats.acceptedCount
                                            skipped = (stats.skippedCount |> Int.toFloat) / total
                                            partial = (stats.partialSuccessCount |> Int.toFloat) / total
                                            failure = (stats.failureCount |> Int.toFloat) / total
-    in Donut.smallDonut [(skipped, lightGrey),(failure, darkRed), (partial, orange),(success, background)]
+    in Donut.smallDonut [(skipped, lightGrey),(failure, darkRed), (partial, darkOrange),(success, lightGreen)]
         |>  el [centerX, centerY, padding 5]
 
 renderReportDates: UTCTimestamp -> Challenge -> List UTCTimestamp -> List ChallengeStepReport -> Element Msg
@@ -206,8 +206,8 @@ failureButton id index maybeStatus =
     reportButton "Failure" (ReportChallengeStepStatus id index Failure)  (maybeStatus == Just Failure)
 
 reportButton: String -> Msg -> Bool -> Element Msg
-reportButton label msg currentStatus =  Input.button [Font.size 8
-    , Font.color (if currentStatus then Theme.background else Theme.black)
+reportButton label msg currentStatus =  Input.button [Font.size 10
+    , Font.color (if currentStatus then Theme.enabledButton else Theme.disabledButton)
     , paddingXY 2 2]
     { onPress = Just msg, label = label |> text }
 

@@ -7,13 +7,13 @@ import Tuple exposing (first)
 import Update.Msg exposing (Msg)
 import Utils.ListUtils as ListUtils
 import View.Chart.ColorScheme as ColorScheme exposing (ColorScheme)
-import View.Style exposing (hashtagStyle)
+import View.Style exposing (hashtagCloudStyle)
 
 
 -- Hashtag cloud, triggering a search on a click on a given Hashtag
 hashtagCloud: ColorScheme -> Int -> List (Int, Hashtag) -> Element Msg
 hashtagCloud scheme maxSize tags = wordCloud
-    (\ht -> hashtagStyle ht)
+    (\ht -> hashtagCloudStyle ht)
     scheme
     maxSize
     tags

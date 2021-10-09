@@ -32,7 +32,7 @@ import View.Icons as Icons
 import View.PartnershipStyle as PartnershipStyle
 import View.ScreenUtils exposing (neverElement)
 import View.Style exposing (..)
-import View.Theme exposing (background, blue, charcoal, darkGrey, darkRed, foreground, grey, lightPurple, orange)
+import View.Theme exposing (background, blue, charcoal, darkGrey, darkRed, foreground, grey, lightGreen, lightPurple, linkForeground, orange, textFieldBackground, textFieldForeground)
 
 
 renderPostId: UTCTimestamp -> Cache -> PostId -> Element Msg
@@ -242,7 +242,7 @@ renderChallengeStatistics stats = let contestants = stats.acceptedCount
                                       failure = (stats.failureCount |> Int.toFloat) / total
     in column [spacing 5, Font.size 8] [
         Donut.doubleTinyDonut
-            [(skipped, charcoal),(failure, darkRed), (partial, orange),(success, background)]
+            [(skipped, charcoal),(failure, darkRed), (partial, orange),(success, lightGreen)]
             [(stats.elapsedPeriodCount |> Int.toFloat, lightPurple), (stats.totalPeriodCount |> Int.toFloat, grey)]
         |>  el [centerX, centerY]
         , ((contestants |> String.fromInt) ++ " contestant(s)") |> bold |> el [alignRight]
@@ -309,7 +309,7 @@ renderMessageInput cache postId =
         valid = currentComment |> TextUtils.nonEmpty
     in
     row [width fill, spacing 5] [
-        Input.multiline [width fill, Font.size 11] {
+        Input.multiline [width fill, Font.size 11, Font.color textFieldForeground, Background.color textFieldBackground] {
         onChange = (\txt -> UpdateNewPostComment postId txt)
         , text = Cache.getComment cache postId |> Maybe.withDefault ""
         , placeholder = placeholderStyle "Enter a comment ..."
@@ -409,9 +409,9 @@ renderNextDate schedule =
 renderLocation: Location -> Element Msg
 renderLocation loc = case loc of
     Online (Url url) ->
-        Element.newTabLink [Font.size 10] { url = url, label = "online" |> text |> el [Font.color blue] }
+        Element.newTabLink [Font.size 10] { url = url, label = "online" |> text |> el [Font.color linkForeground] }
     MapUrl (Url url) ->
-        Element.newTabLink [Font.size 10] { url = url, label = "See on maps" |> text |> el [Font.color blue] }
+        Element.newTabLink [Font.size 10] { url = url, label = "See on maps" |> text |> el [Font.color linkForeground] }
     (GeoLocation _ _) as geo -> let (Url url) = toMapUrl 17 geo in
-        Element.newTabLink [Font.size 10] { url = url, label = "See on maps" |> text |> el [Font.color blue] }
+        Element.newTabLink [Font.size 10] { url = url, label = "See on maps" |> text |> el [Font.color linkForeground] }
     (Address _ _ _) as address -> formatAddress address |> text |> el [Font.color blue, Font.size 10]

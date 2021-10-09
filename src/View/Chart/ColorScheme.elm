@@ -34,15 +34,14 @@ wordCloudScheme = {
 pollPieChartScheme = {
     default = purple,
     colors = [
-        orange
+        darkOrange
+        , lightGreen
         , charcoal
         , darkRed
-        , background
-        , darkBlue
+        , lightBlue
         , yellow
-        , darkPurple
-        , green
-        , darkBrown
+        , lightPurple
+        , lightBrown
     ]
  }
 

@@ -6,16 +6,17 @@ import Data.User exposing (UserId)
 import Element exposing (Element, el, fill, paddingEach, width)
 import Element.Background as Background
 import Element.Border as Border
+import Element.Font as Font
 import State.Cache as Cache exposing (Cache)
 import Update.Msg exposing (Msg)
-import View.Theme exposing (lightOrange, lighterYellow)
+import View.Theme exposing (lightOrange, lighterYellow, partnerBackground, partnerForeground)
 
 
 
 postDecoration: Cache -> PostId -> Element Msg -> Element Msg
 postDecoration cache postId elmt =
     if Cache.hasPartnership cache postId
-    then elmt |> el [width fill, Background.color lighterYellow, Border.width 2, Border.color lightOrange, Border.rounded 6]
+    then elmt |> el [width fill, Font.color partnerForeground, Background.color partnerBackground, Border.width 2, Border.color lightOrange, Border.rounded 6]
     else elmt
 
 userWallDecoration: Cache -> UserId -> Element Msg -> Element Msg
