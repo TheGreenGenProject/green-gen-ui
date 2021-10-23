@@ -516,7 +516,7 @@ loadPageContent state page = case (state.user, page) of
     (LoggedIn user, PinnedPostPage)                   -> (fetchPinnedPosts state.cache user state.pinned.currentPage)
     (LoggedIn user, SearchPage)                       -> (performSearch state.cache user state.search.filter state.search.currentPage)
     (LoggedIn user, NotificationPage)                 -> (fetchNotifications state.cache user state.notifications.currentTab state.notifications.currentPage)
-    (LoggedIn user, UserPage userId)                  -> (fetchUserWall state.cache user userId state.wall.currentPage)
+    (LoggedIn user, UserPage userId)                  -> (fetchUserWall state.cache user userId (if state.wall.user==Just userId then state.wall.currentPage else Page.first))
     (LoggedIn user, PseudoPage pseudo)                -> (fetchWallByPseudo state.cache user pseudo)
     (LoggedIn user, ChallengePage)                    -> (fetchUserChallengePosts state.cache user {tab=state.challenge.currentTab, page=Page.first})
     (LoggedIn user, ChallengeDetailsPage challengeId) -> (fetchChallengeDetails state.cache user challengeId)

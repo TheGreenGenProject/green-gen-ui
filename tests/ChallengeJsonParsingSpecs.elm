@@ -40,7 +40,7 @@ suite =
               , test "a successful ChallengeStepReport" <|
                 \_ ->
                     """[
-                            {"step":4, "status": {"PartialSuccess":{}} },
+                            {"step":4, "status": {"Partial":{}} },
                             {"step":3, "status": {"Skipped":{}} },
                             {"step":2, "status": {"Failure":{}} },
                             {"step":1, "status": {"Success":{}} }

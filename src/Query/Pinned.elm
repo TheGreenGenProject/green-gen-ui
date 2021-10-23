@@ -4,7 +4,7 @@ import Data.Page as Page exposing (Page)
 import Data.Pinned exposing (Pinned(..))
 import Data.Post as Post exposing (PinnedPost(..), PostId)
 import Http
-import Query.CacheQueryUtils exposing (fetchFromIdAndCacheAll)
+import Query.AggregatedCacheQueryUtils exposing (fetchAggregatedAndCacheAll)
 import Query.Json.DecoderUtils exposing (jsonResolver, unitDecoder)
 import Query.Json.PinnedPost exposing (decodePinnedPosts)
 import Query.QueryUtils exposing (authHeader, baseUrl)
@@ -42,7 +42,7 @@ unpin user postId = Debug.log ("Unpinning post " ++ (Post.toString postId))
 fetchPinnedPosts: Cache -> UserInfo -> Page -> Cmd Msg
 fetchPinnedPosts cache user page = Debug.log "Fetching pinned posts"
     fetchPinnedPostList user page
-    |> Task.andThen (\pinned           -> fetchFromIdAndCacheAll cache user (List.map postId pinned) |> thread pinned)
+    |> Task.andThen (\pinned           -> fetchAggregatedAndCacheAll cache user (List.map postId pinned) |> thread pinned)
     |> Task.andThen (\(cache1, pinned) -> Task.succeed (addAllPostPinned cache1 pinned, Pinned page pinned))
     |> Task.attempt HttpPinnedPostsFetched
 

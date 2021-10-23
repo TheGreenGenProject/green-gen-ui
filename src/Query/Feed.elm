@@ -6,6 +6,7 @@ import Data.User as UserId
 import Data.Feed exposing (Feed, postIds)
 import Http
 import Json.Decode exposing (bool)
+import Query.AggregatedCacheQueryUtils exposing (fetchAggregatedAndCacheAll)
 import Query.CacheQueryUtils exposing (fetchFromIdAndCacheAll)
 import Query.Json.FeedDecoder exposing (decodeFeed)
 import Query.QueryUtils exposing (authHeader, baseUrl)
@@ -21,7 +22,7 @@ import Query.Json.DecoderUtils exposing (jsonResolver, unitDecoder)
 
 fetchFeed: Cache -> UserInfo -> Page -> Cmd Msg
 fetchFeed cache user page =  fetchFeedPage user page
-    |> Task.andThen (\feed -> fetchFromIdAndCacheAll cache user (postIds feed) |> thread feed)
+    |> Task.andThen (\feed -> fetchAggregatedAndCacheAll cache user (postIds feed) |> thread feed)
     |> Task.attempt HttpFeedFetched
 
 fetchFeedPage: UserInfo -> Page -> Task Http.Error Feed

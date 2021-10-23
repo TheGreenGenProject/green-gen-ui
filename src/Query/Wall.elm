@@ -5,6 +5,7 @@ import Data.User as UserId exposing (UserId)
 import Data.Wall exposing (Wall, postIds)
 import Http exposing (Error(..))
 import Json.Decode exposing (maybe)
+import Query.AggregatedCacheQueryUtils exposing (fetchAggregatedAndCacheAll)
 import Query.CacheQueryUtils exposing (fetchAndCacheScoreBreakdown, fetchFromIdAndCacheAll)
 import Query.Json.WallDecoder exposing (decodeWall)
 import Query.QueryUtils exposing (authHeader, baseUrl)
@@ -34,7 +35,7 @@ fetchUserWall cache user targetId page =  fetchAndCacheUserWallPage cache user t
 
 fetchAndCacheUserWallPage: Cache -> UserInfo -> UserId -> Page -> Task Http.Error (Cache, Wall)
 fetchAndCacheUserWallPage cache user targetId page =  fetchWallPage user targetId page
-    |> Task.andThen (\wall -> fetchFromIdAndCacheAll cache user (postIds wall)           |> thread wall)
+    |> Task.andThen (\wall -> fetchAggregatedAndCacheAll cache user (postIds wall) |> thread wall)
     |> Task.andThen (\(cache1, wall) -> fetchAndCacheScoreBreakdown cache1 user targetId |> thread wall)
 
 fetchWallPage: UserInfo -> UserId -> Page -> Task Http.Error Wall

@@ -8,6 +8,7 @@ module Query.CacheQueryUtils exposing (
     , fetchFromIdAndCacheAll
     , fetchAndCacheFollowingUsers
     , fetchAndCacheFollowers
+    , fetchAndCacheFollowingHashtags
     , fetchAndCacheScoreBreakdown
     , fetchAndCacheLikeForPost
     , fetchAndCacheLikes

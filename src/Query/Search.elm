@@ -6,6 +6,7 @@ import Data.Post exposing (Post, PostId)
 import Data.User as User exposing (UserId)
 import Http
 import Json.Decode as Decoder
+import Query.AggregatedCacheQueryUtils exposing (fetchAggregatedAndCacheAll)
 import Query.CacheQueryUtils exposing (fetchAndCacheAllUsers, fetchFromIdAndCacheAll)
 import Query.Json.DecoderUtils exposing (decodeUserId, jsonResolver)
 import Query.Json.PostDecoder exposing (decodePostId)
@@ -23,7 +24,7 @@ performSearch: Cache -> UserInfo -> SearchFilter -> Page -> Cmd Msg
 performSearch cache user filter page =
     if SearchState.isPostSearchFilter filter
     then searchPostFromFilter user filter page
-        |> Task.andThen (\searchResult -> fetchFromIdAndCacheAll cache user (postIds searchResult) |> thread searchResult)
+        |> Task.andThen (\searchResult -> fetchAggregatedAndCacheAll cache user (postIds searchResult) |> thread searchResult)
         |> Task.attempt HttpPostSearchResultFetched
     else searchUserFromFilter user filter page
         |> Task.andThen (\searchResult -> fetchAndCacheAllUsers cache user (userIds searchResult) |> thread searchResult)

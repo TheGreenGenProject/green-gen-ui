@@ -14,7 +14,8 @@ import Data.Schedule as Schedule exposing (Duration(..), Schedule(..), UTCTimest
 import Data.User as User exposing (UserId)
 import Http
 import Json.Decode exposing (list)
-import Query.CacheQueryUtils exposing (fetchAndCacheChallenge, fetchAndCacheChallengeStatistics, fetchAndCacheChallengeStatus, fetchAndCacheChallengeStatusForUser, fetchFromIdAndCacheAll)
+import Query.AggregatedCacheQueryUtils exposing (fetchAggregatedAndCacheAll)
+import Query.CacheQueryUtils exposing (fetchAndCacheChallenge, fetchAndCacheChallengeStatistics, fetchAndCacheChallengeStatus, fetchAndCacheChallengeStatusForUser)
 import Query.Json.ChallengeDecoder exposing (..)
 import Query.Json.DecoderUtils exposing (decodeTimestamp, jsonResolver, unitDecoder)
 import Query.Json.PostDecoder exposing (decodePostId)
@@ -105,7 +106,7 @@ fetchAuthoredChallengePosts: Cache -> UserInfo -> Page -> Cmd Msg
 fetchAuthoredChallengePosts cache user page =
     fetchAllAuthoredChallenges user page
     |> Task.andThen (fetchChallengesPosts user)
-    |> Task.andThen (\ids -> fetchFromIdAndCacheAll cache user ids |> thread ids)
+    |> Task.andThen (\ids -> fetchAggregatedAndCacheAll cache user ids |> thread ids)
     |> Task.map (\(cache1, ids) -> (cache1, { tab = AuthoredTab, page = page}, ids))
     |> Task.attempt HttpChallengePostsFetched
 
@@ -113,7 +114,7 @@ fetchUpcomingChallengePosts: Cache -> UserInfo -> Page -> Cmd Msg
 fetchUpcomingChallengePosts cache user page =
     fetchAllUpcomingChallenges user page
     |> Task.andThen (fetchChallengesPosts user)
-    |> Task.andThen (\ids -> fetchFromIdAndCacheAll cache user ids |> thread ids)
+    |> Task.andThen (\ids -> fetchAggregatedAndCacheAll cache user ids |> thread ids)
     |> Task.map (\(cache1, ids) -> (cache1, { tab = UpcomingTab, page = page}, ids))
     |> Task.attempt HttpChallengePostsFetched
 
@@ -121,7 +122,7 @@ fetchReportDueChallengePosts: Cache -> UserInfo -> Page -> Cmd Msg
 fetchReportDueChallengePosts cache user page =
     fetchAllReportDueChallenges user page
     |> Task.andThen (fetchChallengesPosts user)
-    |> Task.andThen (\ids -> fetchFromIdAndCacheAll cache user ids |> thread ids)
+    |> Task.andThen (\ids -> fetchAggregatedAndCacheAll cache user ids |> thread ids)
     |> Task.map (\(cache1, ids) -> (cache1, { tab = ReportDueTab, page = page}, ids))
     |> Task.attempt HttpChallengePostsFetched
 
@@ -129,7 +130,7 @@ fetchFailedChallengePosts: Cache -> UserInfo -> Page -> Cmd Msg
 fetchFailedChallengePosts cache user page =
     fetchAllFailedChallenges user page
     |> Task.andThen (fetchChallengesPosts user)
-    |> Task.andThen (\ids -> fetchFromIdAndCacheAll cache user ids |> thread ids)
+    |> Task.andThen (\ids -> fetchAggregatedAndCacheAll cache user ids |> thread ids)
     |> Task.map (\(cache1, ids) -> (cache1, { tab = FailedTab, page = page}, ids))
     |> Task.attempt HttpChallengePostsFetched
 
@@ -137,7 +138,7 @@ fetchOnTracksChallengePosts: Cache -> UserInfo -> Page -> Cmd Msg
 fetchOnTracksChallengePosts cache user page =
     fetchAllOnTracksChallenges user page
     |> Task.andThen (fetchChallengesPosts user)
-    |> Task.andThen (\ids -> fetchFromIdAndCacheAll cache user ids |> thread ids)
+    |> Task.andThen (\ids -> fetchAggregatedAndCacheAll cache user ids |> thread ids)
     |> Task.map (\(cache1, ids) -> (cache1, { tab = OnTracksTab, page = page}, ids))
     |> Task.attempt HttpChallengePostsFetched
 
@@ -145,7 +146,7 @@ fetchOnGoingChallengePosts: Cache -> UserInfo -> Page -> Cmd Msg
 fetchOnGoingChallengePosts cache user page =
     fetchAllOnGoingChallenges user page
     |> Task.andThen (fetchChallengesPosts user)
-    |> Task.andThen (\ids -> fetchFromIdAndCacheAll cache user ids |> thread ids)
+    |> Task.andThen (\ids -> fetchAggregatedAndCacheAll cache user ids |> thread ids)
     |> Task.map (\(cache1, ids) -> (cache1, { tab = OnGoingTab, page = page}, ids))
     |> Task.attempt HttpChallengePostsFetched
 
@@ -153,7 +154,7 @@ fetchFinishedChallengePosts: Cache -> UserInfo -> Page -> Cmd Msg
 fetchFinishedChallengePosts cache user page =
     fetchAllFinishedChallenges user page
     |> Task.andThen (fetchChallengesPosts user)
-    |> Task.andThen (\ids -> fetchFromIdAndCacheAll cache user ids |> thread ids)
+    |> Task.andThen (\ids -> fetchAggregatedAndCacheAll cache user ids |> thread ids)
     |> Task.map (\(cache1, ids) -> (cache1, { tab = FinishedTab, page = page}, ids))
     |> Task.attempt HttpChallengePostsFetched
 

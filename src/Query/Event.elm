@@ -22,7 +22,8 @@ import Data.Url exposing (Url(..))
 import Data.User as User exposing (UserId)
 import Http
 import Json.Decode exposing (list)
-import Query.CacheQueryUtils exposing (fetchAndCacheAllUsers, fetchAndCacheEvent, fetchAndCacheEventCancelledStatus, fetchAndCacheEventParticipantCount, fetchAndCacheEventParticipationRequestStatus, fetchAndCacheEventParticipationStatus, fetchFromIdAndCacheAll)
+import Query.AggregatedCacheQueryUtils exposing (fetchAggregatedAndCacheAll)
+import Query.CacheQueryUtils exposing (fetchAndCacheAllUsers, fetchAndCacheEvent, fetchAndCacheEventCancelledStatus, fetchAndCacheEventParticipantCount, fetchAndCacheEventParticipationRequestStatus, fetchAndCacheEventParticipationStatus)
 import Query.Conversation as Conversation
 import Query.Json.DecoderUtils exposing (decodeUserId, jsonResolver, unitDecoder)
 import Query.Json.EventDecoder exposing (decodeEvent, decodeEventId)
@@ -159,7 +160,7 @@ fetchOrganizedEventPosts: Cache -> UserInfo -> Page -> Cmd Msg
 fetchOrganizedEventPosts cache user page =
     fetchAllOrganizedEvents user page
     |> Task.andThen (fetchEventPosts user)
-    |> Task.andThen (\ids -> fetchFromIdAndCacheAll cache user ids |> thread ids)
+    |> Task.andThen (\ids -> fetchAggregatedAndCacheAll cache user ids |> thread ids)
     |> Task.map (\(cache1, ids) -> (cache1, { tab = OrganizedEventTab, page = page}, ids))
     |> Task.attempt HttpEventPostsFetched
 
@@ -177,7 +178,7 @@ fetchFinishedEventPosts: Cache -> UserInfo -> Page -> Cmd Msg
 fetchFinishedEventPosts cache user page =
     fetchAllFinishedEvents user page
     |> Task.andThen (fetchEventPosts user)
-    |> Task.andThen (\ids -> fetchFromIdAndCacheAll cache user ids |> thread ids)
+    |> Task.andThen (\ids -> fetchAggregatedAndCacheAll cache user ids |> thread ids)
     |> Task.map (\(cache1, ids) -> (cache1, { tab = ParticipatedEventTab, page = page}, ids))
     |> Task.attempt HttpEventPostsFetched
 
@@ -188,7 +189,7 @@ fetchIncomingEventPosts: Cache -> UserInfo -> Page -> Cmd Msg
 fetchIncomingEventPosts cache user page =
     fetchAllIncomingEvents user page
     |> Task.andThen (fetchEventPosts user)
-    |> Task.andThen (\ids -> fetchFromIdAndCacheAll cache user ids |> thread ids)
+    |> Task.andThen (\ids -> fetchAggregatedAndCacheAll cache user ids |> thread ids)
     |> Task.map (\(cache1, ids) -> (cache1, { tab = IncomingEventTab, page = page}, ids))
     |> Task.attempt HttpEventPostsFetched
 
@@ -199,7 +200,7 @@ fetchParticipationAcceptedEventPosts: Cache -> UserInfo -> Page -> Cmd Msg
 fetchParticipationAcceptedEventPosts cache user page =
     fetchAllParticipationAcceptedEvents user page
     |> Task.andThen (fetchEventPosts user)
-    |> Task.andThen (\ids -> fetchFromIdAndCacheAll cache user ids |> thread ids)
+    |> Task.andThen (\ids -> fetchAggregatedAndCacheAll cache user ids |> thread ids)
     |> Task.map (\(cache1, ids) -> (cache1, { tab = ParticipationAcceptedEventTab, page = page}, ids))
     |> Task.attempt HttpEventPostsFetched
 
@@ -210,7 +211,7 @@ fetchCancelledEventPosts: Cache -> UserInfo -> Page -> Cmd Msg
 fetchCancelledEventPosts cache user page =
     fetchAllCancelledEvents user page
     |> Task.andThen (fetchEventPosts user)
-    |> Task.andThen (\ids -> fetchFromIdAndCacheAll cache user ids |> thread ids)
+    |> Task.andThen (\ids -> fetchAggregatedAndCacheAll cache user ids |> thread ids)
     |> Task.map (\(cache1, ids) -> (cache1, { tab = CancelledEventTab, page = page}, ids))
     |> Task.attempt HttpEventPostsFetched
 
@@ -221,7 +222,7 @@ fetchPendingEventPosts: Cache -> UserInfo -> Page -> Cmd Msg
 fetchPendingEventPosts cache user page =
     fetchAllPendingEvents user page
     |> Task.andThen (fetchEventPosts user)
-    |> Task.andThen (\ids -> fetchFromIdAndCacheAll cache user ids |> thread ids)
+    |> Task.andThen (\ids -> fetchAggregatedAndCacheAll cache user ids |> thread ids)
     |> Task.map (\(cache1, ids) -> (cache1, { tab = RequestedEventTab, page = page}, ids))
     |> Task.attempt HttpEventPostsFetched
 
