@@ -5,68 +5,59 @@ import Ant.Icon exposing (..)
 import Ant.Icons as Icons
 
 
-
-tiny = [width 12, height 12]
-
-small = [width 16, height 16]
-
-normal = [width 24, height 24]
-
-large = [width 48, height 48]
-
-extraLarge = [width 96, height 96]
+toWidthHeight: (Int, Int) -> List (Attribute msg)
+toWidthHeight (w, h) = [width w, height h]
 
 spinning:  List (Attribute msg) ->  List (Attribute msg)
 spinning attrs = attrs ++ [spin]
 
+wall = toWidthHeight >> Icons.homeOutlined
 
-wall = Icons.homeOutlined
+feed = toWidthHeight >> Icons.globalOutlined
 
-feed = Icons.globalOutlined
+event = toWidthHeight >> Icons.calendarOutlined
 
-event = Icons.calendarOutlined
+pinned = toWidthHeight >> Icons.pushpinFilled
 
-pinned = Icons.pushpinFilled
+unpinned = toWidthHeight >> Icons.pushpinOutlined
 
-unpinned = Icons.pushpinOutlined
+notifications = toWidthHeight >> Icons.bellOutlined
 
-notifications = Icons.bellOutlined
+tip = toWidthHeight >> Icons.bulbFilled
 
-tip = Icons.bulbFilled
+challenge = toWidthHeight >> Icons.riseOutlined
 
-challenge = Icons.riseOutlined
+poll = toWidthHeight >> Icons.pieChartOutlined
 
-poll = Icons.pieChartOutlined
+post = toWidthHeight >> Icons.userOutlined
 
-post = Icons.userOutlined
+repost = toWidthHeight >> Icons.shareAltOutlined
 
-repost = Icons.shareAltOutlined
+search = toWidthHeight >> Icons.searchOutlined
 
-search = Icons.searchOutlined
+like = toWidthHeight >> Icons.heartFilled
 
-like = Icons.heartFilled
+unlike = toWidthHeight >> Icons.heartOutlined
 
-unlike = Icons.heartOutlined
+user = toWidthHeight >> Icons.userOutlined
 
-user = Icons.userOutlined
+email = toWidthHeight >> Icons.mailOutlined
 
-email = Icons.mailOutlined
+password = toWidthHeight >> Icons.lockOutlined
 
-password = Icons.lockOutlined
+logoff = toWidthHeight >> Icons.logoutOutlined
 
-logoff = Icons.logoutOutlined
+flagged = toWidthHeight >> Icons.flagFilled
 
-flagged = Icons.flagFilled
+flag = toWidthHeight >> Icons.flagOutlined
 
-flag = Icons.flagOutlined
+openConversation = toWidthHeight >> Icons.messageOutlined
 
-openConversation = Icons.messageOutlined
+closeConversation = toWidthHeight >> Icons.messageFilled
 
-closeConversation = Icons.messageFilled
+comment = toWidthHeight >> Icons.messageOutlined
 
-comment = Icons.messageOutlined
-
-platformNotification = Icons.notificationFilled
+platformNotification = toWidthHeight >> Icons.notificationFilled
 
 postNotification = like
 
@@ -76,33 +67,35 @@ pollNotification = challenge
 
 eventNotification = event
 
-newFollowerNotification = Icons.usergroupAddOutlined
+newFollowerNotification = toWidthHeight >> Icons.usergroupAddOutlined
 
-back = Icons.arrowLeftOutlined
+back = toWidthHeight >> Icons.arrowLeftOutlined
 
-square = Icons.checkSquareFilled
+square = toWidthHeight >> Icons.checkSquareFilled
 
-calendar = Icons.calendarOutlined
+calendar = toWidthHeight >> Icons.calendarOutlined
 
-report = Icons.pieChartOutlined
+report = toWidthHeight >> Icons.pieChartOutlined
 
-successMeasure = Icons.slidersOutlined
+successMeasure = toWidthHeight >> Icons.slidersOutlined
 
-followers = Icons.usergroupAddOutlined
+followers = toWidthHeight >> Icons.usergroupAddOutlined
 
-arrowUp = Icons.caretUpFilled
+arrowUp = toWidthHeight >> Icons.caretUpFilled
 
-arrowDown = Icons.caretDownFilled
+arrowDown = toWidthHeight >> Icons.caretDownFilled
 
-plus = Icons.plusCircleFilled
+plus = toWidthHeight >> Icons.plusCircleFilled
 
-minus = Icons.minusCircleFilled
+minus = toWidthHeight >> Icons.minusCircleFilled
 
-spinningWheel attrs = Icons.loadingOutlined (attrs ++ [spin])
+spinningWheel (w,h) = Icons.loadingOutlined (toWidthHeight (w,h) ++ [spin])
 
-valid = Icons.checkCircleOutlined
+valid = toWidthHeight >> Icons.checkCircleOutlined
 
-invalid = Icons.closeCircleOutlined
+invalid = toWidthHeight >> Icons.closeCircleOutlined
 
-location = Icons.environmentOutlined
+location = toWidthHeight >> Icons.environmentOutlined
+
+loadMore = toWidthHeight >> Icons.redoOutlined
 

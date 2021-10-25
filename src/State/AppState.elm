@@ -4,6 +4,7 @@ import Data.Challenge exposing (ChallengeId)
 import Data.Event exposing (EventId)
 import Data.Schedule exposing (UTCTimestamp(..))
 import Data.User exposing (UserId)
+import Element exposing (Device, DeviceClass(..), Orientation(..))
 import Http
 import State.Cache as Cache exposing (Cache)
 import State.ChallengeState exposing (ChallengeState)
@@ -16,6 +17,8 @@ import State.PinnedState exposing (PinnedState)
 import State.SearchState exposing (SearchState)
 import State.UserState exposing (UserState)
 import State.WallState exposing (WallState)
+import View.Theme as Theme exposing (Theme)
+import View.UIStyle as UIStyle exposing (UIStyle)
 
 type AuthError = HttpError Http.Error | AuthenticationFailed
 
@@ -50,7 +53,9 @@ type alias WindowSize = {
 
 type alias AppState = {
     timestamp: UTCTimestamp,
+    device: Device,
     windowSize: WindowSize,
+    uiStyle: UIStyle,
     display: Display,
     previous: List Display,
     user: UserState,
@@ -69,7 +74,9 @@ type alias AppState = {
 empty: AppState
 empty = {
     timestamp     = UTC(0),
+    device        = { class = Desktop, orientation = Portrait },
     windowSize    = { width = 0, height = 0 },
+    uiStyle       = UIStyle.desktop,
     display       = LoginPage,
     previous      = [],
     user          = State.UserState.NotLogged,

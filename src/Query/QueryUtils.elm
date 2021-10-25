@@ -10,8 +10,8 @@ import Task exposing (Task)
 import Url.Builder exposing (absolute)
 
 
-baseUrl = "http://localhost:8080"
---baseUrl = "http://green-generation.herokuapp.com"
+--baseUrl = "http://localhost:8080"
+baseUrl = "http://green-generation.herokuapp.com"
 
 authHeader: UserInfo -> Header
 authHeader userInfo = header "Authorization" (Token.toString userInfo.token)

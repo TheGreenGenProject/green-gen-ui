@@ -21,7 +21,7 @@ import TypedSvg.Attributes exposing (fill, stroke, transform)
 import TypedSvg.Attributes.InPx exposing (height, width)
 import TypedSvg.Core exposing (Svg)
 import TypedSvg.Types exposing (AnchorAlignment(..), Paint(..), Transform(..))
-import View.Theme exposing (appBackground, background)
+import View.UIStyle exposing (UIStyle)
 
 
 
@@ -40,50 +40,50 @@ defaultConfig = {
  }
 
 
-donut: List (Float, Element.Color) -> Element msg
-donut  data = let config = {defaultConfig| outerRadius = 48.0, innerRadius = 32.0} in
-    donutWithConfig config data
+donut: UIStyle -> List (Float, Element.Color) -> Element msg
+donut ui data = let config = {defaultConfig| outerRadius = 48.0, innerRadius = 32.0} in
+    donutWithConfig ui config data
 
-smallDonut: List (Float, Element.Color) -> Element msg
-smallDonut data = let config = {defaultConfig| outerRadius = 32.0, innerRadius = 24.0} in
-    donutWithConfig config data
+smallDonut: UIStyle -> List (Float, Element.Color) -> Element msg
+smallDonut ui data = let config = {defaultConfig| outerRadius = 32.0, innerRadius = 24.0} in
+    donutWithConfig ui config data
 
-tinyDonut: List (Float, Element.Color) -> Element msg
-tinyDonut data = let config = {defaultConfig| outerRadius = 24.0, innerRadius = 16.0} in
-    donutWithConfig config data
+tinyDonut: UIStyle -> List (Float, Element.Color) -> Element msg
+tinyDonut ui data = let config = {defaultConfig| outerRadius = 24.0, innerRadius = 16.0} in
+    donutWithConfig ui config data
 
-smallPieChart: List (Float, Element.Color) -> Element msg
-smallPieChart data = let config = {defaultConfig| outerRadius = 32.0, innerRadius = 5.0} in
-    donutWithConfig config data
+smallPieChart: UIStyle -> List (Float, Element.Color) -> Element msg
+smallPieChart ui data = let config = {defaultConfig| outerRadius = 32.0, innerRadius = 5.0} in
+    donutWithConfig ui config data
 
-donutWithConfig: ChartConfig -> List (Float, Element.Color) -> Element msg
-donutWithConfig config data = Element.html (drawChart config data)
+donutWithConfig: UIStyle -> ChartConfig -> List (Float, Element.Color) -> Element msg
+donutWithConfig ui config data = Element.html (drawChart ui config data)
 
 
-doubleDonut: List (Float, Element.Color) -> List (Float, Element.Color) -> Element msg
-doubleDonut outerData innerData = let outerConfig = {defaultConfig| outerRadius = 48.0, innerRadius = 32.0 }
-                                      innerConfig = {defaultConfig| outerRadius = 32.0, innerRadius = 16.0 }
-    in doubleDonutWithConfig outerConfig outerData innerConfig innerData
+doubleDonut: UIStyle -> List (Float, Element.Color) -> List (Float, Element.Color) -> Element msg
+doubleDonut ui outerData innerData = let outerConfig = {defaultConfig| outerRadius = 48.0, innerRadius = 32.0 }
+                                         innerConfig = {defaultConfig| outerRadius = 32.0, innerRadius = 16.0 }
+    in doubleDonutWithConfig ui outerConfig outerData innerConfig innerData
 
-doubleSmallDonut: List (Float, Element.Color) -> List (Float, Element.Color) -> Element msg
-doubleSmallDonut outerData innerData = let outerConfig = {defaultConfig| outerRadius = 32.0, innerRadius = 24.0 }
-                                           innerConfig = {defaultConfig| outerRadius = 24.0, innerRadius = 16.0 }
-    in doubleDonutWithConfig outerConfig outerData innerConfig innerData
+doubleSmallDonut: UIStyle -> List (Float, Element.Color) -> List (Float, Element.Color) -> Element msg
+doubleSmallDonut ui outerData innerData = let outerConfig = {defaultConfig| outerRadius = 32.0, innerRadius = 24.0 }
+                                              innerConfig = {defaultConfig| outerRadius = 24.0, innerRadius = 16.0 }
+    in doubleDonutWithConfig ui outerConfig outerData innerConfig innerData
 
-doubleTinyDonut: List (Float, Element.Color) -> List (Float, Element.Color) -> Element msg
-doubleTinyDonut outerData innerData = let outerConfig = {defaultConfig| outerRadius = 24.0, innerRadius = 16.0 }
-                                          innerConfig = {defaultConfig| outerRadius = 16.0, innerRadius = 8.0 }
-    in doubleDonutWithConfig outerConfig outerData innerConfig innerData
+doubleTinyDonut: UIStyle -> List (Float, Element.Color) -> List (Float, Element.Color) -> Element msg
+doubleTinyDonut ui outerData innerData = let outerConfig = {defaultConfig| outerRadius = 24.0, innerRadius = 16.0 }
+                                             innerConfig = {defaultConfig| outerRadius = 16.0, innerRadius = 8.0 }
+    in doubleDonutWithConfig ui outerConfig outerData innerConfig innerData
 
-doubleDonutWithConfig: ChartConfig -> List (Float, Element.Color) -> ChartConfig -> List (Float, Element.Color) -> Element msg
-doubleDonutWithConfig outerconfig outerData innerconfig innerData =
-    Element.html (drawDoubleChart outerconfig outerData innerconfig innerData)
+doubleDonutWithConfig: UIStyle -> ChartConfig -> List (Float, Element.Color) -> ChartConfig -> List (Float, Element.Color) -> Element msg
+doubleDonutWithConfig ui outerconfig outerData innerconfig innerData =
+    Element.html (drawDoubleChart ui outerconfig outerData innerconfig innerData)
 
 
 
 -- Draw a simple donut
-drawChart : ChartConfig -> List (Float, Element.Color) -> Svg msg
-drawChart config model =
+drawChart : UIStyle -> ChartConfig -> List (Float, Element.Color) -> Svg msg
+drawChart ui config model =
     let
         radius    = config.outerRadius
         colorData = model |> List.map (Tuple.second >> convertColor)
@@ -99,19 +99,20 @@ drawChart config model =
                     }
         zippedData = List.map2 Tuple.pair colorData pieData
         makeSlice (color, datum) =
-            Path.element (Shape.arc datum) [ fill <| Paint <| color, stroke <| Paint (convertColor background) ]
+            Path.element (Shape.arc datum) [ fill <| Paint <| color, stroke <| Paint (convertColor ui.theme.background) ]
     in
     svg [ width (radius * 2), height (radius * 2) ]
         [ g [ transform [ Translate radius radius ] ]
             [ g [] <| List.map makeSlice zippedData  ] ]
 
 -- Draw a simple donut
-drawDoubleChart : ChartConfig ->
+drawDoubleChart : UIStyle ->
+                  ChartConfig ->
                   List (Float, Element.Color) ->
                   ChartConfig ->
                   List (Float, Element.Color) ->
                   Svg msg
-drawDoubleChart outerConfig outerModel innerConfig innerModel =
+drawDoubleChart ui outerConfig outerModel innerConfig innerModel =
     let
         outerRadius    = outerConfig.outerRadius
         outerColorData = outerModel |> List.map (Tuple.second >> convertColor)
@@ -140,7 +141,7 @@ drawDoubleChart outerConfig outerModel innerConfig innerModel =
                             }
         innerZippedData = List.map2 Tuple.pair innerColorData innerPieData
         makeSlice (color, datum) =
-            Path.element (Shape.arc datum) [ fill <| Paint <| color, stroke <| Paint (convertColor appBackground) ]
+            Path.element (Shape.arc datum) [ fill <| Paint <| color, stroke <| Paint (convertColor ui.theme.appBackground) ]
     in
     svg [ width (outerRadius * 2), height (outerRadius * 2) ]
         [ g [ transform [ Translate outerRadius outerRadius ] ]

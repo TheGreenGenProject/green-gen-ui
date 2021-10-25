@@ -3,12 +3,13 @@ module Update.Logic exposing (update)
 import Browser.Dom
 import Data.Challenge exposing (ChallengeOutcomeStatus(..))
 import Data.Page as Page exposing (Page(..))
+import Element
 import Platform.Cmd exposing (Cmd(..), none)
 import Query.Authentication exposing (logon)
 import Query.Challenge exposing (acceptChallenge, fetchChallengeDetails, fetchUserChallengePosts, postChallenge, rejectChallenge, reportStepStatus)
 import Query.Clock as Clock
 import Query.Conversation exposing (fetchConversation, flagComment, postComment, unflagComment)
-import Query.Event exposing (acceptParticipation, cancelEvent, cancelParticipation, fetchEventDetails, fetchUserEventPosts, fetchEventDetailsContentForTab, postEvent, rejectParticipation, requestParticipation)
+import Query.Event exposing (acceptParticipation, cancelEvent, cancelParticipation, fetchUserEventPosts, fetchEventDetailsContentForTab, postEvent, rejectParticipation, requestParticipation)
 import Query.Feed exposing (fetchFeed, generateInitialFeed, hasNewPosts, scheduleFeedCheck)
 import Query.Following exposing (followHashtag, followUser, unfollowHashtag, unfollowUser)
 import Query.FreeText exposing (postFreeText)
@@ -38,6 +39,7 @@ import State.WallState as WallState
 import Task
 import Update.Msg exposing(..)
 import View.InfiniteScroll exposing (loadMoreIfNeeded, loadMoreOrLessIfNeeded)
+import View.UIStyle as UIStyle
 
 
 update: Msg -> AppState -> (AppState, Cmd Msg)
@@ -62,9 +64,12 @@ update msg state = case msg of
     SetCurrentTime now ->
         {state| timestamp = now }
         |> cmd Clock.scheduleClockTick
-    SetWindowSize width height ->
-        {state| windowSize = { width = width, height = height } }
+    IdentifyDevice device -> let dev = Debug.log "Window size" device in
+        {state| device = dev, uiStyle = UIStyle.uiStyleFor device }
         |> nocmd
+    SetWindowSize width height -> let winSize = Debug.log "Device identified as"  { width = width, height = height } in
+        {state| windowSize = winSize }
+        |> update (IdentifyDevice (Element.classifyDevice winSize) )
     ChangeWallPage page ->
         let displayCommand = state.wall.user
                              |> Maybe.map (\x -> DisplayPage (UserPage x))

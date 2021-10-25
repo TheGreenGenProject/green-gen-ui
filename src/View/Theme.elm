@@ -1,30 +1,84 @@
 module View.Theme exposing (..)
 
 
-import Element exposing (rgb255)
+import Element exposing (rgb255, Color)
 
-{-- App color scheme --}
-appForeground          = white
-appBackground          = darkCharcoal
-appTitleForeground     = darkOrange
-background             = lightCharcoal
-foreground             = darkCharcoal
-tabForeground          = darkOrange
-disabledTabForeground  = lightCharcoal
-linkForeground         = lightBlue
-userLinkForeground     = lightBlue
-hashtagForeground      = lightPurple
-textFieldForeground    = lightBlue
-textFieldBackground    = darkCharcoal
-enabledButton          = darkOrange
-disabledButton         = grey
-alertColor             = darkOrange
-partnerForeground      = darkCharcoal
-partnerBackground      = lightOrange
-progressColor          = darkOrange
-remainingProgressColor = lightCharcoal
-errorForeground = rgb255 164 25 0
-disabled        = rgb255 85 87 83
+type alias Theme = {
+    appForeground: Color,
+    appBackground: Color,
+    appTitleForeground: Color,
+    background: Color,
+    foreground: Color,
+    tabForeground: Color,
+    disabledTabForeground: Color,
+    linkForeground: Color,
+    userLinkForeground: Color,
+    hashtagForeground: Color,
+    textFieldForeground: Color,
+    textFieldBackground: Color,
+    textFieldPlaceHolder: Color,
+    enabledButton: Color,
+    disabledButton: Color,
+    alertColor: Color,
+    partnerForeground: Color,
+    partnerBackground: Color,
+    progressColor: Color,
+    remainingProgressColor: Color,
+    errorForeground: Color,
+    flaggedForeground: Color,
+    disabled: Color
+ }
+
+-- Dark mode theme
+darkModeTheme = {
+    appForeground          = white,
+    appBackground          = darkCharcoal,
+    appTitleForeground     = darkOrange,
+    background             = lightCharcoal,
+    foreground             = darkCharcoal,
+    tabForeground          = darkOrange,
+    disabledTabForeground  = lightCharcoal,
+    linkForeground         = lightBlue,
+    userLinkForeground     = lightBlue,
+    hashtagForeground      = lightPurple,
+    textFieldForeground    = lightBlue,
+    textFieldBackground    = darkCharcoal,
+    textFieldPlaceHolder   = lightBlue,
+    enabledButton          = darkOrange,
+    disabledButton         = grey,
+    alertColor             = darkOrange,
+    partnerForeground      = darkCharcoal,
+    partnerBackground      = lightOrange,
+    progressColor          = darkOrange,
+    remainingProgressColor = lightCharcoal,
+    errorForeground        = rgb255 164 25 0,
+    flaggedForeground      = darkGrey,
+    disabled               = rgb255 85 87 83
+ }
+
+
+--{-- App color scheme --}
+--appForeground          = white
+--appBackground          = darkCharcoal
+--appTitleForeground     = darkOrange
+--background             = lightCharcoal
+--foreground             = darkCharcoal
+--tabForeground          = darkOrange
+--disabledTabForeground  = lightCharcoal
+--linkForeground         = lightBlue
+--userLinkForeground     = lightBlue
+--hashtagForeground      = lightPurple
+--textFieldForeground    = lightBlue
+--textFieldBackground    = darkCharcoal
+--enabledButton          = darkOrange
+--disabledButton         = grey
+--alertColor             = darkOrange
+--partnerForeground      = darkCharcoal
+--partnerBackground      = lightOrange
+--progressColor          = darkOrange
+--remainingProgressColor = lightCharcoal
+--errorForeground = rgb255 164 25 0
+--disabled        = rgb255 85 87 83
 --background      = rgb255 50 170 110
 --foreground      = rgb255 255 255 255
 

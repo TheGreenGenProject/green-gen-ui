@@ -21,11 +21,12 @@ import Update.Msg exposing (Msg(..))
 import Utils.DateUtils as DateUtils
 import Utils.MaybeUtils as MaybeUtils
 import View.Icons as Icons
-import View.InfiniteScroll exposing (infiniteScroll)
+import View.InfiniteScroll exposing (infiniteScroll, infiniteScrollWithMoreButton)
 import View.PostRenderer as PostRenderer
 import View.ScreenUtils
-import View.Style exposing (size, tabButton, titledElementStyle, titledTextStyle)
-import View.Theme as Theme exposing (blue)
+import View.Style exposing (relFontSize, relSize, tabButton, titledElementStyle, titledTextStyle)
+import View.Theme exposing (blue)
+import View.UIStyle as UIStyle exposing (UIStyle)
 import View.UserListRenderer exposing (renderLoadingUserPage, renderUserId)
 
 
@@ -43,50 +44,50 @@ eventDetailsScreen state eventId =
         , padding 20 ]
         (case (maybeEvent, maybeOwner) of
             (Just event, Just _) -> [
-                renderEventHeader state.cache state.timestamp isEventOwner event
-                , renderEventDetailsTabs state.eventDetails event isEventOwner
+                renderEventHeader state isEventOwner event
+                , renderEventDetailsTabs state event isEventOwner
                 , renderSelectedTabContent state event isEventOwner]
-            _                             -> [ renderEventNotFoundPage ]
+            _                             -> [ renderEventNotFoundPage state.uiStyle]
         )
 
-renderEventHeader: Cache -> UTCTimestamp -> Bool -> Event -> Element Msg
-renderEventHeader cache now isEventOwner event =
-    let status = if isEventClosed now event
-                 then el [Font.size 15, Font.italic] ("This event is now CLOSED." |> text)
-                 else if isEventCancelled cache event
-                 then el [Font.size 15, Font.bold] ("This event is ** CANCELLED **" |> text)
+renderEventHeader: AppState -> Bool -> Event -> Element Msg
+renderEventHeader state isEventOwner event =
+    let status = if isEventClosed state.timestamp event
+                 then el [relFontSize state.uiStyle 5, Font.italic] ("This event is now CLOSED." |> text)
+                 else if isEventCancelled state.cache event
+                 then el [relFontSize state.uiStyle 5, Font.bold] ("This event is ** CANCELLED **" |> text)
                  else if isEventOwner
-                 then el [Font.size 15, Font.bold] ("You are the organizer of this event." |> text)
-                 else if hasEventParticipationBeenAccepted cache event.id
-                 then el [Font.size 15, Font.bold] ("You are PARTICIPATING to this event." |> text)
-                 else if hasEventParticipationBeenRequested cache event.id
-                 then el [Font.size 15, Font.bold] ("You have a PENDING request for this event." |> text)
-                 else el [Font.size 15, Font.italic] ("This event is opened." |> text)
-    in paragraph [paddingXY 10 2] [status, text "  ", renderEventButtons cache event.id isEventOwner]
+                 then el [relFontSize state.uiStyle 5, Font.bold] ("You are the organizer of this event." |> text)
+                 else if hasEventParticipationBeenAccepted state.cache event.id
+                 then el [relFontSize state.uiStyle 5, Font.bold] ("You are PARTICIPATING to this event." |> text)
+                 else if hasEventParticipationBeenRequested state.cache event.id
+                 then el [relFontSize state.uiStyle 5, Font.bold] ("You have a PENDING request for this event." |> text)
+                 else el [relFontSize state.uiStyle 5, Font.italic] ("This event is opened." |> text)
+    in paragraph [paddingXY 10 2] [status, text "  ", renderEventButtons state event.id isEventOwner]
 
-renderEventDetailsTabs: EventDetailsState -> Event -> Bool -> Element Msg
+renderEventDetailsTabs: AppState -> Event -> Bool -> Element Msg
 renderEventDetailsTabs state event isOwner =  row [spacing 5] [
-    eventDetailsTabButton "Details" (ChangeEventDetailsTab  event.id EventDetailsTab) (state.currentTab==EventDetailsTab)
-    , eventDetailsTabButton "Pending Requests" (ChangeEventDetailsTab  event.id PendingRequestsTab) (state.currentTab==PendingRequestsTab)
-    , eventDetailsTabButton "Participants" (ChangeEventDetailsTab  event.id ParticipantsTab) (state.currentTab==ParticipantsTab)
-    , eventDetailsTabButton "Discussion" (ChangeEventDetailsTab event.id EventDiscussionTab) (state.currentTab==EventDiscussionTab)
+    eventDetailsTabButton state.uiStyle "Details" (ChangeEventDetailsTab event.id EventDetailsTab) (state.eventDetails.currentTab==EventDetailsTab)
+    , eventDetailsTabButton state.uiStyle "Pending Requests" (ChangeEventDetailsTab event.id PendingRequestsTab) (state.eventDetails.currentTab==PendingRequestsTab)
+    , eventDetailsTabButton state.uiStyle "Participants" (ChangeEventDetailsTab event.id ParticipantsTab) (state.eventDetails.currentTab==ParticipantsTab)
+    , eventDetailsTabButton state.uiStyle "Discussion" (ChangeEventDetailsTab event.id EventDiscussionTab) (state.eventDetails.currentTab==EventDiscussionTab)
  ]
 
-renderEvent: Cache -> UTCTimestamp -> Event -> Element Msg
-renderEvent cache now event =
+renderEvent: AppState -> Event -> Element Msg
+renderEvent state event =
     row [padding 5, spacing 10, width fill] [
-        el [Font.color Theme.enabledButton, alignTop, alignLeft] (Icons.event Icons.large)
+        el [Font.color state.uiStyle.theme.enabledButton, alignTop, alignLeft] (Icons.event state.uiStyle.large)
         , column [alignLeft, spacing 20, width fill] [
-            titledTextStyle "Event description" event.description 10
-            , titledElementStyle "Organized by" (event.owner |> renderUserId cache) 10
-            , titledElementStyle "When ?" (DateUtils.formatDate (Schedule.start event.schedule) |> text) 10
-            , titledElementStyle "Where ?" (renderLocation event.location) 10
-            , titledElementStyle "How many people are going ?" (renderEventCapacity cache event) 10
+            titledTextStyle state.uiStyle "Event description" event.description
+            , titledElementStyle state.uiStyle "Organized by" (event.owner |> renderUserId state.uiStyle state.cache)
+            , titledElementStyle state.uiStyle "When ?" (DateUtils.formatDate (Schedule.start event.schedule) |> text)
+            , titledElementStyle state.uiStyle "Where ?" (renderLocation state.uiStyle event.location)
+            , titledElementStyle state.uiStyle "How many people are going ?" (renderEventCapacity state event)
         ]
      ]
 
-renderEventNotFoundPage: Element Msg
-renderEventNotFoundPage = View.ScreenUtils.emptyScreen "Event cannot be found"
+renderEventNotFoundPage: UIStyle -> Element Msg
+renderEventNotFoundPage ui = View.ScreenUtils.emptyScreen ui "Event cannot be found"
 
 isEventClosed: UTCTimestamp -> Event -> Bool
 isEventClosed (UTC now) event =
@@ -111,59 +112,59 @@ hasEventParticipationBeenRequested cache eventId =
     Cache.getEventParticipationRequestStatus cache eventId
     |> Maybe.withDefault False
 
-renderEventButtons: Cache -> EventId -> Bool -> Element Msg
-renderEventButtons cache eventId isOwner = let cancelled = isEventIdCancelled cache eventId in
+renderEventButtons: AppState -> EventId -> Bool -> Element Msg
+renderEventButtons state eventId isOwner = let cancelled = isEventIdCancelled state.cache eventId in
     if cancelled
     then Element.none
     else if isOwner
-    then renderCancelButton eventId
-    else if (hasEventParticipationBeenRequested cache eventId) || (hasEventParticipationBeenAccepted cache eventId)
-    then renderCancelParticipationButton eventId
-    else renderRequestParticipationButton eventId
+    then renderCancelButton state.uiStyle eventId
+    else if (hasEventParticipationBeenRequested state.cache eventId) || (hasEventParticipationBeenAccepted state.cache eventId)
+    then renderCancelParticipationButton state.uiStyle eventId
+    else renderRequestParticipationButton state.uiStyle eventId
 
-renderCancelButton: EventId -> Element Msg
-renderCancelButton id =
-    Input.button [Font.size 11, paddingXY 2 2, Border.width 1, Border.rounded 5] {
+renderCancelButton: UIStyle -> EventId -> Element Msg
+renderCancelButton ui id =
+    Input.button [relFontSize ui 1, paddingXY 2 2, Border.width 1, Border.rounded 5] {
         onPress = id |> CancelEvent |> Just
         , label = (text "Cancel Event")
     }
 
-renderCancelParticipationButton: EventId -> Element Msg
-renderCancelParticipationButton id =
-    Input.button [Font.size 11, paddingXY 2 2, Border.width 1, Border.rounded 5] {
+renderCancelParticipationButton: UIStyle -> EventId -> Element Msg
+renderCancelParticipationButton ui id =
+    Input.button [relFontSize ui 1, paddingXY 2 2, Border.width 1, Border.rounded 5] {
         onPress = id |> CancelEventParticipation |> Just
         , label = (text "Cancel participation")
     }
 
-renderRequestParticipationButton: EventId -> Element Msg
-renderRequestParticipationButton id =
-    Input.button [Font.size 11, paddingXY 2 2, Border.width 1, Border.rounded 5] {
+renderRequestParticipationButton: UIStyle -> EventId -> Element Msg
+renderRequestParticipationButton ui id =
+    Input.button [relFontSize ui 1, paddingXY 2 2, Border.width 1, Border.rounded 5] {
         onPress = id |> RequestEventParticipation |> Just
         , label = (text "Request participation")
     }
 
-renderLocation: Location -> Element Msg
-renderLocation loc = case loc of
+renderLocation: UIStyle -> Location -> Element Msg
+renderLocation ui loc = case loc of
     Online (Url url) -> column [spacing 3] [
-        "The event is located online." |> text |> size 10
-        , Element.newTabLink [Font.size 10] { url = url, label = url |> text |> List.singleton |> paragraph [Font.color blue] }
+        "The event is located online." |> text |> relSize ui 0
+        , Element.newTabLink [relFontSize ui 0] { url = url, label = url |> text |> List.singleton |> paragraph [Font.color blue] }
      ]
     MapUrl (Url url) ->
-        Element.newTabLink [Font.size 10] { url = url, label = "See on maps" |> text |> el [Font.color blue] }
+        Element.newTabLink [relFontSize ui 0] { url = url, label = "See on maps" |> text |> el [Font.color blue] }
     (GeoLocation _ _) as geo -> let (Url url) = toMapUrl 17 geo in
-        Element.newTabLink [Font.size 10] { url = url, label = "See on maps" |> text |> el [Font.color blue] }
+        Element.newTabLink [relFontSize ui 0] { url = url, label = "See on maps" |> text |> el [Font.color blue] }
     (Address _ _ _) as address -> column [spacing 3] [
-        "The event is located at the following address" |> text |> size 10
-        , formatAddress address |> text |> el [Font.color blue, Font.size 10]
+        "The event is located at the following address" |> text |> relSize ui 0
+        , formatAddress address |> text |> el [Font.color blue, relFontSize ui 0]
      ]
 
-renderEventCapacity: Cache -> Event -> Element Msg
-renderEventCapacity cache event = column [Font.size 10, centerY, height fill] [
+renderEventCapacity: AppState -> Event -> Element Msg
+renderEventCapacity state event = column [relFontSize state.uiStyle 0, centerY, height fill] [
     "- Event is open to " ++ (event.maxParticipants |> String.fromInt) ++ " participant(s)." |> text
-    ,"- " ++ (Cache.getEventParticipantCount cache event.id
+    ,"- " ++ (Cache.getEventParticipantCount state.cache event.id
         |> Maybe.withDefault 0
         |> String.fromInt) ++ " is/are participating." |> text
-    ,"- " ++ (Cache.getEventParticipantCount cache event.id
+    ,"- " ++ (Cache.getEventParticipantCount state.cache event.id
         |> Maybe.map (\n -> event.maxParticipants - n)
         |> Maybe.withDefault 0
         |> String.fromInt) ++ " slots are still opened" |> text
@@ -174,29 +175,29 @@ renderEventCapacity cache event = column [Font.size 10, centerY, height fill] [
 renderSelectedTabContent: AppState -> Event -> Bool -> Element Msg
 renderSelectedTabContent state event isOwner =
     case state.eventDetails.currentTab of
-        EventDetailsTab    -> renderEvent state.cache state.timestamp event
+        EventDetailsTab    -> renderEvent state event
         PendingRequestsTab -> renderPendingRequestUserListTabContent state event isOwner
         ParticipantsTab    -> renderParticipantListTabContent state event isOwner
         EventDiscussionTab -> renderDiscussion state event
 
 
-eventDetailsTabButton: String -> Msg -> Bool -> Element Msg
-eventDetailsTabButton label msg selected = tabButton label msg selected
+eventDetailsTabButton: UIStyle -> String -> Msg -> Bool -> Element Msg
+eventDetailsTabButton ui label msg selected = tabButton ui label msg selected
 
 
 renderPendingRequestUserListTabContent: AppState -> Event -> Bool -> Element Msg
 renderPendingRequestUserListTabContent state event isOwner = case EventDetailsState.allUpToCurrentPage state.eventDetails of
-    Nothing    -> renderLoadingUsers
-    Just users -> if GenericPage.isEmpty users && Page.isFirst users.number then renderNoUserPage
-                  else renderUserPage users (renderSingleUserPendingRequest state.cache event.id isOwner)
-                     |> infiniteScroll "event-users" (ChangeEventDetailsPage event.id (Page.next state.eventDetails.currentPage))
+    Nothing    -> renderLoadingUsers state.uiStyle
+    Just users -> if GenericPage.isEmpty users && Page.isFirst users.number then renderNoUserPage state.uiStyle
+                  else renderUserPage users (renderSingleUserPendingRequest state event.id isOwner)
+                     |> infiniteScrollWithMoreButton state.uiStyle (UIStyle.isMobile state.device) "event-users" (ChangeEventDetailsPage event.id (Page.next state.eventDetails.currentPage))
 
 renderParticipantListTabContent: AppState -> Event -> Bool -> Element Msg
 renderParticipantListTabContent state event isOwner = case EventDetailsState.allUpToCurrentPage state.eventDetails of
-    Nothing    -> renderLoadingUsers
-    Just users -> if GenericPage.isEmpty users && Page.isFirst users.number then renderNoUserPage
-                  else renderUserPage users (renderSingleParticipant state.cache event.id isOwner)
-                     |> infiniteScroll "event-users" (ChangeEventDetailsPage event.id (Page.next state.eventDetails.currentPage))
+    Nothing    -> renderLoadingUsers state.uiStyle
+    Just users -> if GenericPage.isEmpty users && Page.isFirst users.number then renderNoUserPage state.uiStyle
+                  else renderUserPage users (renderSingleParticipant state.uiStyle state.cache event.id isOwner)
+                     |> infiniteScrollWithMoreButton state.uiStyle (UIStyle.isMobile state.device) "event-users" (ChangeEventDetailsPage event.id (Page.next state.eventDetails.currentPage))
 
 renderUserPage: UserPage ->  (UserId -> Element Msg) -> Element Msg
 renderUserPage page f = column [
@@ -207,41 +208,41 @@ renderUserPage page f = column [
         , padding 10 ]
     <| List.map (f) page.items
 
-renderSingleUserPendingRequest: Cache -> EventId -> Bool -> UserId -> Element Msg
-renderSingleUserPendingRequest cache eventId isOwner userId = row [width fill] [
-    renderUserId cache userId,
+renderSingleUserPendingRequest: AppState -> EventId -> Bool -> UserId -> Element Msg
+renderSingleUserPendingRequest state eventId isOwner userId = row [width fill] [
+    renderUserId state.uiStyle state.cache userId,
     if isOwner
     then row [alignRight, spacing 5] [
-        renderAcceptPendingRequestButton eventId userId
-        , renderRejectedPendingRequestButton eventId userId]
+        renderAcceptPendingRequestButton state.uiStyle eventId userId
+        , renderRejectedPendingRequestButton state.uiStyle eventId userId]
     else Element.none
  ]
 
-renderAcceptPendingRequestButton: EventId -> UserId -> Element Msg
-renderAcceptPendingRequestButton eventId userId =
-    Input.button [Font.size 11, paddingXY 2 2, Border.width 1, Border.rounded 5, width <| px 50] {
+renderAcceptPendingRequestButton: UIStyle -> EventId -> UserId -> Element Msg
+renderAcceptPendingRequestButton ui eventId userId =
+    Input.button [relFontSize ui 1, paddingXY 2 2, Border.width 1, Border.rounded 5, width <| px 50] {
         onPress = AcceptUserEventParticipation eventId userId |> Just
         , label = (text "Accept") |> el [centerX]
     }
 
-renderRejectedPendingRequestButton: EventId -> UserId -> Element Msg
-renderRejectedPendingRequestButton eventId userId =
-    Input.button [Font.size 11, paddingXY 2 2, Border.width 1, Border.rounded 5, width <| px 50] {
+renderRejectedPendingRequestButton: UIStyle -> EventId -> UserId -> Element Msg
+renderRejectedPendingRequestButton ui eventId userId =
+    Input.button [relFontSize ui 1, paddingXY 2 2, Border.width 1, Border.rounded 5, width <| px 50] {
         onPress = RejectUserEventParticipation eventId userId |> Just
         , label = (text "Reject") |> el [centerX]
     }
 
-renderSingleParticipant: Cache -> EventId -> Bool -> UserId -> Element Msg
-renderSingleParticipant cache eventId isOwner userId = renderUserId cache userId
+renderSingleParticipant: UIStyle -> Cache -> EventId -> Bool -> UserId -> Element Msg
+renderSingleParticipant ui cache eventId isOwner userId = renderUserId ui cache userId
 
-renderNoUserPage: Element Msg
-renderNoUserPage = View.ScreenUtils.emptyScreen "No users"
+renderNoUserPage: UIStyle -> Element Msg
+renderNoUserPage ui = View.ScreenUtils.emptyScreen ui "No users"
 
-renderLoadingUsers: Element Msg
-renderLoadingUsers = renderLoadingUserPage 2
+renderLoadingUsers: UIStyle -> Element Msg
+renderLoadingUsers ui = renderLoadingUserPage ui 2
 
 renderDiscussion: AppState -> Event -> Element Msg
 renderDiscussion state event =
     case (Cache.getPostIdForEvent state.cache event.id) of
-        Just postId -> PostRenderer.renderOpenedConversation state.timestamp state.cache postId
-        Nothing     -> View.ScreenUtils.emptyScreen "Couldn't find conversation"
+        Just postId -> PostRenderer.renderOpenedConversation state.uiStyle state.timestamp state.cache postId
+        Nothing     -> View.ScreenUtils.emptyScreen state.uiStyle "Couldn't find conversation"

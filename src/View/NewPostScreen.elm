@@ -8,47 +8,49 @@ import Element.Input as Input
 import State.AppState exposing (AppState, Display(..))
 import Update.Msg exposing (Msg(..))
 import View.Icons as Icons
-import View.Theme exposing (background, foreground)
+import View.Style exposing (relFontSize)
+import View.Theme
+import View.UIStyle exposing (UIStyle)
 
 
 newPostScreen: AppState -> Element Msg
-newPostScreen _ = column [
+newPostScreen state = column [
         width fill
         , height fill
         , centerX
         , spacing 5
         , padding 20 ]
-    [ newTipButton
-     , newChallengeButton
-     , newEventButton
-     , newPollButton
-     , newFreeTextButton]
+    [ newTipButton state.uiStyle
+     , newChallengeButton state.uiStyle
+     , newEventButton state.uiStyle
+     , newPollButton state.uiStyle
+     , newFreeTextButton state.uiStyle]
 
-newTipButton: Element Msg
-newTipButton =
-    wizardButton "Create a new Tip" (Icons.tip Icons.large) (DisplayPage WizardNewTipPage)
+newTipButton: UIStyle -> Element Msg
+newTipButton ui =
+    wizardButton ui "Create a new Tip" (Icons.tip ui.large) (DisplayPage WizardNewTipPage)
 
-newPollButton: Element Msg
-newPollButton =
-    wizardButton "Create a new Poll" (Icons.poll Icons.large) (DisplayPage WizardNewPollPage)
+newPollButton: UIStyle -> Element Msg
+newPollButton ui =
+    wizardButton ui "Create a new Poll" (Icons.poll ui.large) (DisplayPage WizardNewPollPage)
 
-newFreeTextButton: Element Msg
-newFreeTextButton =
-    wizardButton "Create a new free text post " (Icons.post Icons.large) (DisplayPage WizardNewFreePostPage)
+newFreeTextButton: UIStyle -> Element Msg
+newFreeTextButton ui =
+    wizardButton ui "Create a new free text post " (Icons.post ui.large) (DisplayPage WizardNewFreePostPage)
 
-newChallengeButton: Element Msg
-newChallengeButton =
-    wizardButton "Create a new challenge" (Icons.challenge Icons.large) (DisplayPage WizardNewChallengePage)
+newChallengeButton: UIStyle -> Element Msg
+newChallengeButton ui =
+    wizardButton ui "Create a new challenge" (Icons.challenge ui.large) (DisplayPage WizardNewChallengePage)
 
-newEventButton: Element Msg
-newEventButton =
-    wizardButton "Create an event" (Icons.event Icons.large) (DisplayPage WizardNewEventPage)
+newEventButton: UIStyle -> Element Msg
+newEventButton ui =
+    wizardButton ui "Create an event" (Icons.event ui.large) (DisplayPage WizardNewEventPage)
 
-wizardButton: String -> Element Msg -> Msg -> Element Msg
-wizardButton txt icon onClick =  Input.button
+wizardButton: UIStyle -> String -> Element Msg -> Msg -> Element Msg
+wizardButton ui txt icon onClick =  Input.button
     [width fill
     , padding 15
-    , Font.color foreground
-    , Background.color background
+    , Font.color ui.theme.foreground
+    , Background.color ui.theme.background
     , Border.rounded 20]
-    { onPress = Just onClick, label = row [padding 5, spacing 20, Font.size 20] [icon, text txt] }
+    { onPress = Just onClick, label = row [padding 5, spacing 20, relFontSize ui 10] [icon, text txt] }

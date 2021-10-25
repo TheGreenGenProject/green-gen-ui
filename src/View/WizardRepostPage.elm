@@ -1,6 +1,6 @@
 module View.WizardRepostPage exposing (newWizardRepostScreen)
 
-import Element exposing (Element, alignRight, centerX, column, el, fill, height, maximum, padding, row, spacing, text, width)
+import Element exposing (Element, alignLeft, alignRight, centerX, column, el, fill, height, maximum, padding, row, spacing, text, width)
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
@@ -16,9 +16,9 @@ import View.Theme as Theme
 
 newWizardRepostScreen: AppState -> Element Msg
 newWizardRepostScreen state = column [
-    centerX
-    , width  <| maximum 600 fill
-    , height <| maximum 300 fill
+    alignLeft
+    , width fill
+    , height fill
     , spacing 10
     , padding 10
     , Border.rounded 20 ]
@@ -29,12 +29,12 @@ form state =
     let posting = state.forms.newRepostWizard.posting
         postId = state.forms.newRepostWizard.repost
         isCorrect = check state.forms.newRepostWizard |> hasError |> not
-        postButtonColor = if isCorrect then Theme.enabledButton else Theme.disabledButton
+        postButtonColor = if isCorrect then state.uiStyle.theme.enabledButton else state.uiStyle.theme.disabledButton
     in
     [ (row [padding 5, spacing 10, width fill] [
-        el [Font.color Theme.enabledButton] (Icons.repost Icons.large)
-        , titledTextStyle "Repost" wizardDescription 10])
-    , postId |> Maybe.map (renderPostId state.timestamp state.cache)
+        el [Font.color state.uiStyle.theme.enabledButton] (Icons.repost state.uiStyle.large)
+        , titledTextStyle state.uiStyle "Repost" wizardDescription])
+    , postId |> Maybe.map (renderPostId state.uiStyle state.timestamp state.cache)
              |> Maybe.withDefault Element.none
     , (Input.button [alignRight, Border.width 2, Border.rounded 5, padding 5, Font.color postButtonColor] {
         onPress = if isCorrect then Just PostNewRepost else Nothing

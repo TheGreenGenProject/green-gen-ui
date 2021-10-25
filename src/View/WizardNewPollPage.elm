@@ -2,7 +2,7 @@ module View.WizardNewPollPage exposing (newWizardNewPollScreen)
 
 import Data.Hashtag exposing (Hashtag(..))
 import Data.Poll exposing (PollOption(..))
-import Element exposing (Element, alignLeft, alignRight, centerX, column, el, fill, height, maximum, padding, paragraph, row, spacing, text, width)
+import Element exposing (Element, alignLeft, alignRight, column, el, fill, height, maximum, padding, paragraph, row, spacing, text, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
@@ -14,15 +14,16 @@ import Update.Msg exposing (Msg(..))
 import Utils.ListUtils as ListUtils
 import Utils.TextUtils as TextUtils
 import View.Icons as Icons
-import View.Style exposing (hashtagStyle, placeholderStyle, titledTextStyle, userStyle)
-import View.Theme as Theme exposing (background, foreground)
+import View.Style exposing (hashtagStyle, placeholderStyle, relFontSize, titledTextStyle, userStyle)
+import View.Theme
+import View.UIStyle exposing (UIStyle)
 
 
 newWizardNewPollScreen: AppState -> Element Msg
 newWizardNewPollScreen state = column [
-    centerX
-    , width  <| maximum 600 fill
-    , height <| maximum 500 fill
+    alignLeft
+    , width  fill
+    , height fill
     , spacing 10
     , padding 10
     , Border.rounded 20 ]
@@ -33,52 +34,52 @@ form state =
     let pollState = state.forms.newPollWizard
         posting = pollState.posting
         isCorrect = check pollState |> hasError |> not
-        postButtonColor = if isCorrect then Theme.enabledButton else Theme.disabledButton
+        postButtonColor = if isCorrect then state.uiStyle.theme.enabledButton else state.uiStyle.theme.disabledButton
     in
     [ (row [padding 5, spacing 10, width fill] [
-        el [Font.color Theme.enabledButton] (Icons.poll Icons.large)
-        , titledTextStyle "Create a new Poll" wizardDescription 10])
+        el [Font.color state.uiStyle.theme.enabledButton] (Icons.poll state.uiStyle.large)
+        , titledTextStyle state.uiStyle "Create a new Poll" wizardDescription])
     , (Input.multiline [width fill
         , height <| maximum 100 fill
-        , Font.color Theme.textFieldForeground
-        , Background.color Theme.textFieldBackground] {
+        , Font.color state.uiStyle.theme.textFieldForeground
+        , Background.color state.uiStyle.theme.textFieldBackground] {
         onChange = (updateQuestion state.forms.newPollWizard)
         , text = (state.forms.newPollWizard.question |> Maybe.withDefault "")
-        , placeholder = placeholderStyle "Enter your Poll question !"
+        , placeholder = placeholderStyle state.uiStyle "Enter your Poll question !"
         , label = labelHidden "Question"
         , spellcheck = True
     })
-    , makeHashtagBar pollState
-    , makeUserBar state.cache pollState] ++
+    , makeHashtagBar state.uiStyle pollState
+    , makeUserBar state.uiStyle state.cache pollState] ++
     (pollState.options
         |> Maybe.withDefault ([PollOption ""])
-        |> List.indexedMap (\index opt -> renderPollOptionRow pollState index opt)) ++
+        |> List.indexedMap (\index opt -> renderPollOptionRow state.uiStyle pollState index opt)) ++
     [(Input.button [alignRight, Border.width 2, Border.rounded 5, padding 5, Font.color postButtonColor] {
         onPress = if isCorrect then Just (PostNewPoll pollState) else Nothing
         , label = (text (if posting then "Posting ..." else "Post your poll !"))
     })
  ]
 
-makeHashtagBar: NewPollWizardState -> Element Msg
-makeHashtagBar state = paragraph [alignLeft
+makeHashtagBar: UIStyle -> NewPollWizardState -> Element Msg
+makeHashtagBar ui state = paragraph [alignLeft
         , spacing 10
-        , Font.color foreground
+        , Font.color ui.theme.foreground
         , Font.italic
-        , Font.size 12] [row [spacing 5]
+        , relFontSize ui 2] [row [spacing 5]
     (state.question |> Maybe.withDefault ""
       |> TextUtils.hashtagsFrom
       |> List.sortBy (\(Hashtag x) -> x)
-      |> List.map hashtagStyle)]
+      |> List.map (hashtagStyle ui))]
 
-makeUserBar: Cache -> NewPollWizardState -> Element Msg
-makeUserBar cache state = paragraph [alignLeft
+makeUserBar: UIStyle -> Cache -> NewPollWizardState -> Element Msg
+makeUserBar ui cache state = paragraph [alignLeft
         , spacing 10
-        , Font.color foreground
+        , Font.color ui.theme.foreground
         , Font.italic
-        , Font.size 12] [row [spacing 5]
+        , relFontSize ui 2] [row [spacing 5]
     (state.question |> Maybe.withDefault ""
       |> TextUtils.userPseudosFrom
-      |> List.map (\pseudo -> userStyle pseudo (Cache.getUserByPseudo cache pseudo)))]
+      |> List.map (\pseudo -> userStyle ui pseudo (Cache.getUserByPseudo cache pseudo)))]
 
 updateQuestion: NewPollWizardState -> String -> Msg
 updateQuestion state question = FillingNewPollWizard {state| question = Just question }
@@ -98,25 +99,25 @@ removePollOption state index =
         options = state.options
             |> Maybe.andThen (\xs -> xs |> ListUtils.delete index |> ListUtils.nonEmptyToMaybe) }
 
-renderPollOptionRow: NewPollWizardState -> Int -> PollOption -> Element Msg
-renderPollOptionRow state index (PollOption opt) =
+renderPollOptionRow: UIStyle -> NewPollWizardState -> Int -> PollOption -> Element Msg
+renderPollOptionRow ui state index (PollOption opt) =
     let lastIndex = state.options |> Maybe.map (List.length) |> Maybe.withDefault 1
         isLast = (index+1) == lastIndex
     in
     row [spacing 5, width fill] [
-        Input.text [width fill, Font.color Theme.textFieldForeground, Background.color Theme.textFieldBackground] {
+        Input.text [width fill, Font.color ui.theme.textFieldForeground, Background.color ui.theme.textFieldBackground] {
             onChange = (updatePollOption state index)
             , text = opt
-            , placeholder = placeholderStyle  ((index+1 |> String.fromInt) ++"- Enter another option")
+            , placeholder = placeholderStyle ui ((index+1 |> String.fromInt) ++"- Enter another option")
             , label = labelHidden "hidden option" }
         , if isLast
-          then Input.button [alignRight, Border.width 2, Border.rounded 5, padding 5, Font.color background] {
+          then Input.button [alignRight, Border.width 2, Border.rounded 5, padding 5, Font.color ui.theme.background] {
             onPress = Just (addNewPollOption state)
-            , label = Icons.plus Icons.normal
+            , label = Icons.plus ui.normal
           }
-          else Input.button [alignRight, Border.width 2, Border.rounded 5, padding 5, Font.color background] {
+          else Input.button [alignRight, Border.width 2, Border.rounded 5, padding 5, Font.color ui.theme.background] {
             onPress = Just (removePollOption state index)
-            , label = Icons.minus Icons.normal
+            , label = Icons.minus ui.normal
           }
         ]
 

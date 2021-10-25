@@ -13,6 +13,7 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input exposing (Placeholder, labelHidden, placeholder)
+import Html.Attributes
 import Html.Events
 import Json.Decode as Decode
 import State.AppState exposing (AppState, Display(..))
@@ -20,7 +21,7 @@ import Update.Msg exposing (Msg(..))
 import Utils.DateUtils exposing (LocalDate, LocalTime, toLocalDate, toLocalTime)
 import Utils.TextUtils as TextUtils exposing (QuotedString(..), format2Digits)
 import View.Icons as Icons
-import View.Theme as Theme exposing (alertColor, background, disabledTabForeground, errorForeground, foreground, grey, hashtagForeground, linkForeground, tabForeground, textFieldBackground, textFieldForeground, userLinkForeground)
+import View.UIStyle exposing (UIStyle)
 
 empty: Element Msg
 empty = Element.none
@@ -40,6 +41,9 @@ bold txt = txt |> text |> el [Font.bold]
 semiBold: String -> Element Msg
 semiBold txt = txt |> text |> el [Font.semiBold]
 
+relFontSize: UIStyle -> Int -> Attribute msg
+relFontSize ui sz = Font.size (ui.defaultFontSize + sz)
+
 rightGap: Int -> Element Msg -> Element Msg
 rightGap sp x = el [width fill, paddingEach { top = 0, bottom = 0, left = 0, right = sp}] x
 
@@ -52,8 +56,11 @@ topGap sp x = el [width fill, paddingEach { top = sp, bottom = 0, left = 0, righ
 bottomGap: Int -> Element Msg -> Element Msg
 bottomGap sp x = el [width fill, paddingEach { top = 0, bottom = sp, left = 0, right = 0}] x
 
-size: Int -> Element Msg -> Element Msg
-size sz x = el [Font.size sz] x
+relSize: UIStyle -> Int -> Element Msg -> Element Msg
+relSize ui sz x = el [relFontSize ui sz] x
+
+noSelectionEffect: Attribute Msg
+noSelectionEffect = Element.htmlAttribute <| Html.Attributes.style "box-shadow" "none"
 
 horizontalSeparator: Int -> Color -> Element Msg
 horizontalSeparator thickness color = column [width fill] [
@@ -67,133 +74,109 @@ verticalSeparator thickness color = row [height fill] [
     , el [ ] (empty)
  ]
 
-loadingFixedTextLine: Int -> Int -> Element Msg
-loadingFixedTextLine font w = "" |> text
-    |> el [width <| px w, Background.color grey, Border.rounded 8, Font.size font]
+loadingFixedTextLine: UIStyle -> Int -> Int -> Element Msg
+loadingFixedTextLine ui font w = "" |> text
+    |> el [width <| px w, Background.color ui.theme.background, Border.rounded 8, Font.size font]
     |> el [padding 4]
 
-loadingTextLine: Int -> Element Msg
-loadingTextLine font = "" |> text
-    |> el [width fill, Background.color grey, Border.rounded 8, Font.size font]
+loadingTextLine: UIStyle -> Int -> Element Msg
+loadingTextLine ui font = "" |> text
+    |> el [width fill, Background.color ui.theme.background, Border.rounded 8, Font.size font]
     |> el [width fill, padding 4]
 
-loadingTextBlock: Int -> Int -> Element Msg
-loadingTextBlock font rowCount = column [width fill, height fill, alignTop]
-    (loadingFixedTextLine font 100 :: (List.range 1 (rowCount - 1) |> List.map (\_ -> loadingTextLine font)))
+loadingTextBlock: UIStyle -> Int -> Int -> Element Msg
+loadingTextBlock ui font rowCount = column [width fill, height fill, alignTop]
+    (loadingFixedTextLine ui font 100 :: (List.range 1 (rowCount - 1) |> List.map (\_ -> loadingTextLine ui font)))
 
 
-standard: Element Msg -> Element Msg
-standard = el [Background.color background, Font.color foreground]
+standard: UIStyle -> Element Msg -> Element Msg
+standard ui = el [Background.color ui.theme.background, Font.color ui.theme.foreground]
 
-invert: Element Msg -> Element Msg
-invert = el [Background.color foreground, Font.color background]
+invert: UIStyle -> Element Msg -> Element Msg
+invert ui = el [Background.color ui.theme.foreground, Font.color ui.theme.background]
 
-multiLineQuotedText: String -> Element Msg
-multiLineQuotedText txt = let lines = String.split ("\n") txt in
-    column [spacing 1] (lines |> List.map (quotedText))
+multiLineQuotedText: UIStyle -> String -> Element Msg
+multiLineQuotedText ui txt = let lines = String.split ("\n") txt in
+    column [spacing 1] (lines |> List.map (quotedText ui))
 
-quotedText: String -> Element Msg
-quotedText str =
+quotedText: UIStyle -> String -> Element Msg
+quotedText ui str =
     let quoted = TextUtils.parseQuotedText str
         quoteToString = \s -> case s of
             Str x -> x |> text
-            UserQuote x -> userStyle (String.dropLeft 1 x) Nothing
-            HashtagQuote x -> x |> String.dropLeft 1 |> Hashtag |> hashtagStyle
+            UserQuote x -> userStyle ui (String.dropLeft 1 x) Nothing
+            HashtagQuote x -> x |> String.dropLeft 1 |> Hashtag |> hashtagStyle ui
     in quoted |> List.map (quoteToString) |> List.intersperse (" " |> text) |> paragraph []
 
-tabStyle: Element msg -> Element msg
-tabStyle e = el
-    [ Background.color background
-      , Font.color foreground
-      , Border.rounded 5
-      , padding 5
-    ] e
-
-panelStyle: Element msg -> Element msg
-panelStyle e = el
-    [ Background.color background
-        , Font.color foreground
-        , Border.rounded 5
-        , padding 5
-    ] e
-
-buttonStyle: String -> msg -> Element msg
-buttonStyle txt msg =
-    Input.button [Background.color background
-                  , Font.color foreground
-                  , paddingXY 20 20
-                  , Border.rounded 3]
-        { onPress = Just msg, label = Element.text txt }
-
-followButtonStyle: UserId -> Element Msg
-followButtonStyle id =
-    Input.button [Font.size 10
+followButtonStyle: UIStyle -> UserId -> Element Msg
+followButtonStyle ui id =
+    Input.button [relFontSize ui 0
                   , paddingXY 2 2
                   , Border.width 1
                   , Border.rounded 4]
         { onPress = Just (FollowUser id), label = Element.text "Follow" }
 
-unfollowButtonStyle: UserId -> Element Msg
-unfollowButtonStyle id =
-    Input.button [Font.size 10
+unfollowButtonStyle: UIStyle -> UserId -> Element Msg
+unfollowButtonStyle ui id =
+    Input.button [relFontSize ui 0
                   , paddingXY 2 2
                   , Border.width 1
                   , Border.rounded 4]
         { onPress = Just (UnfollowUser id), label = Element.text "Unfollow" }
 
-likeButtonStyle: PostId -> Element Msg
-likeButtonStyle id =
-    Input.button [Font.size 10
+likeButtonStyle: UIStyle -> PostId -> Element Msg
+likeButtonStyle ui id =
+    Input.button [relFontSize ui 0
                   , paddingXY 1 1]
-        { onPress = Just (LikePost id), label = Icons.unlike <| Icons.tiny }
+        { onPress = Just (LikePost id), label = Icons.unlike <| ui.tiny }
 
-unlikeButtonStyle: PostId -> Element Msg
-unlikeButtonStyle id =
-    Input.button [Font.size 10
+unlikeButtonStyle: UIStyle -> PostId -> Element Msg
+unlikeButtonStyle ui id =
+    Input.button [relFontSize ui 0
                   , paddingXY 1 1]
-        { onPress = Just (UnlikePost id), label = Icons.like <| Icons.tiny }
+        { onPress = Just (UnlikePost id), label = Icons.like <| ui.tiny }
 
-pinButtonStyle: PostId -> Element Msg
-pinButtonStyle id =
-    Input.button [Font.size 10
+pinButtonStyle: UIStyle -> PostId -> Element Msg
+pinButtonStyle ui id =
+    Input.button [relFontSize ui 0
                   , paddingXY 1 1]
-        { onPress = Just (PinPost id), label = Icons.unpinned <| Icons.tiny }
+        { onPress = Just (PinPost id), label = Icons.unpinned <| ui.tiny }
 
-unpinButtonStyle: PostId -> Element Msg
-unpinButtonStyle id =
-    Input.button [Font.size 10
+unpinButtonStyle: UIStyle -> PostId -> Element Msg
+unpinButtonStyle ui id =
+    Input.button [relFontSize ui 0
                   , paddingXY 1 1]
-        { onPress = Just (UnpinPost id), label = Icons.pinned <| Icons.tiny }
+        { onPress = Just (UnpinPost id), label = Icons.pinned <| ui.tiny }
 
-openConversationButtonStyle: PostId -> Element Msg
-openConversationButtonStyle id =
-    Input.button [Font.size 10
+openConversationButtonStyle: UIStyle -> PostId -> Element Msg
+openConversationButtonStyle ui id =
+    Input.button [relFontSize ui 0
                   , paddingXY 1 1]
-            { onPress = Just (OpenPostConversation id), label = Icons.openConversation <| Icons.tiny }
+            { onPress = Just (OpenPostConversation id), label = Icons.openConversation <| ui.tiny }
 
-closeConversationButtonStyle: PostId -> Element Msg
-closeConversationButtonStyle id =
-    Input.button [Font.size 10
+closeConversationButtonStyle: UIStyle -> PostId -> Element Msg
+closeConversationButtonStyle ui id =
+    Input.button [relFontSize ui 0
                   , paddingXY 1 1]
-            { onPress = Just (ClosePostConversation id), label = Icons.closeConversation <| Icons.tiny }
+            { onPress = Just (ClosePostConversation id), label = Icons.closeConversation <| ui.tiny }
 
-repostButtonStyle: PostId -> Element Msg
-repostButtonStyle id =
-    Input.button [Font.size 10
+repostButtonStyle: UIStyle -> PostId -> Element Msg
+repostButtonStyle ui id =
+    Input.button [relFontSize ui 0
                   , paddingXY 1 1]
-            { onPress = Just (Repost id), label = Icons.repost <| Icons.tiny }
+            { onPress = Just (Repost id), label = Icons.repost <| ui.tiny }
 
-viewChallengeButtonStyle: ChallengeId -> Element Msg
-viewChallengeButtonStyle id =
-    Input.button [Font.size 11
+viewChallengeButtonStyle: UIStyle -> ChallengeId -> Element Msg
+viewChallengeButtonStyle ui id =
+    Input.button [relFontSize ui 1
                   , paddingXY 2 2
                   , Border.width 1
                   , Border.rounded 5]
         { onPress = Just (DisplayPage (ChallengeDetailsPage id)), label = Element.text "View challenge" }
 
-viewEventButtonStyle: EventId -> Element Msg
-viewEventButtonStyle id =
-    Input.button [Font.size 11
+viewEventButtonStyle: UIStyle -> EventId -> Element Msg
+viewEventButtonStyle ui id =
+    Input.button [relFontSize ui 1
                   , paddingXY 2 2
                   , Border.width 1
                   , Border.rounded 5]
@@ -205,41 +188,41 @@ buttonBarStyle attrs buttons = buttons
     |> List.intersperse (el attrs ("|" |> text))
     |> row attrs
 
-postButtonBarStyle: (String, Msg) -> Element Msg
-postButtonBarStyle (txt, action) =
-    Input.button [Font.size 9, Font.semiBold] { onPress = Just action, label = txt |> text }
+postButtonBarStyle: UIStyle -> (String, Msg) -> Element Msg
+postButtonBarStyle ui (txt, action) =
+    Input.button [relFontSize ui -1, Font.semiBold] { onPress = Just action, label = txt |> text }
 
 
-tabButton: String -> Msg -> Bool -> Element Msg
-tabButton label msg selected = Input.button [
-    Font.size 14
-    , Font.color (if selected then tabForeground else disabledTabForeground)
+tabButton: UIStyle -> String -> Msg -> Bool -> Element Msg
+tabButton ui label msg selected = Input.button [
+    relFontSize ui 4
+    , Font.color (if selected then ui.theme.tabForeground else ui.theme.disabledTabForeground)
     , if selected then Font.italic else Font.regular
-    , Border.color tabForeground
+    , Border.color ui.theme.tabForeground
     , Border.widthEach { bottom = (if selected then 3 else 0), top = 0, left = 0, right = 0 }
     , padding 5
  ] { onPress = Just msg, label = label |> text}
 
-tabIconButton: Element msg -> msg -> Element msg
-tabIconButton icon msg =
-    Input.button [ Background.color background
-                  , Font.color foreground
+tabIconButton: UIStyle -> Element msg -> msg -> Element msg
+tabIconButton ui icon msg =
+    Input.button [ Background.color ui.theme.background
+                  , Font.color ui.theme.foreground
                   , Border.rounded 5
                   , padding 5]
         { onPress = Just msg, label = icon }
 
 screenTabButton: AppState -> Display -> String -> msg -> Element msg
 screenTabButton state display txt msg =
-    Input.button [ Background.color (if state.display==display then foreground else background)
-                  , Font.color (if state.display==display then background else foreground)
+    Input.button [ Background.color (if state.display==display then state.uiStyle.theme.foreground else state.uiStyle.theme.background)
+                  , Font.color (if state.display==display then state.uiStyle.theme.background else state.uiStyle.theme.foreground)
                   , Border.rounded 5
                   , padding 5]
         { onPress = Just msg, label = Element.text txt }
 
 screenTabIcon: AppState -> Display -> Element msg -> msg -> Element msg
 screenTabIcon state display icon msg =
-    Input.button [ Background.color (if state.display==display then foreground else background)
-                  , Font.color (if state.display==display then background else foreground)
+    Input.button [ Background.color (if state.display==display then state.uiStyle.theme.foreground else state.uiStyle.theme.background)
+                  , Font.color (if state.display==display then state.uiStyle.theme.background else state.uiStyle.theme.foreground)
                   , Border.rounded 5
                   , padding 5]
         { onPress = Just msg, label = icon }
@@ -247,9 +230,9 @@ screenTabIcon state display icon msg =
 -- Ads a distinctive sign if there is something new (notifications, new posts, ...)
 screenTabIconWithRefresh: AppState -> Display -> Bool -> Element msg -> msg -> Element msg
 screenTabIconWithRefresh state display needsRefresh icon msg =
-    let refreshColor = if needsRefresh then alertColor else background
-    in Input.button [ Background.color (if state.display==display then foreground else refreshColor)
-                  , Font.color (if state.display==display then refreshColor else foreground)
+    let refreshColor = if needsRefresh then state.uiStyle.theme.alertColor else state.uiStyle.theme.background
+    in Input.button [ Background.color (if state.display==display then state.uiStyle.theme.foreground else refreshColor)
+                  , Font.color (if state.display==display then refreshColor else state.uiStyle.theme.foreground)
                   , Border.rounded 5
                   , padding 5]
         { onPress = Just msg, label = icon }
@@ -257,7 +240,7 @@ screenTabIconWithRefresh state display needsRefresh icon msg =
 searchBar: AppState -> Element Msg
 searchBar state = row [
         width fill
-        , Background.color foreground
+        , Background.color state.uiStyle.theme.foreground
         , Border.rounded 5
         , Border.width 0
         , spacing 10]
@@ -271,20 +254,20 @@ searchField state =
                 (Decode.field "key" Decode.string
                     |> Decode.andThen (\key -> if key == "Enter" then Decode.succeed msg else Decode.fail "Not the enter key")))
     in Input.search [
-        Font.size 11
-        , Border.color background
-        , Background.color textFieldBackground
-        , Font.color textFieldForeground
+        relFontSize state.uiStyle 1
+        , Border.color state.uiStyle.theme.background
+        , Background.color state.uiStyle.theme.textFieldBackground
+        , Font.color state.uiStyle.theme.textFieldForeground
         , Border.rounded 5
         , onEnter PerformSearchFromField]
      { onChange = (\txt -> EnteringSearch txt)
        , text = state.search.field
-       , placeholder = placeholderStyle "Search..."
+       , placeholder = placeholderStyle state.uiStyle "Search..."
        , label = labelHidden "" }
 
-hashtagStyle: Hashtag -> Element Msg
-hashtagStyle (Hashtag tag as ht) =
-    Input.button [Font.italic, Font.semiBold, Font.color hashtagForeground]
+hashtagStyle: UIStyle -> Hashtag -> Element Msg
+hashtagStyle ui (Hashtag tag as ht) =
+    Input.button [Font.italic, Font.semiBold, Font.color ui.theme.hashtagForeground]
         { onPress = Just <| PerformSearchFromHashtag ht, label = Element.text ("#" ++ tag) }
 
 hashtagCloudStyle: Hashtag -> Element Msg
@@ -292,30 +275,30 @@ hashtagCloudStyle (Hashtag tag as ht) =
     Input.button [Font.italic, Font.semiBold]
         { onPress = Just <| PerformSearchFromHashtag ht, label = Element.text ("#" ++ tag) }
 
-followHashtagStyle: Hashtag -> Element Msg
-followHashtagStyle ht = row [spacing 5] [
-    hashtagStyle ht
-    , Input.button [Font.size 11
+followHashtagStyle: UIStyle -> Hashtag -> Element Msg
+followHashtagStyle ui ht = row [spacing 5] [
+    hashtagStyle ui ht
+    , Input.button [relFontSize ui 1
         , paddingXY 2 2
         , Border.width 1
         , Border.rounded 5]
       { onPress = Just <| FollowHashtag ht, label = "Follow" |> text }
  ]
 
-unfollowHashtagStyle: Hashtag -> Element Msg
-unfollowHashtagStyle ht = row [spacing 5] [
-    hashtagStyle ht
-    , Input.button [Font.size 11
+unfollowHashtagStyle: UIStyle -> Hashtag -> Element Msg
+unfollowHashtagStyle ui ht = row [spacing 5] [
+    hashtagStyle ui ht
+    , Input.button [relFontSize ui 1
         , paddingXY 2 2
         , Border.width 1
         , Border.rounded 5]
       { onPress = Just <| UnfollowHashtag ht, label = "Unfollow" |> text }
  ]
 
-userStyle: String -> Maybe UserId -> Element Msg
-userStyle pseudo userId =
+userStyle: UIStyle -> String -> Maybe UserId -> Element Msg
+userStyle ui pseudo userId =
     let page = userId |> Maybe.map (UserPage) |> Maybe.withDefault (PseudoPage pseudo) in
-    Input.button [Font.italic, Font.semiBold, Font.color userLinkForeground]
+    Input.button [Font.italic, Font.semiBold, Font.color ui.theme.userLinkForeground]
         { onPress = DisplayPage page |> Just, label = Element.text ("@" ++ pseudo) }
 
 userPseudoStyle: String -> Maybe UserId -> Element Msg
@@ -324,10 +307,10 @@ userPseudoStyle pseudo userId =
     Input.button [Font.italic, Font.semiBold]
         { onPress = DisplayPage page |> Just, label = Element.text ("@" ++ pseudo) }
 
-linkStyle: Url -> String -> Element msg
-linkStyle (Url url) txt =
-    link [Background.color background
-          , Font.color linkForeground
+linkStyle: UIStyle -> Url -> String -> Element msg
+linkStyle ui (Url url) txt =
+    link [Background.color ui.theme.background
+          , Font.color ui.theme.linkForeground
           , Font.italic]
         { url = url, label = Element.text txt }
 
@@ -336,117 +319,69 @@ internalPageLinkStyle page txt =
     Input.button [Font.italic, Font.semiBold]
     { onPress = DisplayPage page |> Just , label = Element.text txt }
 
-italicTextStyle: String -> Element msg
-italicTextStyle txt =
-    el [Background.color background
-        , Font.color foreground
+italicTextStyle: UIStyle -> String -> Element msg
+italicTextStyle ui txt =
+    el [Background.color ui.theme.background
+        , Font.color ui.theme.foreground
         , Font.italic]
     (text txt)
 
-normalTextStyle: String -> Element msg
-normalTextStyle txt =
-    el [Background.color background
-        , Font.color foreground]
+errorTextStyle: UIStyle -> String -> Element msg
+errorTextStyle ui txt =
+    el [Font.color ui.theme.errorForeground, Font.italic]
     (text txt)
 
-errorTextStyle: String -> Element msg
-errorTextStyle txt =
-    el [Font.color errorForeground, Font.italic]
-    (text txt)
-
-titledTextStyle: String -> String -> Int -> Element Msg
-titledTextStyle title content fontSize = column [width fill,height fill, spacing 5] [
-    el [Font.semiBold, Font.size (fontSize + 2)] (quotedText title)
-    , el [Font.size fontSize] (multiLineQuotedText content)
+titledTextStyle: UIStyle -> String -> String -> Element Msg
+titledTextStyle ui title content = column [width fill,height fill, spacing 5] [
+    el [Font.semiBold, relFontSize ui 2] (quotedText ui title)
+    , el [relFontSize ui 0] (multiLineQuotedText ui content)
  ]
 
-titledParagraphStyle: String -> List String -> Int -> Element Msg
-titledParagraphStyle title content fontSize = column [width fill,height fill, spacing 10] [
-    el [Font.semiBold, Font.size (fontSize + 2)] (quotedText title)
-    , column [width fill,height fill, spacing 10, Font.size fontSize] (content |> List.map (multiLineQuotedText))
+titledParagraphStyle: UIStyle -> String -> List String -> Element Msg
+titledParagraphStyle ui title content = column [width fill,height fill, spacing 10] [
+    el [Font.semiBold, relFontSize ui 2] (quotedText ui title)
+    , column [width fill,height fill, spacing 10, relFontSize ui 0] (content |> List.map (multiLineQuotedText ui))
  ]
 
-titledElementStyle: String -> Element Msg -> Int -> Element Msg
-titledElementStyle title content fontSize = column [width fill, height fill, spacing 5] [
-    el [Font.semiBold, Font.size (fontSize + 2)] (text title)
-    , row [Font.size fontSize] [content]
+titledElementStyle: UIStyle -> String -> Element Msg  -> Element Msg
+titledElementStyle ui title content = column [width fill, height fill, spacing 5] [
+    el [Font.semiBold, relFontSize ui 2] (text title)
+    , row [relFontSize ui 0] [content]
  ]
 
-checkListStyle: List (Attribute Msg) -> List (Bool, String) -> Element Msg
-checkListStyle attrs items = items
+checkListStyle: UIStyle -> List (Attribute Msg) -> List (Bool, String) -> Element Msg
+checkListStyle ui attrs items = items
     |> List.map (\(checked, item) -> row [alignLeft] [
-        el [centerX, centerY, padding 1, Font.color (if checked then background else grey)] (Icons.square Icons.tiny),
+        el [centerX, centerY, padding 1, Font.color (if checked then ui.theme.background else ui.theme.disabledButton)] (Icons.square ui.tiny),
         item |> text
       ])
     |> column attrs
 
-placeholderStyle: String -> Maybe (Placeholder msg)
-placeholderStyle txt = Just (placeholder [Font.italic, Font.color Theme.lightBlue] (text txt))
+placeholderStyle: UIStyle -> String -> Maybe (Placeholder msg)
+placeholderStyle ui txt = Just (placeholder [Font.italic, Font.color ui.theme.textFieldPlaceHolder] (text txt))
 
-postHeaderStyle: Element msg -> Element msg
-postHeaderStyle e = el
+headerDateStyle: UIStyle -> Element msg -> Element msg
+headerDateStyle ui = el [relFontSize ui -2]
+
+postBodyStyle: UIStyle -> Element msg -> Element msg
+postBodyStyle ui e = paragraph [width fill, relFontSize ui 0] [e]
+
+postFooterStyle: UIStyle -> Element msg -> Element msg
+postFooterStyle ui e = el
     [ width fill
-     , Background.color background
-     , Font.color foreground
-     , Font.size 12
+     , relFontSize ui 0
      , Border.rounded 5
      , padding 5
     ] e
 
-headerDateStyle: Element msg -> Element msg
-headerDateStyle = el [Font.size 8]
-
-postBodyStyle: Element msg -> Element msg
-postBodyStyle e = paragraph [width fill, Font.size 10] [e]
-
-postFooterStyle: Element msg -> Element msg
-postFooterStyle e = el
-    [ width fill
-     , Font.size 10
-     , Border.rounded 5
-     , padding 5
-    ] e
-
-notifHeaderStyle: Element msg -> Element msg
-notifHeaderStyle e = el
-    [Font.color background, Border.rounded 3] e
-
-paged: Page -> (Page -> Msg) -> Bool -> Element Msg -> Element Msg
-paged page f showNext comp = column [width fill, height fill, centerX] [comp, pageBar page f showNext]
-
-pageBar: Page -> (Page -> Msg) -> Bool -> Element Msg
-pageBar page f showNext = row [
-        width fill
-        , centerX
-        , padding 5
-        , spacing 5
-        , Border.widthEach { top=1, bottom=0, left=0, right=0 }
-        , Border.color background]
-        (( if Page.isFirst page then []
-           else [Input.button [Background.color foreground
-                              , Font.color background
-                              , Font.size 14
-                              , Font.semiBold
-                              , Border.rounded 5
-                              , height fill]
-                              { onPress = page |> Page.previous |> Maybe.map f, label = Element.text "<<" }]) ++
-        [el [centerX, Font.color background, Font.size 14] (page |> Page.number |> String.fromInt |> (++) "Page " |> text)] ++
-        ( if not showNext then []
-           else [Input.button
-                [Background.color foreground
-                , Font.color background
-                , Font.size 14
-                , Font.semiBold
-                , Border.rounded 5
-                , height fill]
-                { onPress = if showNext then page |> Page.next |> f |> Just else Nothing, label = Element.text ">>" }
-        ]))
+notifHeaderStyle: UIStyle -> Element msg -> Element msg
+notifHeaderStyle ui e = el
+    [Font.color ui.theme.background, Border.rounded 3] e
 
 
 -- Trying to implement a simplistic and decent date spinner ...
-
-dateSpinner: UTCTimestamp -> (LocalDate -> Maybe Msg) -> Element Msg
-dateSpinner timestamp onChange =
+dateSpinner: UIStyle -> UTCTimestamp -> (LocalDate -> Maybe Msg) -> Element Msg
+dateSpinner ui timestamp onChange =
     let leapYear yyyy = ((modBy 4 yyyy == 0) || (modBy 100 yyyy == 0)) &&  not (modBy 400 yyyy == 0)
         maxDayOfMonth date = if date.month == 2 && leapYear date.year then 29
             else if date.month == 2 then 28
@@ -458,84 +393,84 @@ dateSpinner timestamp onChange =
             |> ensureMaxDay
         spinDay date = let maxDay = maxDayOfMonth date in {day = (modBy maxDay date.day) + 1, month = date.month, year = date.year }
         {day, month, year} = toLocalDate timestamp
-    in row [Border.width 3, Border.rounded 3, Border.color Theme.background, spacing 5] [
+    in row [Border.width 3, Border.rounded 3, Border.color ui.theme.background, spacing 5] [
         -- Day
-        Input.button [Background.color foreground
+        Input.button [Background.color ui.theme.foreground
             , padding 4
-            , Font.size 14
-            , Font.color foreground
-            , Background.color background
-            , width <| px 30
+            , relFontSize ui 4
+            , Font.color ui.theme.foreground
+            , Background.color ui.theme.background
+            , width <| px 40
             , height fill
-            , Border.color background
+            , Border.color ui.theme.background
             , Border.widthEach { right = 1, top = 0, bottom = 0, left = 0 } ]
         { onPress = onChange (spinDay { day = day , month = month, year = year })
           , label = day |> format2Digits |> Element.text |> el [centerX] }
         -- Month
-        , Input.button [Background.color foreground
+        , Input.button [Background.color ui.theme.foreground
             , padding 4
-            , Font.size 14
-            , Font.color foreground
-            , Background.color background
-            , width <| px 30
+            , relFontSize ui 4
+            , Font.color ui.theme.foreground
+            , Background.color ui.theme.background
+            , width <| px 40
             , height fill
-            , Border.color background
+            , Border.color ui.theme.background
             , Border.widthEach { right = 1, top = 0, bottom = 0, left = 0 }]
          { onPress = onChange (spinMonth { day = day, month = month, year = year })
            , label = month |> format2Digits |> Element.text |> el [centerX] }
         -- Year
-        , Input.button [Background.color foreground
-            , Font.color foreground
-            , Background.color background
+        , Input.button [Background.color ui.theme.foreground
+            , Font.color ui.theme.foreground
+            , Background.color ui.theme.background
             , padding 4
-            , Font.size 14
+            , relFontSize ui 4
             , height fill
-            , width <| px 50]
+            , width <| px 60]
          { onPress = onChange (spinYear { day = day, month = month, year = year })
           , label = year |> String.fromInt |> Element.text |> el [centerX] }
     ]
 
-timeSpinner: UTCTimestamp -> (LocalTime -> Maybe Msg) -> Element Msg
-timeSpinner timestamp onChange =
+timeSpinner: UIStyle -> UTCTimestamp -> (LocalTime -> Maybe Msg) -> Element Msg
+timeSpinner ui timestamp onChange =
     let {hour, minute} = toLocalTime timestamp
         spinHour time   = { hour = (modBy 24 time.hour), minute = time.minute }
         spinMinute time = { hour = time.hour, minute = (modBy 60 time.minute) }
-    in row [Border.width 3, Border.rounded 3, Border.color Theme.background, spacing 5] [
-        Input.button [Background.color foreground
+    in row [Border.width 3, Border.rounded 3, Border.color ui.theme.background, spacing 5] [
+        Input.button [Background.color ui.theme.foreground
             , padding 4
-            , Font.size 14
-            , Font.color foreground
-            , Background.color background
-            , width <| px 30
+            , relFontSize ui 4
+            , Font.color ui.theme.foreground
+            , Background.color ui.theme.background
+            , width <| px 40
             , height fill
-            , Border.color background
+            , Border.color ui.theme.background
             , Border.widthEach { right = 1, top = 0, bottom = 0, left = 0 } ]
         { onPress = onChange (spinHour { hour = hour + 1 , minute = minute })
           , label = hour |> format2Digits |> Element.text |> el [centerX] }
-       , Input.button [Background.color foreground
+       , Input.button [Background.color ui.theme.foreground
                      , padding 4
-                     , Font.size 14
-                     , Font.color foreground
-                     , Background.color background
-                     , width <| px 30
+                     , relFontSize ui 4
+                     , Font.color ui.theme.foreground
+                     , Background.color ui.theme.background
+                     , width <| px 40
                      , height fill
-                     , Border.color background
+                     , Border.color ui.theme.background
                      , Border.widthEach { right = 1, top = 0, bottom = 0, left = 0 } ]
         { onPress = onChange (spinMinute { hour = hour , minute = minute + 1 })
           , label = minute |> format2Digits |> Element.text |> el [centerX] }
     ]
 
-intSpinner: Int -> Int -> Int -> Int -> (Int -> Maybe Msg) -> Element Msg
-intSpinner mn mx step value onChange =
+intSpinner: UIStyle -> Int -> Int -> Int -> Int -> (Int -> Maybe Msg) -> Element Msg
+intSpinner ui mn mx step value onChange =
     let checked v = min mx v |> max mn
         checkedValue = checked value
     in
     row [spacing 5] [
         String.fromInt checkedValue |> text
         , column [centerX, centerY] [
-            Input.button [centerX, centerY, Font.size 10]
+            Input.button [centerX, centerY, relFontSize ui 0]
                      { onPress = onChange ((checkedValue + step) |> checked), label = "▲" |> text}
-            , Input.button [centerX, centerY, Font.size 10]
+            , Input.button [centerX, centerY, relFontSize ui 0]
                      { onPress = onChange ((checkedValue - step) |> checked), label = "▼" |> text}
         ]
       ]
@@ -548,8 +483,8 @@ type ButtonPosition
     | Mid
     | Last
 
-options: List (String, a) -> a -> (a -> Msg) -> Element Msg
-options opts selected onChange =
+options: UIStyle -> List (String, a) -> a -> (a -> Msg) -> Element Msg
+options ui opts selected onChange =
     Input.radioRow
         [ Border.rounded 6
           --, Border.shadow { offset = ( 0, 0 ), size = 3, blur = 10, color = Theme.lightGrey }
@@ -558,11 +493,11 @@ options opts selected onChange =
           , selected = Just selected
           , label = Input.labelHidden ""
           , options = opts
-            |> List.map (\(label, opt) -> Input.optionWith opt <| button Mid label )
+            |> List.map (\(label, opt) -> Input.optionWith opt <| button ui Mid label )
         }
 
-button : ButtonPosition -> String -> Input.OptionState -> Element msg
-button position label state =
+button : UIStyle -> ButtonPosition -> String -> Input.OptionState -> Element msg
+button ui position label state =
     let borders =
             case position of
                 First -> { left = 2, right = 2, top = 2, bottom = 2 }
@@ -576,11 +511,11 @@ button position label state =
     in el [ paddingEach { left = 3, right = 3, top = 3, bottom = 3 }
             , Border.roundEach corners
             , Border.widthEach borders
-            , Border.color Theme.background
+            , Border.color ui.theme.background
             , Font.color <|
-                if state == Input.Selected then  Theme.foreground
-                else Theme.background
+                if state == Input.Selected then  ui.theme.foreground
+                else ui.theme.background
             , Background.color <|
-                if state == Input.Selected then  Theme.background
-                else Theme.foreground
-            ] <| el [ centerX, centerY, Font.size 14 ] <| text label
+                if state == Input.Selected then ui.theme.background
+                else ui.theme.foreground
+            ] <| el [ centerX, centerY, relFontSize ui 4 ] <| text label

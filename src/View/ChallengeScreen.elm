@@ -3,17 +3,18 @@ module View.ChallengeScreen exposing (challengeScreen)
 import Data.Page as Page
 import Data.Post exposing (PostId)
 import Data.Schedule exposing (UTCTimestamp)
-import Element exposing (Element, centerX, column, fill, height, padding, row, spacing, width)
+import Element exposing (Element, centerX, column, fill, height, padding, spacing, width, wrappedRow)
 import State.AppState exposing (AppState)
 import State.Cache exposing (Cache)
 import State.ChallengeState as ChallengeState exposing (ChallengeState, ChallengeTab(..))
 import State.GenericPage as GenericPage
 import State.PostPageCache exposing (PostPage)
 import Update.Msg exposing (Msg(..))
-import View.InfiniteScroll exposing (infiniteScroll)
+import View.InfiniteScroll exposing (infiniteScrollWithMoreButton)
 import View.PostRenderer exposing (renderLoadingPostPage, renderPostId)
 import View.ScreenUtils
 import View.Style exposing (tabButton)
+import View.UIStyle as UIStyle exposing (UIStyle)
 
 challengeScreen: AppState -> Element Msg
 challengeScreen state = column [
@@ -22,44 +23,43 @@ challengeScreen state = column [
         , centerX
         , spacing 5
         , padding 5 ]
-    [ challengeTabs state.challenge
-     , renderChallengeTabContent state]
+    [ challengeTabs state, renderChallengeTabContent state]
 
-challengeTabs: ChallengeState -> Element Msg
-challengeTabs state = row [spacing 5] [
-    challengeTabButton "On going" (ChangeChallengeTab OnGoingTab) (state.currentTab==OnGoingTab)
-    , challengeTabButton "Report due" (ChangeChallengeTab ReportDueTab) (state.currentTab==ReportDueTab)
-    , challengeTabButton "Upcoming" (ChangeChallengeTab UpcomingTab) (state.currentTab==UpcomingTab)
-    , challengeTabButton "Finished" (ChangeChallengeTab FinishedTab) (state.currentTab==FinishedTab)
-    , challengeTabButton "On tracks" (ChangeChallengeTab OnTracksTab) (state.currentTab==OnTracksTab)
-    , challengeTabButton "Failed" (ChangeChallengeTab FailedTab) (state.currentTab==FailedTab)
-    , challengeTabButton "Authored" (ChangeChallengeTab AuthoredTab) (state.currentTab==AuthoredTab)
+challengeTabs: AppState -> Element Msg
+challengeTabs state = wrappedRow [spacing 5] [
+    challengeTabButton state.uiStyle "On going" (ChangeChallengeTab OnGoingTab) (state.challenge.currentTab==OnGoingTab)
+    , challengeTabButton state.uiStyle "Report due" (ChangeChallengeTab ReportDueTab) (state.challenge.currentTab==ReportDueTab)
+    , challengeTabButton state.uiStyle "Upcoming" (ChangeChallengeTab UpcomingTab) (state.challenge.currentTab==UpcomingTab)
+    , challengeTabButton state.uiStyle "Finished" (ChangeChallengeTab FinishedTab) (state.challenge.currentTab==FinishedTab)
+    , challengeTabButton state.uiStyle "On tracks" (ChangeChallengeTab OnTracksTab) (state.challenge.currentTab==OnTracksTab)
+    , challengeTabButton state.uiStyle "Failed" (ChangeChallengeTab FailedTab) (state.challenge.currentTab==FailedTab)
+    , challengeTabButton state.uiStyle "Authored" (ChangeChallengeTab AuthoredTab) (state.challenge.currentTab==AuthoredTab)
  ]
 
-challengeTabButton: String -> Msg -> Bool -> Element Msg
-challengeTabButton label msg selected = tabButton label msg selected
+challengeTabButton: UIStyle -> String -> Msg -> Bool -> Element Msg
+challengeTabButton ui label msg selected = tabButton ui label msg selected
 
 renderChallengeTabContent: AppState -> Element Msg
 renderChallengeTabContent state = case ChallengeState.allUpToCurrentPage state.challenge of
-    Nothing -> renderLoadingPosts
-    Just posts -> if GenericPage.isEmpty posts && Page.isFirst posts.number then renderNoPostPage
-                  else renderPostPage state.timestamp state.cache posts
-                     |> infiniteScroll "challenge" (ChangeChallengePage (Page.next state.challenge.currentPage))
+    Nothing -> renderLoadingPosts state.uiStyle
+    Just posts -> if GenericPage.isEmpty posts && Page.isFirst posts.number then renderNoPostPage state.uiStyle
+                  else renderPostPage state posts
+                     |> infiniteScrollWithMoreButton state.uiStyle (UIStyle.isMobile state.device) "challenge" (ChangeChallengePage (Page.next state.challenge.currentPage))
 
-renderPostPage: UTCTimestamp -> Cache -> PostPage -> Element Msg
-renderPostPage tmstp cache page = column [
+renderPostPage: AppState -> PostPage -> Element Msg
+renderPostPage state page = column [
         width fill
         , height fill
         , centerX
         , spacing 5
         , padding 10 ]
-    <| List.map (renderSinglePost tmstp cache) page.items
+    <| List.map (renderSinglePost state.uiStyle state.timestamp state.cache) page.items
 
-renderSinglePost: UTCTimestamp -> Cache -> PostId -> Element Msg
+renderSinglePost: UIStyle -> UTCTimestamp -> Cache -> PostId -> Element Msg
 renderSinglePost = renderPostId
 
-renderNoPostPage: Element Msg
-renderNoPostPage = View.ScreenUtils.emptyScreen "No challenges"
+renderNoPostPage: UIStyle -> Element Msg
+renderNoPostPage ui = View.ScreenUtils.emptyScreen ui "No challenges"
 
-renderLoadingPosts: Element Msg
-renderLoadingPosts = renderLoadingPostPage 2
+renderLoadingPosts: UIStyle -> Element Msg
+renderLoadingPosts ui = renderLoadingPostPage ui 2

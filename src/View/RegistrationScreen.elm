@@ -12,72 +12,89 @@ import State.FormState exposing (RegistrationSubmissionStage(..))
 import Update.Msg exposing (Msg(..))
 import Utils.MaybeUtils as MaybeUtils
 import Utils.TextUtils as TextUtils
-import View.Icons as Icons exposing (normal)
-import View.Style as Style exposing (internalPageLinkStyle, placeholderStyle)
-import View.Theme as Theme exposing (background, darkRed, foreground)
+import View.Icons as Icons
+import View.Style as Style exposing (internalPageLinkStyle, placeholderStyle, relFontSize)
+import View.Theme exposing (darkRed)
+import View.UIStyle exposing (UIStyle)
 
 
 registrationScreen: AppState -> Element Msg
-registrationScreen state = column [centerX, centerY, spacing 30] [
-    "Create a new account" |> text |> el [centerX, Font.size 25, Font.color background, Font.semiBold]
+registrationScreen state = column [centerX, centerY, spacing 30, padding 20] [
+    "Create a new account" |> text |> el [centerX, relFontSize state.uiStyle 15, Font.color state.uiStyle.theme.background, Font.semiBold]
     , column [
         centerX, centerY,
         spacing 10, padding 10,
         Border.rounded 20,
         width <| maximum 500 fill,
-        Background.color Theme.background,
-        Font.color Theme.foreground ] (
+        Background.color state.uiStyle.theme.background,
+        Font.color state.uiStyle.theme.foreground ] (
             if isSubmissionPhase state then registrationComponents state
             else if isVerificationPhase state then verificationComponents state
             else if isVerificationSuccessful state then createdAccountComponents state
             else registrationComponents state)
-    , signIngLink
+    , signIngLink state.uiStyle
  ]
 
 registrationComponents : AppState -> List (Element Msg)
 registrationComponents state = [
         row [width fill, spacing 5] [
-            (Input.username [Font.color Theme.background, Border.width 1, Border.color (if checkEmail state then background else darkRed)] {
+            (Input.username [Font.color state.uiStyle.theme.textFieldForeground
+                             , Background.color state.uiStyle.theme.foreground
+                             , Border.width 1
+                             , Border.color (if checkEmail state then state.uiStyle.theme.background else darkRed)] {
                 onChange = updateEmail state
                 ,text = readEmail state
-                ,placeholder = placeholderStyle "Email"
-                ,label = (labelLeft [centerX, centerY] (Icons.email normal))
+                ,placeholder = placeholderStyle state.uiStyle "Email"
+                ,label = (labelLeft [centerX, centerY, Font.color state.uiStyle.theme.foreground] (Icons.email state.uiStyle.normal))
             })
-        , state.forms.registrationForm.email |> Maybe.map(\_ -> checkEmail state) |> validityIcon]
+        , state.forms.registrationForm.email |> Maybe.map(\_ -> checkEmail state) |> validityIcon state.uiStyle]
         , row [width fill, spacing 5] [
-            Input.text [Font.color Theme.background, Border.width 1, Border.color (if checkPseudo state then background else darkRed)] {
+            Input.text [Font.color state.uiStyle.theme.textFieldForeground
+                        , Background.color state.uiStyle.theme.foreground
+                        , Border.width 1
+                        , Border.color (if checkPseudo state then state.uiStyle.theme.background else darkRed)] {
                 onChange = updatePseudo state
                 ,text = readPseudo state
-                ,placeholder = placeholderStyle "Pseudo"
-                ,label = (labelLeft [centerX, centerY] (Icons.user normal))
+                ,placeholder = placeholderStyle state.uiStyle "Pseudo"
+                ,label = (labelLeft [centerX, centerY, Font.color state.uiStyle.theme.foreground] (Icons.user state.uiStyle.normal))
             }
-            , serverSidePseudoCheck state |> validityIcon]
+            , serverSidePseudoCheck state |> validityIcon state.uiStyle]
         , row [width fill, spacing 5] [
-            Input.currentPassword [Font.color Theme.background, Border.width 1, Border.color (if checkPassword state then background else darkRed)] {
+            Input.currentPassword [Font.color state.uiStyle.theme.textFieldForeground
+                                   , Background.color state.uiStyle.theme.foreground
+                                   , Border.width 1
+                                   , Border.color (if checkPassword state then state.uiStyle.theme.background else darkRed)] {
                 onChange = updatePassword state
                 ,text = readPassword state
-                ,placeholder = placeholderStyle "Password"
-                ,label = (labelLeft [centerX, centerY] (Icons.password normal))
+                ,placeholder = placeholderStyle state.uiStyle "Password"
+                ,label = (labelLeft [centerX, centerY, Font.color state.uiStyle.theme.foreground] (Icons.password state.uiStyle.normal))
                 ,show = False
             }
-            , state.forms.registrationForm.password |> Maybe.map(\_ -> checkPassword state) |> validityIcon]
+            , state.forms.registrationForm.password |> Maybe.map(\_ -> checkPassword state) |> validityIcon state.uiStyle]
         , row [width fill, spacing 5] [
-            Input.currentPassword [Font.color Theme.background, Border.width 1, Border.color (if checkPasswordVerification state then background else darkRed)] {
+            Input.currentPassword [Font.color state.uiStyle.theme.textFieldForeground
+                                   , Background.color state.uiStyle.theme.foreground
+                                   , Border.width 1
+                                   , Border.color (if checkPasswordVerification state then state.uiStyle.theme.background else darkRed)] {
                 onChange = updatePasswordVerification state
                 ,text = readPasswordVerification state
-                ,placeholder = placeholderStyle "Retype your password"
-                ,label = (labelLeft [centerX, centerY] (Icons.password normal))
+                ,placeholder = placeholderStyle state.uiStyle "Retype your password"
+                ,label = (labelLeft [centerX, centerY, Font.color state.uiStyle.theme.foreground] (Icons.password state.uiStyle.normal))
                 ,show = False
             }
-            , state.forms.registrationForm.passwordVerification |> Maybe.map(\_ -> checkPasswordVerification state) |> validityIcon]
+            , state.forms.registrationForm.passwordVerification |> Maybe.map(\_ -> checkPasswordVerification state) |> validityIcon state.uiStyle]
         , row [width fill] [
-            "Introduce yourself" |> text |> el [width fill, alignLeft]
-            , state.forms.registrationForm.introduction |> Maybe.map(\_ -> checkIntroduction state) |> validityIcon |> el [alignRight]
+            "Introduce yourself" |> text |> el [width fill, alignLeft, Font.color state.uiStyle.theme.foreground]
+            , state.forms.registrationForm.introduction |> Maybe.map(\_ -> checkIntroduction state) |> validityIcon state.uiStyle |> el [alignRight]
          ]
-        ,(Input.multiline [Font.color Theme.background, height <| px 150, Border.width 1, Border.color (if checkIntroduction state then background else darkRed)] {
+        ,(Input.multiline [Font.color state.uiStyle.theme.textFieldForeground
+                           , height <| px 150
+                           , Background.color state.uiStyle.theme.foreground
+                           , Border.width 1
+                           , Border.color (if checkIntroduction state then state.uiStyle.theme.background else darkRed)] {
             onChange = updateIntroduction state
             ,text = readIntroduction state
-            ,placeholder = placeholderStyle "Tell others who you are ..."
+            ,placeholder = placeholderStyle state.uiStyle "Tell others who you are ..."
             ,label = labelHidden "Introduction"
             ,spellcheck = True
         })
@@ -85,7 +102,12 @@ registrationComponents state = [
             if isFailedRegistrationSubmission state
             then "Registration failed" |> text |> el [Font.color darkRed, alignLeft]
             else Style.empty
-            ,Input.button [alignRight, Border.width 2, Border.rounded 5, padding 5] {
+            ,Input.button [alignRight
+                , Border.width 2
+                , Border.rounded 5
+                , padding 5
+                , fontColor state.uiStyle (checkRegistrationForm state)
+                , Background.color state.uiStyle.theme.foreground] {
             onPress = if checkRegistrationForm state then Just RegisterNewAccount else Nothing
             , label = (text "Sign-up now !")
         }]
@@ -93,40 +115,52 @@ registrationComponents state = [
 
 verificationComponents: AppState -> List (Element Msg)
 verificationComponents state = [
-    "Please enter the verification code we just sent you" |> text
-    , row [width fill, centerX, spacing 20] [
-        Input.text [Font.color Theme.background, width <| px 100] {
+    paragraph [Font.color state.uiStyle.theme.foreground] [
+        "Please enter the verification code we just sent you" |> text]
+    , wrappedRow [width fill, centerX, spacing 20] [
+        Input.text [Font.color state.uiStyle.theme.textFieldForeground
+                    , Background.color state.uiStyle.theme.foreground
+                    , width <| px 100] {
             onChange = updateVerificationCode state 1
             , text = readVerificationCodeSection state 1
-            , placeholder = placeholderStyle "0000"
+            , placeholder = placeholderStyle state.uiStyle "0000"
             , label = labelHidden "Section1"
         }
-        , Input.text [Font.color Theme.background, width <| px 100] {
+        , Input.text [Font.color state.uiStyle.theme.textFieldForeground
+                      , Background.color state.uiStyle.theme.foreground
+                      , width <| px 100] {
             onChange = updateVerificationCode state 2
             , text = readVerificationCodeSection state 2
-            , placeholder = placeholderStyle "0000"
+            , placeholder = placeholderStyle state.uiStyle "0000"
             , label = labelHidden "Section2"
         }
-        , Input.text [Font.color Theme.background, width <| px 100] {
+        , Input.text [Font.color state.uiStyle.theme.textFieldForeground
+                      , Background.color state.uiStyle.theme.foreground
+                      , width <| px 100] {
             onChange = updateVerificationCode state 3
             , text = readVerificationCodeSection state 3
-            , placeholder = placeholderStyle "0000"
+            , placeholder = placeholderStyle state.uiStyle "0000"
             , label = labelHidden "Section3"
         }]
-    ,row [width fill] [
+    , row [width fill] [
         if isFailedVerification state
         then "Verification failed. Please try again" |> text |> el [Font.color darkRed, alignLeft]
         else Style.empty
-       , Input.button [alignRight, Border.width 2, Border.rounded 5, padding 5] {
+       , Input.button [alignRight
+            , Border.width 2
+            , Border.rounded 5
+            , padding 5
+            , fontColor state.uiStyle (checkVerificationCodeForm state)
+            , Background.color state.uiStyle.theme.foreground] {
         onPress = if checkVerificationCodeForm state then Just VerifyAccount else Nothing
-        ,label = (text "Finish verification")
+        ,label = (text "Verify" |> el [fontColor state.uiStyle True])
     }]
  ]
 
 createdAccountComponents: AppState -> List (Element Msg)
 createdAccountComponents state = [
     "Congratulations ! You are all set-up !" |> text
-    ,(Input.button [alignRight, Border.width 2, Border.rounded 5, padding 5] {
+    ,(Input.button [alignRight, Border.width 2, Border.rounded 5, padding 5, Background.color state.uiStyle.theme.foreground, fontColor state.uiStyle True] {
         onPress = DisplayPage LoginPage |> Just
         ,label = (text "Go to Sign-in page")
     })
@@ -134,6 +168,9 @@ createdAccountComponents state = [
 
 
 -- Helpers
+
+fontColor: UIStyle -> Bool -> Attribute msg
+fontColor ui b = Font.color (if b then ui.theme.enabledButton else ui.theme.disabledButton)
 
 readEmail: AppState -> String
 readEmail state =
@@ -253,16 +290,16 @@ updateVerificationCode state section codeStr =
     in {registrationState| verification = updateSection verifCode section code |> Just }
         |> FillingRegistrationForm
 
-signIngLink = paragraph [width fill, centerX, spacing 5, Font.size 13,  Font.italic, Font.color background] [
+signIngLink ui = paragraph [width fill, centerX, spacing 5, relFontSize ui 3,  Font.italic, Font.color ui.theme.background] [
     "If you already have an account with us, please use our " |> text
     , internalPageLinkStyle LoginPage "Sign-in"
     , " page instead." |> text
  ]
 
-validityIcon: Maybe Bool -> Element Msg
-validityIcon flag = case flag of
-    Just True  -> Icons.valid Icons.normal |> el [Font.color foreground]
-    Just False -> Icons.invalid Icons.normal |> el [Font.color foreground]
+validityIcon: UIStyle -> Maybe Bool -> Element Msg
+validityIcon ui flag = case flag of
+    Just True  -> Icons.valid ui.normal |> el [Font.color ui.theme.foreground]
+    Just False -> Icons.invalid ui.normal |> el [Font.color ui.theme.foreground]
     Nothing    -> Element.none
 
 isFailedRegistrationSubmission: AppState -> Bool

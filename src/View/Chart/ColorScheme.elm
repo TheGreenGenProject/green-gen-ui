@@ -14,7 +14,6 @@ type alias ColorScheme = {
 
 
 {-- Standard ColorScheme --}
-shadesOfGreen = deriveFrom darkGreen background 7
 
 wordCloudScheme = {
     default = darkGreen,

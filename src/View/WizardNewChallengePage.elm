@@ -2,7 +2,7 @@ module View.WizardNewChallengePage exposing (newWizardNewChallengeScreen)
 
 import Data.Hashtag exposing (Hashtag(..))
 import Data.Schedule as Schedule exposing (Duration(..), Schedule(..))
-import Element exposing (Element, alignLeft, alignRight, centerX, column, el, fill, height, maximum, padding, paragraph, px, row, spacing, text, width)
+import Element exposing (Element, alignLeft, alignRight, column, el, fill, height, padding, paragraph, px, row, spacing, text, width, wrappedRow)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
@@ -14,15 +14,15 @@ import Update.Msg exposing (Msg(..))
 import Utils.DateUtils as DateUtils
 import Utils.TextUtils as TextUtils
 import View.Icons as Icons
-import View.Style exposing (dateSpinner, hashtagStyle, intSpinner, options, placeholderStyle, titledTextStyle, userStyle)
-import View.Theme as Theme exposing (foreground)
+import View.Style exposing (dateSpinner, hashtagStyle, intSpinner, options, placeholderStyle, relFontSize, titledTextStyle, userStyle)
+import View.UIStyle exposing (UIStyle)
 
 
 newWizardNewChallengeScreen: AppState -> Element Msg
 newWizardNewChallengeScreen state = column [
-    centerX
-    , width  <| maximum 600 fill
-    , height <| maximum 500 fill
+    alignLeft
+    , width fill
+    , height fill
     , spacing 10
     , padding 10
     , Border.rounded 20 ]
@@ -39,86 +39,91 @@ form state =
         wizardState = {wizardStateMaybeDates| start = Just startDate, end = Just endDate }
         posting = wizardState.posting
         isCorrect = check wizardState |> hasError |> not
-        postButtonColor = if isCorrect then Theme.enabledButton else Theme.disabledButton
+        postButtonColor = if isCorrect then state.uiStyle.theme.enabledButton else  state.uiStyle.theme.disabledButton
         reportCount = countReports wizardState
         successMeasure = wizardState.successMeasure
     in
     [ (row [padding 5, spacing 10, width fill] [
-        el [Font.color Theme.enabledButton] (Icons.challenge Icons.large)
-        , titledTextStyle "Create a new Challenge" wizardDescription 10])
+        el [Font.color state.uiStyle.theme.enabledButton] (Icons.challenge state.uiStyle.large)
+        , titledTextStyle state.uiStyle "Create a new Challenge" wizardDescription])
     , row [spacing 10] [
-        Icons.calendar Icons.normal
-            |> el [Font.color Theme.background]
-        , "Starts on" |> text |> el [Font.size 12, width <| px 50]
-        , dateSpinner (startDate)
+        Icons.calendar state.uiStyle.normal
+            |> el [Font.color state.uiStyle.theme.background]
+        , "Starts on" |> text |> el [relFontSize state.uiStyle 2, width <| px 75]
+        , dateSpinner state.uiStyle (startDate)
             (\localDate -> FillingNewChallengeWizard {wizardState|
                     start = localDate
                     |> DateUtils.toUTCTimestamp }
                     |> Just)
      ]
      , row [spacing 10] [
-        Icons.calendar Icons.normal
-            |> el [Font.color Theme.background]
-        , "Ends on" |> text |> el [Font.size 12, width <| px 50]
-        , dateSpinner (endDate)
+        Icons.calendar state.uiStyle.normal
+            |> el [Font.color state.uiStyle.theme.background]
+        , "Ends on" |> text |> el [relFontSize state.uiStyle 2, width <| px 75]
+        , dateSpinner state.uiStyle (endDate)
              (\localDate -> FillingNewChallengeWizard {wizardState|
                 end = localDate
                     |> DateUtils.toUTCTimestamp }
                     |> Just)
       ]
       , row [spacing 10] [
-        Icons.report Icons.normal
-            |> el [Font.color Theme.background]
-        , "Report" |> text |> el [Font.size 12, width <| px 50]
-        , options [("Daily", Daily), ("Weekly", Weekly)]
+        Icons.report state.uiStyle.normal
+            |> el [Font.color state.uiStyle.theme.background]
+        , "Report" |> text |> el [relFontSize state.uiStyle 2, width <| px 75]
+        , options state.uiStyle [("Daily", Daily), ("Weekly", Weekly)]
             wizardState.reportPeriod
             (\opt -> FillingNewChallengeWizard {wizardState| reportPeriod = opt})
         , reportCount
             |> Maybe.map (\n -> " - " ++ (String.fromInt n) ++ " report(s)")
-            |> Maybe.map (text >> el [Font.size 12])
+            |> Maybe.map (text >> el [relFontSize state.uiStyle 2])
             |> Maybe.withDefault Element.none
       ]
       , row [spacing 10] [
-        Icons.followers Icons.normal
-            |> el [Font.color Theme.background]
-        , "Audience" |> text |> el [Font.size 12, width <| px 50]
-        , options [("Followers", Followers), ("Me only", Specific [])]
+        Icons.followers state.uiStyle.normal
+            |> el [Font.color state.uiStyle.theme.background]
+        , "Audience" |> text |> el [relFontSize state.uiStyle 2, width <| px 75]
+        , options state.uiStyle [("Followers", Followers), ("Me only", Specific [])]
             (if wizardState.audience == Followers then Followers else Specific [])
             (\opt -> FillingNewChallengeWizard {wizardState| audience = opt})
         ]
-      , row [spacing 10] [
-        Icons.successMeasure Icons.normal
-            |> el [Font.color Theme.background]
-        , "Evaluation"      |> text |> el [Font.size 12, width <| px 50]
-        , intSpinner 0 (reportCount|> Maybe.withDefault 0) 1 wizardState.successMeasure.maxFailure
+      , wrappedRow [spacing 10] [
+        Icons.successMeasure state.uiStyle.normal
+            |> el [Font.color state.uiStyle.theme.background]
+        , "Evaluation"      |> text |> el [relFontSize state.uiStyle 2, width <| px 75]
+        , intSpinner state.uiStyle 0 (reportCount|> Maybe.withDefault 0) 1 wizardState.successMeasure.maxFailure
                        (\val -> FillingNewChallengeWizard {wizardState| successMeasure = {successMeasure| maxFailure = val}} |> Just)
-        ,"failure(s), " |> text |> el [Font.size 12]
-        , intSpinner 0 (reportCount |> Maybe.withDefault 0) 1 wizardState.successMeasure.maxSkip
+        ,"failure(s), " |> text |> el [relFontSize state.uiStyle 2]
+        , intSpinner state.uiStyle 0 (reportCount |> Maybe.withDefault 0) 1 wizardState.successMeasure.maxSkip
                         (\val -> FillingNewChallengeWizard {wizardState| successMeasure = {successMeasure| maxSkip = val}} |> Just)
-        ,"reports skipping" |> text |> el [Font.size 12]
-        , intSpinner 0 (reportCount |> Maybe.withDefault 0) 1 wizardState.successMeasure.maxPartial
+        ,"reports skipping" |> text |> el [relFontSize state.uiStyle 2]
+        , intSpinner state.uiStyle 0 (reportCount |> Maybe.withDefault 0) 1 wizardState.successMeasure.maxPartial
                                 (\val -> FillingNewChallengeWizard {wizardState| successMeasure = {successMeasure| maxPartial = val}} |> Just)
-        ,"partial success(es)" |> text |> el [Font.size 12]
+        ,"partial success(es)" |> text |> el [relFontSize state.uiStyle 2]
       ]
     , row [spacing 10, width fill] [
-      Icons.challenge Icons.normal
-            |> el [Font.color Theme.background]
-      , "Title" |> text |> el [Font.size 12, width <| px 50]
-      , Input.text [width fill, Font.color Theme.textFieldForeground, Background.color Theme.textFieldBackground] {
+      Icons.challenge state.uiStyle.normal
+            |> el [Font.color state.uiStyle.theme.background]
+      , "Title" |> text |> el [relFontSize state.uiStyle 2, width <| px 75]
+      , Input.text [width fill
+                    , Font.color state.uiStyle.theme.textFieldForeground
+                    , Background.color state.uiStyle.theme.textFieldBackground] {
             onChange = (updateTitle state.forms.newChallengeWizard)
             , text = (state.forms.newChallengeWizard.title |> Maybe.withDefault "")
-            , placeholder = placeholderStyle "Challenge title"
+            , placeholder = placeholderStyle state.uiStyle "Challenge title"
             , label = labelHidden "Challenge title"
         }]
-    , (Input.multiline [width fill, height fill, Font.color Theme.textFieldForeground, Background.color Theme.textFieldBackground] {
+    , (Input.multiline [width fill
+                        , height fill
+                        , Font.color state.uiStyle.theme.textFieldForeground
+                        , Background.color state.uiStyle.theme.textFieldBackground] {
         onChange = (updateContent state.forms.newChallengeWizard)
         , text = (state.forms.newChallengeWizard.content |> Maybe.withDefault "")
-        , placeholder = placeholderStyle "Enter your Challenge description !"
+        , placeholder = placeholderStyle state.uiStyle "Enter your Challenge description !"
         , label = labelHidden "Challenge content"
         , spellcheck = True
     })
-    , makeHashtagBar state.forms.newChallengeWizard
-    , makeUserBar state.cache state.forms.newChallengeWizard
+    , makeHashtagBar state.uiStyle state.forms.newChallengeWizard
+    , makeUserBar state.uiStyle state.cache state.forms.newChallengeWizard
     , (Input.button [alignRight, Border.width 2, Border.rounded 5, padding 5, Font.color postButtonColor] {
         onPress = if isCorrect then Just (PostNewChallenge wizardState) else Nothing
         , label = (text (if posting then "Posting ..." else "Post your challenge !"))
@@ -126,26 +131,26 @@ form state =
  ]
 
 
-makeHashtagBar: NewChallengeWizardState -> Element Msg
-makeHashtagBar state = paragraph [alignLeft
+makeHashtagBar: UIStyle -> NewChallengeWizardState -> Element Msg
+makeHashtagBar ui state = paragraph [alignLeft
         , spacing 10
-        , Font.color foreground
+        , Font.color ui.theme.foreground
         , Font.italic
-        , Font.size 12] [row [spacing 5]
+        , relFontSize ui 2] [row [spacing 5]
     (state.content |> Maybe.withDefault ""
       |> TextUtils.hashtagsFrom
       |> List.sortBy (\(Hashtag x) -> x)
-      |> List.map hashtagStyle)]
+      |> List.map (hashtagStyle ui))]
 
-makeUserBar: Cache -> NewChallengeWizardState -> Element Msg
-makeUserBar cache state = paragraph [alignLeft
+makeUserBar: UIStyle -> Cache -> NewChallengeWizardState -> Element Msg
+makeUserBar ui cache state = paragraph [alignLeft
         , spacing 10
-        , Font.color foreground
+        , Font.color ui.theme.foreground
         , Font.italic
-        , Font.size 12] [row [spacing 5]
+        , relFontSize ui 2] [row [spacing 5]
     (state.content |> Maybe.withDefault ""
       |> TextUtils.userPseudosFrom
-      |> List.map (\pseudo -> userStyle pseudo (Cache.getUserByPseudo cache pseudo)))]
+      |> List.map (\pseudo -> userStyle ui pseudo (Cache.getUserByPseudo cache pseudo)))]
 
 updateContent: NewChallengeWizardState -> String -> Msg
 updateContent state content = FillingNewChallengeWizard {state| content = Just content }

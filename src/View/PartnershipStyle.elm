@@ -9,14 +9,20 @@ import Element.Border as Border
 import Element.Font as Font
 import State.Cache as Cache exposing (Cache)
 import Update.Msg exposing (Msg)
-import View.Theme exposing (lightOrange, lighterYellow, partnerBackground, partnerForeground)
+import View.Theme exposing (lightOrange, lighterYellow)
+import View.UIStyle exposing (UIStyle)
 
 
 
-postDecoration: Cache -> PostId -> Element Msg -> Element Msg
-postDecoration cache postId elmt =
+postDecoration: UIStyle -> Cache -> PostId -> Element Msg -> Element Msg
+postDecoration ui cache postId elmt =
     if Cache.hasPartnership cache postId
-    then elmt |> el [width fill, Font.color partnerForeground, Background.color partnerBackground, Border.width 2, Border.color lightOrange, Border.rounded 6]
+    then elmt |> el [width fill
+        , Font.color ui.theme.partnerForeground
+        , Background.color ui.theme.partnerBackground
+        , Border.width 2
+        , Border.color lightOrange
+        , Border.rounded 6]
     else elmt
 
 userWallDecoration: Cache -> UserId -> Element Msg -> Element Msg

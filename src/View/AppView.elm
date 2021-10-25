@@ -16,6 +16,7 @@ import View.ChallengeDetailsView exposing (challengeDetailsScreen)
 import View.ChallengeScreen exposing (challengeScreen)
 import View.EventDetailsView exposing (eventDetailsScreen)
 import View.EventScreen exposing (eventScreen)
+import View.UIStyle as UIStyle exposing (UIStyle)
 import View.WizardNewEventPage exposing (newWizardNewEventScreen)
 import View.WizardRepostPage exposing (newWizardRepostScreen)
 import View.FeedScreen exposing (feedScreen)
@@ -28,7 +29,7 @@ import View.PinnedScreen exposing (pinnedScreen)
 import View.RegistrationScreen exposing (registrationScreen)
 import View.SearchScreen exposing (searchScreen)
 import View.Style exposing(..)
-import View.Theme exposing (appBackground, appForeground, appTitleForeground, background, foreground)
+import View.Theme
 import View.WallScreen exposing (wallScreen)
 import View.WizardNewChallengePage exposing (newWizardNewChallengeScreen)
 import View.WizardNewFreeTextPage exposing (newWizardNewFreeTextScreen)
@@ -38,23 +39,38 @@ import View.WizardNewTipPage exposing (newWizardNewTipScreen)
 
 viewApp: AppState -> Html Msg
 viewApp state = Element.layout [width fill]
-    (column [ width fill, height fill, padding 5, spacing 10, Font.color appForeground, Background.color appBackground]
+    (column [ width fill
+              , height fill
+              , padding 5
+              , spacing 10
+              , Font.color state.uiStyle.theme.appForeground
+              , Background.color state.uiStyle.theme.appBackground]
             [ menuBar state, (displayCurrentPage state)])
 
 menuBar : AppState -> Element Msg
 menuBar state =
-    row [ width fill, padding 10, spacing 5, Background.color background, Border.rounded 20 ]
-        [el [alignLeft] (backButton state)
-        , el [width fill] (if state.display==State.AppState.SearchPage then searchBar state else appTitle)
-        , el [alignRight] (wallTab state)
-        , el [alignRight] (feedTab state)
-        , el [alignRight] (challengeTab state)
-        , el [alignRight] (eventTab state)
-        , el [alignRight] (pinnedTab state)
-        , el [alignRight] (searchTab state)
-        , el [alignRight] (notificationTab state)
-        , el [alignRight] (newTab state)
-    ]
+    let isUnloggedScreen = List.member state.display [
+            State.AppState.LoginPage
+            , State.AppState.RegistrationPage
+            , State.AppState.LoggedOffPage
+            , State.AppState.BlockedPage]
+        isSearch = state.display==State.AppState.SearchPage
+        isMobile = UIStyle.isMobile state.device
+        show el = if isSearch && isMobile then Element.none else el
+    in if isUnloggedScreen
+       then  el [ width fill, padding 10, Background.color state.uiStyle.theme.background, Border.rounded 20 ] (appTitle state)
+       else row [ width fill, padding 10, spacing 5, Background.color state.uiStyle.theme.background, Border.rounded 20 ]
+            [el [alignLeft] (backButton state)
+            , el [width fill] (if isSearch then searchBar state else appTitle state)
+            , el [alignRight] (wallTab state)         |> show
+            , el [alignRight] (feedTab state)
+            , el [alignRight] (challengeTab state)    |> show
+            , el [alignRight] (eventTab state)        |> show
+            , el [alignRight] (pinnedTab state)       |> show
+            , el [alignRight] (searchTab state)       |> show
+            , el [alignRight] (notificationTab state) |> show
+            , el [alignRight] (newTab state)          |> show
+        ]
 
 displayCurrentPage: AppState -> Element Msg
 displayCurrentPage state = case state.display of
@@ -154,59 +170,63 @@ displayEventDetails = eventDetailsScreen
 
 
 -- We really should have a picture with a proper logo here ...
-logo : Element Msg
-logo =  text ">> GG"
+logo : UIStyle -> Element Msg
+logo ui =  text ">> GG"
     |> el [centerX, centerY]
     |> el [width <| px 80
            , height <| px 40
            , Border.width 2
            , Border.rounded 6
-           , Background.color background
-           , Font.color foreground]
+           , Background.color ui.theme.background
+           , Font.color ui.theme.foreground]
 
-appTitle: Element Msg
-appTitle = row [width fill, Background.color background] [
-    el [width <| px 20] (horizontalSeparator 1 foreground)
-    , text "GreenGen >>"
-        |> el [alignLeft]
-        |> el [Border.width 1
-            , Border.rounded 5
-            , Border.color appBackground
-            , padding 5
-            , Background.color appBackground
-            , Font.color appTitleForeground
-            , Font.italic
-            , Font.family [ Font.typeface "Open Sans", Font.sansSerif]]
-    , horizontalSeparator 1 foreground
- ]
+appTitle: AppState -> Element Msg
+appTitle state =
+    if UIStyle.isMobile state.device
+    then Element.none
+    else let ui = state.uiStyle in
+        row [width fill, Background.color ui.theme.background] [
+            el [width <| px 20] (horizontalSeparator 1 ui.theme.foreground)
+            , text "GreenGen >>"
+                |> el [alignLeft]
+                |> el [Border.width 1
+                    , Border.rounded 5
+                    , Border.color ui.theme.appBackground
+                    , padding 5
+                    , Background.color ui.theme.appBackground
+                    , Font.color ui.theme.appTitleForeground
+                    , Font.italic
+                    , Font.family [ Font.typeface "Open Sans", Font.sansSerif]]
+            , horizontalSeparator 1 ui.theme.foreground
+         ]
 
 
 backButton : AppState -> Element Msg
-backButton _ = tabIconButton (Icons.back Icons.normal) Back
+backButton state = tabIconButton state.uiStyle (Icons.back state.uiStyle.normal) Back
 
 wallTab : AppState -> Element Msg
-wallTab state = screenTabIcon state WallPage (Icons.wall Icons.normal) (RefreshWall)
+wallTab state = screenTabIcon state WallPage (Icons.wall state.uiStyle.normal) (RefreshWall)
 
 feedTab : AppState -> Element Msg
 feedTab state =
-    screenTabIconWithRefresh state FeedPage state.feed.newPostsAvailable (Icons.feed Icons.normal) (RefreshFeed)
+    screenTabIconWithRefresh state FeedPage state.feed.newPostsAvailable (Icons.feed state.uiStyle.normal) (RefreshFeed)
 
 challengeTab : AppState -> Element Msg
 challengeTab state =
-    screenTabIcon state ChallengePage (Icons.challenge Icons.normal) (DisplayPage ChallengePage)
+    screenTabIcon state ChallengePage (Icons.challenge state.uiStyle.normal) (DisplayPage ChallengePage)
 
 eventTab : AppState -> Element Msg
-eventTab state = screenTabIcon state EventPage (Icons.event Icons.normal) (DisplayPage EventPage)
+eventTab state = screenTabIcon state EventPage (Icons.event state.uiStyle.normal) (DisplayPage EventPage)
 
 pinnedTab : AppState -> Element Msg
-pinnedTab state = screenTabIcon state PinnedPostPage (Icons.pinned Icons.normal) (RefreshPinnedPosts)
+pinnedTab state = screenTabIcon state PinnedPostPage (Icons.pinned state.uiStyle.normal) (RefreshPinnedPosts)
 
 searchTab : AppState -> Element Msg
-searchTab state = screenTabIcon state SearchPage (Icons.search Icons.normal) (DisplayPage SearchPage)
+searchTab state = screenTabIcon state SearchPage (Icons.search state.uiStyle.normal) (DisplayPage SearchPage)
 
 notificationTab : AppState -> Element Msg
 notificationTab state =
-    screenTabIconWithRefresh state NotificationPage state.notifications.unread (Icons.notifications Icons.normal) (RefreshNotifications)
+    screenTabIconWithRefresh state NotificationPage state.notifications.unread (Icons.notifications state.uiStyle.normal) (RefreshNotifications)
 
 newTab : AppState -> Element Msg
 newTab state = screenTabButton state NewPostPage "+" (DisplayPage NewPostPage)

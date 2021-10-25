@@ -14,6 +14,7 @@ import Data.Post exposing (PinnedPost, Post, PostId)
 import Data.Schedule exposing (UTCTimestamp)
 import Data.User exposing (UserId)
 import Data.Wall exposing (Wall)
+import Element exposing (Device, DeviceClass)
 import Http
 import State.AppState exposing (AppState, AuthError, Display(..))
 import State.Cache exposing (Cache)
@@ -33,6 +34,7 @@ type Msg =
     | ClockTick
     | SetCurrentTime UTCTimestamp
     | SetWindowSize Int Int
+    | IdentifyDevice Device
     | RefreshHashtagTrend Int
     | DisplayPage State.AppState.Display
     | ChangeWallPage Page
