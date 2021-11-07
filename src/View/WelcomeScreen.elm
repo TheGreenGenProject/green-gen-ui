@@ -120,5 +120,5 @@ titledMultiText ui title content = titledParagraphStyle ui title (content |> Lis
 bullet: UIStyle -> Element Msg -> String -> Element Msg
 bullet ui icon txt = row [width fill, spacing 5] [
     icon |> el [padding 2, Font.color ui.theme.foreground, Background.color ui.theme.background, Border.rounded 2, alignLeft],
-    paragraph [relFontSize ui 0] [txt |> text]
+    el [relFontSize ui 0] (txt |> text)
  ]

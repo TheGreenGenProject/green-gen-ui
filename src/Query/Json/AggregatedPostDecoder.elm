@@ -124,6 +124,7 @@ decodeAggregatedPosts token = Decoder.list (decodeAggregatedPost token)
   --  },
   --  "poll": null,
   --  "repost": null,
+  --  "liked": false,
   --  "likes": {
   --    "value": 0
   --  },
@@ -142,6 +143,7 @@ type alias AggregatedPost = {
     event: Maybe EventInfo,
     poll: Maybe PollInfo,
     repost: Maybe RepostInfo,
+    liked: Bool,
     likes: Int,
     messageCount: Int
  }
@@ -193,6 +195,7 @@ decodeAggregatedPost token = succeed AggregatedPost
     |> required "event" (maybe decodeEventInfo)
     |> required "poll" (maybe decodePollInfo)
     |> required "repost" (maybe decodeRepostInfo)
+    |> required "liked" bool
     |> required "likes" (decodeIntWithDefault 0)
     |> required "messageCount" int
 

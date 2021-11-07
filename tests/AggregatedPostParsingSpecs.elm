@@ -73,6 +73,7 @@ suite =
                         },
                         "poll": null,
                         "repost": null,
+                        "liked" : false,
                         "likes": { "value": 0 },
                         "messageCount": 0
                       }
@@ -155,6 +156,7 @@ suite =
                         "event": null,
                         "poll": null,
                         "repost": null,
+                        "liked" : false,
                         "likes": {
                           "value": 0
                         },
@@ -223,6 +225,7 @@ suite =
                           }
                         },
                         "repost": null,
+                        "liked" : false,
                         "likes": { "value": 0 },
                         "messageCount": 0
                       }
@@ -319,6 +322,7 @@ suite =
                         "event": null,
                         "poll": null,
                         "repost": null,
+                        "liked" : false,
                         "likes": {
                           "value": 0
                         },
@@ -453,6 +457,7 @@ suite =
                         "event": null,
                         "poll": null,
                         "repost": null,
+                        "liked" : false,
                         "likes": {
                           "value": 0
                         },

@@ -43,25 +43,26 @@ cacheAggregatedPosts: Cache -> AggregatedPost -> Cache
 cacheAggregatedPosts cache post =
     let c1 = Cache.addPost cache post.postId post.post
         c2 = Cache.addUser c1 post.user.id post.user
-        c3 = Cache.setLikeCount c2 post.postId post.likes
-        c4 = Cache.addConversationSize c3 post.postId post.messageCount
-        c5 = if(post.pinned) then Cache.addPinned c4 post.postId else c4
-        c6 = post.partner
-            |> Maybe.map (partnership c5 post.postId)
-            |> Maybe.withDefault c5
-        c7 = post.event
-            |> Maybe.map (cacheEventInfo c6 post.postId)
+        c3 = if post.liked then Cache.addLike c2 post.postId else c2
+        c4 = Cache.setLikeCount c3 post.postId post.likes
+        c5 = Cache.addConversationSize c4 post.postId post.messageCount
+        c6 = if(post.pinned) then Cache.addPinned c5 post.postId else c5
+        c7 = post.partner
+            |> Maybe.map (partnership c6 post.postId)
             |> Maybe.withDefault c6
-        c8 = post.challenge
-            |> Maybe.map (cacheChallengeInfo c7 post.postId)
+        c8 = post.event
+            |> Maybe.map (cacheEventInfo c7 post.postId)
             |> Maybe.withDefault c7
-        c9 = post.poll
-            |> Maybe.map (cachePollInfo c8 post.postId)
+        c9 = post.challenge
+            |> Maybe.map (cacheChallengeInfo c8 post.postId)
             |> Maybe.withDefault c8
-        c10 = post.tip
-            |> Maybe.map (cacheTipInfo c9)
+        c10 = post.poll
+            |> Maybe.map (cachePollInfo c9 post.postId)
             |> Maybe.withDefault c9
-    in c10
+        c11 = post.tip
+            |> Maybe.map (cacheTipInfo c10)
+            |> Maybe.withDefault c10
+    in c11
 
 partnership: Cache -> PostId -> Partner -> Cache
 partnership cache postId partner =
