@@ -145,7 +145,7 @@ renderMapUrlLocationForm ui state =
     column [width fill, spacing 3] [
         titledTextStyle ui "Map link" "Enter the google map or open street map URL "
         , (Input.text [width <| px 450, Background.color ui.theme.textFieldBackground, Font.color ui.theme.textFieldForeground] {
-            onChange = (\txt -> updateLocation state (Online (Url txt)))
+            onChange = (\txt -> updateLocation state (MapUrl (Url txt)))
             , text = loc
             , placeholder = placeholderStyle ui "Map Url for the event"
             , label = labelHidden "Event map link"
